@@ -1,6 +1,6 @@
 import { CancellationToken, Event, FileDecoration, FileDecorationProvider, ProviderResult, ThemeColor, Uri } from "vscode";
 import { Status } from "../types";
-import ComponentTreeItem from "./component/component";
+import ComponentTreeItem from "./components/component";
 
 export class DecorationProvider implements FileDecorationProvider {
     onDidChangeFileDecorations?: Event<Uri | Uri[] | undefined> | undefined;

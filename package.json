@@ -41,8 +41,8 @@
     "views": {
       "github-local-actions-container": [
         {
-          "id": "component",
-          "name": "Component",
+          "id": "components",
+          "name": "Components",
           "icon": "$(telescope)"
         },
         {

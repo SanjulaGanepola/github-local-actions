@@ -4,10 +4,10 @@ import { DecorationProvider } from "../decorationProvider";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import ComponentTreeItem from "./component";
 
-export default class ComponentTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
+export default class ComponentsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    public static VIEW_ID = 'component';
+    public static VIEW_ID = 'components';
     private componentManager: ComponentManager;
 
     constructor(context: ExtensionContext) {
