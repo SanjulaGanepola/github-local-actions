@@ -29,11 +29,36 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "github-local-actions-container",
+          "title": "GitHub Local Actions",
+          "icon": "$(robot)"
+        }
+      ]
+    },
+    "views": {
+      "github-local-actions-container": [
+        {
+          "id": "status",
+          "name": "Status"
+        },
+        {
+          "id": "workflows",
+          "name": "Workflows"
+        },
+        {
+          "id": "events",
+          "name": "Events"
+        },
+        {
+          "id": "settings",
+          "name": "Settings"
+        }
+      ]
+    },
     "commands": [
-      {
-        "command": "github-local-actions.helloWorld",
-        "title": "Hello World"
-      }
     ]
   },
   "scripts": {
