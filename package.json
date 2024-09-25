@@ -41,24 +41,54 @@
     "views": {
       "github-local-actions-container": [
         {
-          "id": "status",
-          "name": "Status"
+          "id": "component",
+          "name": "Component",
+          "icon": "$(telescope)"
         },
         {
           "id": "workflows",
-          "name": "Workflows"
+          "name": "Workflows",
+          "icon": "$(remote-explorer)"
         },
         {
           "id": "events",
-          "name": "Events"
+          "name": "Events",
+          "icon": "$(rocket)"
         },
         {
           "id": "settings",
-          "name": "Settings"
+          "name": "Settings",
+          "icon": "$(server-environment)"
         }
       ]
     },
     "commands": [
+    ],
+    "colors": [
+      {
+        "id": "GitHubLocalActions.enabled",
+        "description": "Color for a component success state",
+        "defaults": {
+          "dark": "#89d185",
+          "light": "#89d185"
+        }
+      },
+      {
+        "id": "GitHubLocalActions.warning",
+        "description": "Color for a component warning state",
+        "defaults": {
+          "dark": "#cca700",
+          "light": "#cca700"
+        }
+      },
+      {
+        "id": "GitHubLocalActions.disabled",
+        "description": "Color for a component disabled state",
+        "defaults": {
+          "dark": "#f48771",
+          "light": "#f48771"
+        }
+      }
     ]
   },
   "scripts": {
