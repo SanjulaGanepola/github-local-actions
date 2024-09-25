@@ -1,0 +1,36 @@
+name: Publish to the Marketplace and Open VSX
+
+on:
+  workflow_dispatch:
+
+  release:
+    types: [created]
+
+jobs:
+  publish:
+    name: Publish
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install NPM Dependencies
+        run: |
+          npm install
+          npm install -g vsce ovsx
+
+      - name: Publish to Open VSX
+        run: npx ovsx publish -p ${{ secrets.OPEN_VSX_TOKEN }}
+
+      - name: Publish to Marketplace
+        run: vsce publish -p ${{ secrets.VS_MARKETPLACE_TOKEN }}

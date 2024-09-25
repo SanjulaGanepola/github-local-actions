@@ -1,14 +1,31 @@
 {
   "name": "github-local-actions",
-  "displayName": "github-local-actions",
+  "displayName": "GitHub Local Actions",
   "description": "Run your GitHub Actions locally!",
-  "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.93.0"
+  "icon": "icon.png",
+  "author": {
+    "name": "Sanjula Ganepola",
+    "url": "https://github.com/sanjulaganepola"
   },
+  "publisher": "SanjulaGanepola",
+  "license": "Apache-2.0",
+  "version": "0.0.1",
+  "repository": {
+    "url": "https://github.com/SanjulaGanepola/github-local-actions"
+  },
+  "homepage": "https://github.com/SanjulaGanepola/github-local-actions/blob/main/README.md",
+  "bugs": {
+    "url": "https://github.com/SanjulaGanepola/github-local-actions/issues"
+  },
+  "keywords": [
+    "GitHub Actions"
+  ],
   "categories": [
     "Other"
   ],
+  "engines": {
+    "vscode": "^1.93.0"
+  },
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {

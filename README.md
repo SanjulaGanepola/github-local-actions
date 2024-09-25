@@ -1,5 +1,10 @@
 # GitHub Local Actions
 
+<img src="./icon.png" align="right" width="128" height="128">
+
+[![Version](https://img.shields.io/visual-studio-marketplace/v/SanjulaGanepola.github-local-actions)](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/SanjulaGanepola.github-local-actions)](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions)
+
 Run your GitHub Actions locally!
 
 ## Bugs and Feature Requests
