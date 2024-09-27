@@ -1,5 +1,5 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem } from "vscode";
-import { ComponentManager } from "../componentManager";
+import { ComponentManager } from "../../componentManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import ComponentTreeItem from "./component";
 

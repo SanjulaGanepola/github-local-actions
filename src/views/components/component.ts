@@ -1,6 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri } from "vscode";
-import { Component } from "../../types";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
+import { Component } from "../../componentManager";
 
 export default class ComponentTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'component';

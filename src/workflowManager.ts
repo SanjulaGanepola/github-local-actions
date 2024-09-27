@@ -1,8 +1,14 @@
 import * as fs from "fs/promises";
 import * as path from "path";
-import { workspace } from "vscode";
+import { Uri, workspace } from "vscode";
 import * as yaml from "yaml";
-import { Workflow } from "../types";
+
+export interface Workflow {
+  name: string,
+  uri: Uri,
+  content?: any,
+  error?: string
+}
 
 export class WorkflowManager {
   async getWorkflows(): Promise<Workflow[]> {

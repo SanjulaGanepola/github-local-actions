@@ -1,6 +1,6 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, window, workspace } from "vscode";
+import { WorkflowManager } from "../../workflowManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import { WorkflowManager } from "../workflowManager";
 import WorkflowTreeItem from "./workflow";
 
 export default class WorkflowsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
@@ -19,6 +19,9 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
             commands.registerCommand('githubLocalActions.openWorkflow', async (workflowTreeItem: WorkflowTreeItem) => {
                 const document = await workspace.openTextDocument(workflowTreeItem.workflow.uri);
                 await window.showTextDocument(document);
+            }),
+            commands.registerCommand('githubLocalActions.runWorkflow', async (workflowTreeItem: WorkflowTreeItem) => {
+
             })
         );
     }
