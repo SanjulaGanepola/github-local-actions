@@ -1,9 +1,45 @@
 import * as path from "path";
-import { commands, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, window, workspace } from "vscode";
+import { commands, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, window } from "vscode";
 import { ComponentManager } from "./componentManager";
 import { Workflow } from "./workflowManager";
 
-export enum Options {
+export enum EventTrigger {
+    BranchProtectionRule = 'branch_protection_rule',
+    CheckRun = 'check_run',
+    CheckSuite = 'check_suite',
+    Create = 'create',
+    Delete = 'delete',
+    Deployment = 'deployment',
+    DeploymentStatus = 'deployment_status',
+    Discussion = 'discussion',
+    DiscussionComment = 'discussion_comment',
+    Fork = 'fork',
+    Gollum = 'gollum',
+    IssueComment = 'issue_comment',
+    Issues = 'issues',
+    Label = 'label',
+    MergeGroup = 'merge_group',
+    Milestone = 'milestone',
+    PageBuild = 'page_build',
+    Public = 'public',
+    PullRequest = 'pull_request',
+    PullRequestComment = 'pull_request_comment',
+    PullRequestReview = 'pull_request_review',
+    PullRequestReviewComment = 'pull_request_review_comment',
+    PullRequestTarget = 'pull_request_target',
+    Push = 'push',
+    RegistryPackage = 'registry_package',
+    Release = 'release',
+    RepositoryDispatch = 'repository_dispatch',
+    Schedule = 'schedule',
+    Status = 'status',
+    Watch = 'watch',
+    WorkflowCall = 'workflow_call',
+    WorkflowDispatch = 'workflow_dispatch',
+    WorkflowRun = 'workflow_run'
+}
+
+export enum Option {
     Workflows = '-W'
 }
 
@@ -14,11 +50,15 @@ export class Act {
         // TODO: Implement
     }
 
-    static async runWorkflow(workflow: Workflow) {
-        return await Act.runCommand(workflow, `${Act.base} ${Options.Workflows} '.github/workflows/${path.parse(workflow.uri.fsPath).base}'`);
+    static async runEvent(eventTrigger: EventTrigger) {
+        return await Act.runCommand(`${Act.base} ${eventTrigger}`);
     }
 
-    static async runCommand(workflow: Workflow, command: string) {
+    static async runWorkflow(workflow: Workflow) {
+        return await Act.runCommand(`${Act.base} ${Option.Workflows} '.github/workflows/${path.parse(workflow.uri.fsPath).base}'`, workflow);
+    }
+
+    static async runCommand(command: string, workflow?: Workflow) {
 
         const unreadyComponents = await ComponentManager.getUnreadyComponents();
         if (unreadyComponents.length > 0) {
@@ -31,11 +71,11 @@ export class Act {
         }
 
         await tasks.executeTask({
-            name: workflow.name,
+            name: workflow?.name || 'act',
             detail: 'Run workflow',
             definition: { type: 'GitHub Local Actions' },
             source: 'GitHub Local Actions',
-            scope: workspace.getWorkspaceFolder(workflow.uri),
+            scope: TaskScope.Workspace,
             isBackground: true,
             presentationOptions: {
                 reveal: TaskRevealKind.Always,

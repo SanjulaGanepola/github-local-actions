@@ -1,5 +1,5 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, window, workspace } from "vscode";
-import { Act } from "../../act";
+import { Act, EventTrigger } from "../../act";
 import { WorkflowManager } from "../../workflowManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import WorkflowTreeItem from "./workflow";
@@ -13,6 +13,16 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
         context.subscriptions.push(
             commands.registerCommand('githubLocalActions.runAllWorkflows', async () => {
                 await Act.runAllWorkflows();
+            }),
+            commands.registerCommand('githubLocalActions.runEvent', async () => {
+                const event = await window.showQuickPick(Object.values(EventTrigger), {
+                    title: 'Select the event to run',
+                    placeHolder: 'Event'
+                });
+
+                if(event) {
+                    await Act.runEvent(event as EventTrigger);
+                }
             }),
             commands.registerCommand('githubLocalActions.refreshWorkflows', async () => {
                 this.refresh();

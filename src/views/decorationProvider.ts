@@ -12,17 +12,17 @@ export class DecorationProvider implements FileDecorationProvider {
             if (params.get('status') === Status.Enabled) {
                 return {
                     badge: '✅',
-                    color: new ThemeColor('GitHubLocalActions.enabled')
+                    color: new ThemeColor('GitHubLocalActions.green')
                 };
             } else if (params.get('status') === Status.Warning) {
                 return {
                     badge: '⚠️',
-                    color: new ThemeColor('GitHubLocalActions.warning')
+                    color: new ThemeColor('GitHubLocalActions.yellow')
                 };
             } else if (params.get('status') === Status.Disabled) {
                 return {
                     badge: '❌',
-                    color: new ThemeColor('GitHubLocalActions.disabled')
+                    color: new ThemeColor('GitHubLocalActions.red')
                 };
             }
         } else if (uri.scheme === WorkflowTreeItem.contextValue) {
@@ -30,7 +30,7 @@ export class DecorationProvider implements FileDecorationProvider {
             if (params.get('error')) {
                 return {
                     badge: '❌',
-                    color: new ThemeColor('GitHubLocalActions.disabled')
+                    color: new ThemeColor('GitHubLocalActions.red')
                 };
             }
         }

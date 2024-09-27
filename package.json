@@ -74,6 +74,12 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.runEvent",
+        "title": "Run Event",
+        "icon": "$(symbol-event)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.refreshWorkflows",
         "title": "Refresh",
         "icon": "$(refresh)"
@@ -108,6 +114,10 @@
           "when": "never"
         },
         {
+          "command": "githubLocalActions.runEvent",
+          "when": "never"
+        },
+        {
           "command": "githubLocalActions.refreshWorkflows",
           "when": "never"
         },
@@ -136,9 +146,14 @@
           "group": "navigation@0"
         },
         {
-          "command": "githubLocalActions.refreshWorkflows",
+          "command": "githubLocalActions.runEvent",
           "when": "view == workflows",
           "group": "navigation@1"
+        },
+        {
+          "command": "githubLocalActions.refreshWorkflows",
+          "when": "view == workflows",
+          "group": "navigation@2"
         },
         {
           "command": "githubLocalActions.refreshSettings",
@@ -161,24 +176,24 @@
     },
     "colors": [
       {
-        "id": "GitHubLocalActions.enabled",
-        "description": "Color for a component success state",
+        "id": "GitHubLocalActions.green",
+        "description": "Color for green in GitHub Local Actions extension",
         "defaults": {
           "dark": "#89d185",
           "light": "#89d185"
         }
       },
       {
-        "id": "GitHubLocalActions.warning",
-        "description": "Color for a component warning state",
+        "id": "GitHubLocalActions.yellow",
+        "description": "Color for yellow in GitHub Local Actions extension",
         "defaults": {
           "dark": "#cca700",
           "light": "#cca700"
         }
       },
       {
-        "id": "GitHubLocalActions.disabled",
-        "description": "Color for a component disabled state",
+        "id": "GitHubLocalActions.red",
+        "description": "Color for red in GitHub Local Actions extension",
         "defaults": {
           "dark": "#f48771",
           "light": "#f48771"
