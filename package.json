@@ -50,12 +50,12 @@
         {
           "id": "workflows",
           "name": "Workflows",
-          "icon": "$(remote-explorer)"
+          "icon": "$(layers)"
         },
         {
           "id": "settings",
           "name": "Settings",
-          "icon": "$(server-environment)"
+          "icon": "$(gear)"
         }
       ]
     },
@@ -65,6 +65,12 @@
         "command": "githubLocalActions.refreshComponents",
         "title": "Refresh",
         "icon": "$(refresh)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.runAllWorkflows",
+        "title": "Run All Workflows",
+        "icon": "$(run-all)"
       },
       {
         "category": "GitHub Local Actions",
@@ -80,6 +86,12 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.runWorkflow",
+        "title": "Run Workflow",
+        "icon": "$(debug-start)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.refreshSettings",
         "title": "Refresh",
         "icon": "$(refresh)"
@@ -92,11 +104,19 @@
           "when": "never"
         },
         {
+          "command": "githubLocalActions.runAllWorkflows",
+          "when": "never"
+        },
+        {
           "command": "githubLocalActions.refreshWorkflows",
           "when": "never"
         },
         {
           "command": "githubLocalActions.openWorkflow",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.runWorkflow",
           "when": "never"
         },
         {
@@ -111,9 +131,14 @@
           "group": "navigation@0"
         },
         {
-          "command": "githubLocalActions.refreshWorkflows",
+          "command": "githubLocalActions.runAllWorkflows",
           "when": "view == workflows",
           "group": "navigation@0"
+        },
+        {
+          "command": "githubLocalActions.refreshWorkflows",
+          "when": "view == workflows",
+          "group": "navigation@1"
         },
         {
           "command": "githubLocalActions.refreshSettings",
@@ -124,8 +149,13 @@
       "view/item/context": [
         {
           "command": "githubLocalActions.openWorkflow",
-          "when": "view == workflows && viewItem =~ /^workflow.*/",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.workflow.*/",
           "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.runWorkflow",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.workflow.*/",
+          "group": "inline@1"
         }
       ]
     },

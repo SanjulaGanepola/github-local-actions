@@ -11,7 +11,7 @@ export interface Workflow {
 }
 
 export class WorkflowManager {
-  async getWorkflows(): Promise<Workflow[]> {
+  static async getWorkflows(): Promise<Workflow[]> {
     const workflows: Workflow[] = [];
 
     const workspaceFolders = workspace.workspaceFolders;

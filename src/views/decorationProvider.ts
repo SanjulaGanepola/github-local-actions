@@ -1,5 +1,5 @@
 import { CancellationToken, Event, FileDecoration, FileDecorationProvider, ProviderResult, ThemeColor, Uri } from "vscode";
-import { Status } from "../types";
+import { Status } from "../componentManager";
 import ComponentTreeItem from "./components/component";
 import WorkflowTreeItem from "./workflows/workflow";
 

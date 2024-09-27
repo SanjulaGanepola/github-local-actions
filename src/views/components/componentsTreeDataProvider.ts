@@ -6,12 +6,9 @@ import ComponentTreeItem from "./component";
 export default class ComponentsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    public static VIEW_ID = 'components';
-    private componentManager: ComponentManager;
+    static VIEW_ID = 'components';
 
     constructor(context: ExtensionContext) {
-        this.componentManager = new ComponentManager();
-
         context.subscriptions.push(            
             commands.registerCommand('githubLocalActions.refreshComponents', async () => {
                 this.refresh();
@@ -39,7 +36,7 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
         if (element) {
             return element.getChildren();
         } else {
-            const components = await this.componentManager.getComponents();
+            const components = await ComponentManager.getComponents();
             return components.map(component => new ComponentTreeItem(component));
         }
     }

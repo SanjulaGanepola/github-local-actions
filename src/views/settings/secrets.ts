@@ -2,7 +2,7 @@ import { ThemeIcon, TreeItem, TreeItemCollapsibleState } from "vscode";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
 export default class SecretsTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
-    static contextValue = 'secrets';
+    static contextValue = 'githubLocalActions.secrets';
 
     constructor() {
         super('Secrets', TreeItemCollapsibleState.Collapsed);

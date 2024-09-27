@@ -1,4 +1,5 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, window, workspace } from "vscode";
+import { Act } from "../../act";
 import { WorkflowManager } from "../../workflowManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import WorkflowTreeItem from "./workflow";
@@ -6,13 +7,13 @@ import WorkflowTreeItem from "./workflow";
 export default class WorkflowsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    public static VIEW_ID = 'workflows';
-    private workflowManager: WorkflowManager;
+    static VIEW_ID = 'workflows';
 
     constructor(context: ExtensionContext) {
-        this.workflowManager = new WorkflowManager();
-
         context.subscriptions.push(
+            commands.registerCommand('githubLocalActions.runAllWorkflows', async () => {
+                await Act.runAllWorkflows();
+            }),
             commands.registerCommand('githubLocalActions.refreshWorkflows', async () => {
                 this.refresh();
             }),
@@ -21,7 +22,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 await window.showTextDocument(document);
             }),
             commands.registerCommand('githubLocalActions.runWorkflow', async (workflowTreeItem: WorkflowTreeItem) => {
-
+                await Act.runWorkflow(workflowTreeItem.workflow);
             })
         );
     }
@@ -46,7 +47,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
         if (element) {
             return element.getChildren();
         } else {
-            const workflows = await this.workflowManager.getWorkflows();
+            const workflows = await WorkflowManager.getWorkflows();
             return workflows.map(workflow => new WorkflowTreeItem(workflow));
         }
     }

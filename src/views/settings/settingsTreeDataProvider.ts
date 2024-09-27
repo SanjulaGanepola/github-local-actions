@@ -7,7 +7,7 @@ import VariablesTreeItem from "./variables";
 export default class SettingsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    public static VIEW_ID = 'settings';
+    static VIEW_ID = 'settings';
 
     constructor(context: ExtensionContext) {
         context.subscriptions.push(

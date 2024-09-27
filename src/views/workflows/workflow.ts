@@ -3,7 +3,7 @@ import { Workflow } from "../../workflowManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
 export default class WorkflowTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
-    static contextValue = 'workflow';
+    static contextValue = 'githubLocalActions.workflow';
     workflow: Workflow;
 
     constructor(workflow: Workflow) {

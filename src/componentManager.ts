@@ -1,7 +1,8 @@
 export interface Component {
     name: string,
-    status: Status,
     icon: string,
+    status: Status,
+    required: boolean
     message?: string
 }
 
@@ -12,32 +13,39 @@ export enum Status {
 }
 
 export class ComponentManager {
-    components: Component[] = [
-        {
-            name: 'nektos/act',
-            status: Status.Enabled,
-            icon: 'package'
-        },
-        {
-            name: 'Docker Engine',
-            status: Status.Disabled,
-            icon: 'dashboard'
-        },
-        {
-            name: 'GitHub Actions Extension',
-            status: Status.Warning,
-            icon: 'extensions',
-            message: 'GitHub Actions extension is not required but is recommended to take advantage of workflow editor features'
-        },
-        {
-            name: 'GitHub CLI',
-            status: Status.Warning,
-            icon: 'terminal',
-            message: 'GitHub CLI is not required but is recommended if you plan to use it to retrieve GitHub tokens'
-        }
-    ];
+    static async getComponents(): Promise<Component[]> {
+        return [
+            {
+                name: 'nektos/act',
+                icon: 'package',
+                status: Status.Enabled,
+                required: true
+            },
+            {
+                name: 'Docker Engine',
+                icon: 'dashboard',
+                status: Status.Enabled,
+                required: true
+            },
+            {
+                name: 'GitHub Actions Extension',
+                icon: 'extensions',
+                status: Status.Warning,
+                required: false,
+                message: 'GitHub Actions extension is not required, but is recommended to take advantage of workflow editor features.'
+            },
+            {
+                name: 'GitHub CLI',
+                icon: 'terminal',
+                status: Status.Warning,
+                required: false,
+                message: 'GitHub CLI is not required, but is recommended if you plan to use it to retrieve GitHub tokens.'
+            }
+        ];
+    }
 
-    async getComponents(): Promise<Component[]> {
-        return this.components;
+    static async getUnreadyComponents(): Promise<Component[]> {
+        const components = await ComponentManager.getComponents();
+        return components.filter(component => component.required && component.status !== Status.Enabled);
     }
 }
