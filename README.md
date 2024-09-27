@@ -5,7 +5,21 @@
 [![Version](https://img.shields.io/visual-studio-marketplace/v/SanjulaGanepola.github-local-actions)](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/SanjulaGanepola.github-local-actions)](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions)
 
-Run your GitHub Actions locally!
+Run your GitHub Actions locally with the power of the [GitHub Local Actions](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions) extension!
+
+* Run Workflows:
+* View Workflow Run History: 
+* Manage Environments, Secrets, and Variables:
+
+## Getting Started
+
+> [!IMPORTANT]  
+> WORK IN PROGRESS
+
+## Extension Settings
+
+> [!IMPORTANT]  
+> WORK IN PROGRESS
 
 ## Bugs and Feature Requests
 
