@@ -74,6 +74,12 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.openWorkflow",
+        "title": "Open Workflow",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.refreshSettings",
         "title": "Refresh",
         "icon": "$(refresh)"
@@ -87,6 +93,10 @@
         },
         {
           "command": "githubLocalActions.refreshWorkflows",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.openWorkflow",
           "when": "never"
         },
         {
@@ -109,6 +119,13 @@
           "command": "githubLocalActions.refreshSettings",
           "when": "view == settings",
           "group": "navigation@0"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "githubLocalActions.openWorkflow",
+          "when": "view == workflows && viewItem =~ /^workflow.*/",
+          "group": "inline@0"
         }
       ]
     },

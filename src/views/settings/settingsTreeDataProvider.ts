@@ -13,7 +13,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
         context.subscriptions.push(
             commands.registerCommand('githubLocalActions.refreshSettings', async () => {
                 this.refresh();
-            }),
+            })
         );
     }
 

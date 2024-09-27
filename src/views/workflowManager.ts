@@ -10,21 +10,21 @@ export class WorkflowManager {
 
     const workspaceFolders = workspace.workspaceFolders;
     if (workspaceFolders && workspaceFolders.length > 0) {
-      const workflowFiles = await workspace.findFiles(`.github/workflows/*.{yml,yaml}`);
+      const workflowFileUris = await workspace.findFiles(`.github/workflows/*.{yml,yaml}`);
 
-      for await (const workflowFile of workflowFiles) {
+      for await (const workflowFileUri of workflowFileUris) {
         try {
-          const fileContent = await fs.readFile(workflowFile.fsPath, 'utf8');
+          const fileContent = await fs.readFile(workflowFileUri.fsPath, 'utf8');
 
           workflows.push({
-            name: path.parse(workflowFile.fsPath).name,
-            path: workflowFile.fsPath,
+            name: path.parse(workflowFileUri.fsPath).name,
+            uri: workflowFileUri,
             content: yaml.parse(fileContent)
           });
         } catch (error) {
           workflows.push({
-            name: path.parse(workflowFile.fsPath).name,
-            path: workflowFile.fsPath,
+            name: path.parse(workflowFileUri.fsPath).name,
+            uri: workflowFileUri,
             error: 'Failed to parse workflow file'
           });
         }

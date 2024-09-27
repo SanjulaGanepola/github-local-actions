@@ -15,7 +15,7 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
         context.subscriptions.push(            
             commands.registerCommand('githubLocalActions.refreshComponents', async () => {
                 this.refresh();
-            }),
+            })
         );
     }
 

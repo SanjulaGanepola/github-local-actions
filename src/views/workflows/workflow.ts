@@ -12,7 +12,7 @@ export default class WorkflowTreeItem extends TreeItem implements GithubLocalAct
         this.contextValue = WorkflowTreeItem.contextValue;
         this.iconPath = new ThemeIcon('layers');
         this.tooltip = `Name: ${workflow.name}\n` +
-            `Path: ${workflow.path}`;
+            `Path: ${workflow.uri.fsPath}`;
 
         if(workflow.error) {
             this.resourceUri = Uri.parse(`${WorkflowTreeItem.contextValue}:${workflow.name}?error=${workflow.error}`, true);

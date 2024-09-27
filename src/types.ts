@@ -1,3 +1,5 @@
+import { Uri } from "vscode"
+
 export interface Component {
     name: string,
     status: Status,
@@ -13,7 +15,7 @@ export enum Status {
 
 export interface Workflow {
     name: string,
-    path: string,
+    uri: Uri,
     content?: any,
     error?: string
 }
