@@ -7,9 +7,8 @@ export default class ComponentTreeItem extends TreeItem implements GithubLocalAc
     component: Component;
 
     constructor(component: Component) {
-        super(component.name, TreeItemCollapsibleState.Collapsed);
+        super(component.name, TreeItemCollapsibleState.None);
         this.component = component;
-        this.collapsibleState = TreeItemCollapsibleState.None;
         this.contextValue = ComponentTreeItem.contextValue;
         this.iconPath = new ThemeIcon(component.icon);
         this.resourceUri = Uri.parse(`${ComponentTreeItem.contextValue}:${component.name}?status=${component.status}`, true);

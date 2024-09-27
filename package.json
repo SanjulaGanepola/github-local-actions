@@ -62,8 +62,7 @@
         }
       ]
     },
-    "commands": [
-    ],
+    "commands": [],
     "colors": [
       {
         "id": "GitHubLocalActions.enabled",
@@ -102,18 +101,21 @@
     "lint": "eslint src",
     "test": "vscode-test"
   },
+  "dependencies": {
+    "yaml": "^2.5.1"
+  },
   "devDependencies": {
-    "@types/vscode": "^1.93.0",
     "@types/mocha": "^10.0.7",
     "@types/node": "20.x",
+    "@types/vscode": "^1.93.0",
     "@typescript-eslint/eslint-plugin": "^8.3.0",
     "@typescript-eslint/parser": "^8.3.0",
-    "eslint": "^9.9.1",
-    "typescript": "^5.5.4",
-    "ts-loader": "^9.5.1",
-    "webpack": "^5.94.0",
-    "webpack-cli": "^5.1.4",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.9.1",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.5.4",
+    "webpack": "^5.94.0",
+    "webpack-cli": "^5.1.4"
   }
 }

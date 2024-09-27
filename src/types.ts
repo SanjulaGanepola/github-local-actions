@@ -10,3 +10,10 @@ export enum Status {
     Warning = 'Warning',
     Disabled = 'Disabled'
 }
+
+export interface Workflow {
+    name: string,
+    path: string,
+    content?: any,
+    error?: string
+}

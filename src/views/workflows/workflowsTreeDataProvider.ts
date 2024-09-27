@@ -1,16 +1,16 @@
 import { CancellationToken, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem } from "vscode";
-import { ComponentManager } from "../componentManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import ComponentTreeItem from "./component";
+import { WorkflowManager } from "../workflowManager";
+import WorkflowTreeItem from "./workflow";
 
-export default class ComponentsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
+export default class WorkflowsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    public static VIEW_ID = 'components';
-    private componentManager: ComponentManager;
+    public static VIEW_ID = 'workflows';
+    private workflowManager: WorkflowManager;
 
     constructor(context: ExtensionContext) {
-        this.componentManager = new ComponentManager();
+        this.workflowManager = new WorkflowManager();
     }
 
     refresh(element?: GithubLocalActionsTreeItem) {
@@ -33,8 +33,8 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
         if (element) {
             return element.getChildren();
         } else {
-            const components = await this.componentManager.getComponents();
-            return components.map(component => new ComponentTreeItem(component));
+            const workflows = await this.workflowManager.getWorkflows();
+            return workflows.map(workflow => new WorkflowTreeItem(workflow));
         }
     }
 }
