@@ -1,19 +1,17 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem } from "vscode";
-import { ComponentManager } from "../componentManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import ComponentTreeItem from "./component";
+import EnvironmentsTreeItem from "./environments";
+import SecretsTreeItem from "./secrets";
+import VariablesTreeItem from "./variables";
 
-export default class ComponentsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
+export default class SettingsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    public static VIEW_ID = 'components';
-    private componentManager: ComponentManager;
+    public static VIEW_ID = 'settings';
 
     constructor(context: ExtensionContext) {
-        this.componentManager = new ComponentManager();
-
-        context.subscriptions.push(            
-            commands.registerCommand('githubLocalActions.refreshComponents', async () => {
+        context.subscriptions.push(
+            commands.registerCommand('githubLocalActions.refreshSettings', async () => {
                 this.refresh();
             }),
         );
@@ -39,8 +37,11 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
         if (element) {
             return element.getChildren();
         } else {
-            const components = await this.componentManager.getComponents();
-            return components.map(component => new ComponentTreeItem(component));
+            return [
+                new EnvironmentsTreeItem(),
+                new SecretsTreeItem(),
+                new VariablesTreeItem()
+            ];
         }
     }
 }

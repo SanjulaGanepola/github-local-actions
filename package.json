@@ -26,7 +26,9 @@
   "engines": {
     "vscode": "^1.93.0"
   },
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -51,18 +53,65 @@
           "icon": "$(remote-explorer)"
         },
         {
-          "id": "events",
-          "name": "Events",
-          "icon": "$(rocket)"
-        },
-        {
           "id": "settings",
           "name": "Settings",
           "icon": "$(server-environment)"
         }
       ]
     },
-    "commands": [],
+    "commands": [
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.refreshComponents",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.refreshWorkflows",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.refreshSettings",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "githubLocalActions.refreshComponents",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.refreshWorkflows",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.refreshSettings",
+          "when": "never"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "githubLocalActions.refreshComponents",
+          "when": "view == components",
+          "group": "navigation@0"
+        },
+        {
+          "command": "githubLocalActions.refreshWorkflows",
+          "when": "view == workflows",
+          "group": "navigation@0"
+        },
+        {
+          "command": "githubLocalActions.refreshSettings",
+          "when": "view == settings",
+          "group": "navigation@0"
+        }
+      ]
+    },
     "colors": [
       {
         "id": "GitHubLocalActions.enabled",
