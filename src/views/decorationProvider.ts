@@ -10,7 +10,7 @@ export class DecorationProvider implements FileDecorationProvider {
 
         if (uri.scheme === ComponentTreeItem.contextValue) {
             const status = params.get('status');
-            const required = params.get('required');
+            const required = params.get('required') === 'true';
 
             if (status === CliStatus.Installed || status === ExtensionStatus.Activated) {
                 return {

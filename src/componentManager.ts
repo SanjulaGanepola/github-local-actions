@@ -4,6 +4,7 @@ import { extensions } from "vscode";
 export interface Component<T extends CliStatus | ExtensionStatus> {
     name: string,
     icon: string,
+    version?: string,
     status: T,
     required: boolean
     message?: string
@@ -23,36 +24,42 @@ export class ComponentManager {
     static async getComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
         const components: Component<CliStatus | ExtensionStatus>[] = [];
 
-        const actCliStatus = await ComponentManager.getCliStatus('act');
+        const actCliInfo = await ComponentManager.getCliInfo('act', /act version (.+)/);
         components.push({
             name: 'nektos/act CLI',
             icon: 'terminal',
-            status: actCliStatus,
+            version: actCliInfo.version,
+            status: actCliInfo.status,
             required: true
         });
 
+        // TODO: Fix docker status
+        const dockerEngineVersion = '2.0.0';
         const dockerEngineStatus = CliStatus.Installed;
         components.push({
             name: 'Docker Engine',
             icon: 'dashboard',
+            version: dockerEngineVersion,
             status: dockerEngineStatus,
             required: true
         });
 
-        const githubActionsExtensionStatus = await ComponentManager.getExtensionStatus('github.vscode-github-actions');
+        const githubActionsInfo = await ComponentManager.getExtensionInfo('github.vscode-github-actions');
         components.push({
             name: 'GitHub Actions Extension',
             icon: 'extensions',
-            status: githubActionsExtensionStatus,
+            version: githubActionsInfo.version,
+            status: githubActionsInfo.status,
             required: false,
             message: 'GitHub Actions extension is not required, but is recommended to take advantage of workflow editor features.'
         });
 
-        const isGithubCliInstalled = await ComponentManager.getCliStatus('gh');
+        const githubCliInfo = await ComponentManager.getCliInfo('gh', /gh version (.+)/);
         components.push({
             name: 'GitHub CLI',
             icon: 'terminal',
-            status: isGithubCliInstalled,
+            version: githubCliInfo.version,
+            status: githubCliInfo.status,
             required: false,
             message: 'GitHub CLI is not required, but is recommended if you plan to use it to retrieve GitHub tokens.'
         });
@@ -65,29 +72,42 @@ export class ComponentManager {
         return components.filter(component => component.required && (component.status === CliStatus.NotInstalled || component.status === ExtensionStatus.NotActivated));
     }
 
-    static async getCliStatus(component: string): Promise<CliStatus> {
-        return new Promise<CliStatus>((resolve, reject) => {
+    static async getCliInfo(component: string, versionRegex: RegExp): Promise<{ version?: string, status: CliStatus }> {
+        return new Promise<{ version?: string, status: CliStatus }>((resolve, reject) => {
             child_process.exec(`${component} --version`, (error, stdout, stderr) => {
                 if (error) {
-                    resolve(CliStatus.NotInstalled);
+                    resolve({
+                        status: CliStatus.NotInstalled
+                    });
                 } else {
-                    resolve(CliStatus.Installed);
+                    const version = stdout.match(versionRegex);
+
+                    resolve({
+                        version: version ? version[1] : undefined,
+                        status: CliStatus.Installed
+                    });
                 }
             });
         });
     }
 
-    static async getExtensionStatus(extensionId: string): Promise<ExtensionStatus> {
+    static async getExtensionInfo(extensionId: string): Promise<{ version?: string, status: ExtensionStatus }> {
         const allExtensions = extensions.all;
         const extension = allExtensions.find(extension => extension.id === extensionId);
+
         if (extension) {
             if (!extension.isActive) {
                 await extension.activate();
             }
 
-            return ExtensionStatus.Activated;
+            return {
+                status: ExtensionStatus.Activated,
+                version: extension.packageJSON.version
+            }
         } else {
-            return ExtensionStatus.NotActivated;
+            return {
+                status: ExtensionStatus.NotActivated
+            }
         }
     }
 }
