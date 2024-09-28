@@ -1,4 +1,4 @@
-import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem } from "vscode";
+import { CancellationToken, commands, EventEmitter, ExtensionContext, extensions, TreeDataProvider, TreeItem } from "vscode";
 import { ComponentManager } from "../../componentManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import ComponentTreeItem from "./component";
@@ -9,7 +9,11 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
     static VIEW_ID = 'components';
 
     constructor(context: ExtensionContext) {
-        context.subscriptions.push(            
+        extensions.onDidChange(e => {
+            this.refresh();
+        });
+
+        context.subscriptions.push(
             commands.registerCommand('githubLocalActions.refreshComponents', async () => {
                 this.refresh();
             })
