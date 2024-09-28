@@ -68,6 +68,12 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.information",
+        "title": "Information",
+        "icon": "$(info)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.runAllWorkflows",
         "title": "Run All Workflows",
         "icon": "$(run-all)"
@@ -107,6 +113,10 @@
       "commandPalette": [
         {
           "command": "githubLocalActions.refreshComponents",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.information",
           "when": "never"
         },
         {
@@ -162,6 +172,11 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "githubLocalActions.information",
+          "when": "view == components && viewItem =~ /^githubLocalActions.component.*/",
+          "group": "inline@0"
+        },
         {
           "command": "githubLocalActions.openWorkflow",
           "when": "view == workflows && viewItem =~ /^githubLocalActions.workflow.*/",

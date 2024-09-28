@@ -6,6 +6,7 @@ export interface Component<T extends CliStatus | ExtensionStatus> {
     icon: string,
     version?: string,
     status: T,
+    information: string,
     required: boolean
     message?: string
 }
@@ -30,6 +31,7 @@ export class ComponentManager {
             icon: 'terminal',
             version: actCliInfo.version,
             status: actCliInfo.status,
+            information: 'https://github.com/nektos/act',
             required: true
         });
 
@@ -41,6 +43,7 @@ export class ComponentManager {
             icon: 'dashboard',
             version: dockerEngineVersion,
             status: dockerEngineStatus,
+            information: 'https://docs.docker.com/engine',
             required: true
         });
 
@@ -50,6 +53,7 @@ export class ComponentManager {
             icon: 'extensions',
             version: githubActionsInfo.version,
             status: githubActionsInfo.status,
+            information: 'https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-github-actions',
             required: false,
             message: 'GitHub Actions extension is not required, but is recommended to take advantage of workflow editor features.'
         });
@@ -60,6 +64,7 @@ export class ComponentManager {
             icon: 'terminal',
             version: githubCliInfo.version,
             status: githubCliInfo.status,
+            information: 'https://cli.github.com',
             required: false,
             message: 'GitHub CLI is not required, but is recommended if you plan to use it to retrieve GitHub tokens.'
         });
