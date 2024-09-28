@@ -103,7 +103,14 @@ export class Act {
                     onDidWrite: writeEmitter.event,
                     onDidClose: closeEmitter.event,
                     open: async (initialDimensions: TerminalDimensions | undefined): Promise<void> => {
-                        writeEmitter.fire(`Workflow:   ${workflow.name}\r\nPath:       ${workflow.uri.fsPath}\r\nCommand:    ${command}\r\nTimestamp:  ${new Date().toLocaleTimeString()}\r\n\r\n`);
+                        writeEmitter.fire(`Workflow:    ${workflow.name}\r\n`);
+                        writeEmitter.fire(`Path:        ${workflow.uri.fsPath}\r\n`);
+                        writeEmitter.fire(`Command:     ${command}\r\n`);
+                        writeEmitter.fire(`Environments: OSSBUILD\r\n`);
+                        writeEmitter.fire(`Variables:   VARIABLE1=ABC, VARIABLE2=DEF\r\n`);
+                        writeEmitter.fire(`Secrets:     SECRET1=ABC, SECRET2=DEF\r\n`);
+                        writeEmitter.fire(`Timestamp:   ${new Date().toLocaleTimeString()}\r\n`);
+                        writeEmitter.fire(`\r\n`);
 
                         const exec = child_process.spawn(command, { cwd: workspaceFolder.uri.fsPath, shell: '/usr/bin/bash' });
                         exec.stdout.on('data', (data) => {
