@@ -1,5 +1,6 @@
+import * as child_process from 'child_process';
 import * as path from "path";
-import { commands, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, window } from "vscode";
+import { commands, CustomExecution, EventEmitter, Pseudoterminal, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace } from "vscode";
 import { ComponentManager } from "./componentManager";
 import { Workflow } from "./workflowManager";
 
@@ -51,15 +52,14 @@ export class Act {
     }
 
     static async runEvent(eventTrigger: EventTrigger) {
-        return await Act.runCommand(`${Act.base} ${eventTrigger}`);
+        // return await Act.runCommand(`${Act.base} ${eventTrigger}`);
     }
 
     static async runWorkflow(workflow: Workflow) {
-        return await Act.runCommand(`${Act.base} ${Option.Workflows} '.github/workflows/${path.parse(workflow.uri.fsPath).base}'`, workflow);
+        return await Act.runCommand(workflow, `${Act.base} ${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`);
     }
 
-    static async runCommand(command: string, workflow?: Workflow) {
-
+    static async runCommand(workflow: Workflow, command: string) {
         const unreadyComponents = await ComponentManager.getUnreadyComponents();
         if (unreadyComponents.length > 0) {
             window.showErrorMessage(`The following required components are not ready: ${unreadyComponents.map(component => component.name).join(', ')}`, 'Fix...').then(async value => {
@@ -70,12 +70,18 @@ export class Act {
             return;
         }
 
+        const workspaceFolder = workspace.getWorkspaceFolder(workflow.uri);
+        if (!workspaceFolder) {
+            window.showErrorMessage('Failed to detect workspace folder');
+            return;
+        }
+
         await tasks.executeTask({
-            name: workflow?.name || 'act',
+            name: workflow.name,
             detail: 'Run workflow',
             definition: { type: 'GitHub Local Actions' },
             source: 'GitHub Local Actions',
-            scope: TaskScope.Workspace,
+            scope: workspaceFolder || TaskScope.Workspace,
             isBackground: true,
             presentationOptions: {
                 reveal: TaskRevealKind.Always,
@@ -89,7 +95,42 @@ export class Act {
             problemMatchers: [],
             runOptions: {},
             group: TaskGroup.Build,
-            execution: new ShellExecution(command)
+            execution: new CustomExecution(async (resolvedDefinition: TaskDefinition): Promise<Pseudoterminal> => {
+                const writeEmitter = new EventEmitter<string>();
+                const closeEmitter = new EventEmitter<number>();
+
+                return {
+                    onDidWrite: writeEmitter.event,
+                    onDidClose: closeEmitter.event,
+                    open: async (initialDimensions: TerminalDimensions | undefined): Promise<void> => {
+                        writeEmitter.fire(`Workflow:   ${workflow.name}\r\nPath:       ${workflow.uri.fsPath}\r\nCommand:    ${command}\r\nTimestamp:  ${new Date().toLocaleTimeString()}\r\n\r\n`);
+
+                        const exec = child_process.spawn(command, { cwd: workspaceFolder.uri.fsPath, shell: '/usr/bin/bash' });
+                        exec.stdout.on('data', (data) => {
+                            const output = data.toString();
+                            writeEmitter.fire(output);
+
+                            if (output.includes('success')) {
+                                window.showInformationMessage('Command succeeded!');
+                            }
+                        });
+
+                        exec.stderr.on('data', (data) => {
+                            const error = data.toString();
+                            writeEmitter.fire(error);
+                        });
+
+                        exec.on('close', (code) => {
+                            closeEmitter.fire(code || 0);
+                        });
+                    },
+
+                    close: () => {
+                        // TODO:
+                    }
+                };
+            }
+            )
         });
     }
 }

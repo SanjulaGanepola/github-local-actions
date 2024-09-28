@@ -7,7 +7,7 @@ export default class WorkflowTreeItem extends TreeItem implements GithubLocalAct
     workflow: Workflow;
 
     constructor(workflow: Workflow) {
-        super(workflow.content.name || workflow.name, workflow.error ? TreeItemCollapsibleState.None : TreeItemCollapsibleState.Collapsed);
+        super(workflow.name, workflow.error ? TreeItemCollapsibleState.None : TreeItemCollapsibleState.Collapsed);
         this.workflow = workflow;
         this.contextValue = WorkflowTreeItem.contextValue;
         this.iconPath = new ThemeIcon('layers');

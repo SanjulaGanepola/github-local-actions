@@ -10,7 +10,44 @@ export interface Workflow {
   error?: string
 }
 
+export interface WorkflowLog {
+  workflow: Workflow,
+  status: WorkflowStatus
+}
+
+export enum WorkflowStatus {
+  Queued = 'queued',
+  InProgress = 'inProgress',
+  success = 'success',
+  failed = 'failed',
+  Cancelled = 'cancelled'
+}
+
+export enum JobStatus {
+  Queued = 'queued',
+  InProgress = 'inProgress',
+  Skipped = 'skipped',
+  success = 'success',
+  failed = 'failed',
+  Cancelled = 'cancelled'
+}
+
+export enum StepStatus {
+  Queued = 'queued',
+  InProgress = 'inProgress',
+  Skipped = 'skipped',
+  success = 'success',
+  failed = 'failed',
+  Cancelled = 'cancelled'
+}
+
 export class WorkflowManager {
+  private workflowLogs: WorkflowLog[] = [];
+
+  constructor() {
+
+  }
+
   static async getWorkflows(): Promise<Workflow[]> {
     const workflows: Workflow[] = [];
 
@@ -19,17 +56,20 @@ export class WorkflowManager {
       const workflowFileUris = await workspace.findFiles(`.github/workflows/*.{yml,yaml}`);
 
       for await (const workflowFileUri of workflowFileUris) {
+        let yamlContent: any | undefined;
+
         try {
           const fileContent = await fs.readFile(workflowFileUri.fsPath, 'utf8');
+          yamlContent = yaml.parse(fileContent);
 
           workflows.push({
-            name: path.parse(workflowFileUri.fsPath).name,
+            name: yamlContent.name || path.parse(workflowFileUri.fsPath).name,
             uri: workflowFileUri,
             content: yaml.parse(fileContent)
           });
         } catch (error) {
           workflows.push({
-            name: path.parse(workflowFileUri.fsPath).name,
+            name: (yamlContent ? yamlContent.name : undefined) || path.parse(workflowFileUri.fsPath).name,
             uri: workflowFileUri,
             error: 'Failed to parse workflow file'
           });

@@ -213,6 +213,7 @@
     "test": "vscode-test"
   },
   "dependencies": {
+    "child_process": "^1.0.2",
     "yaml": "^2.5.1"
   },
   "devDependencies": {

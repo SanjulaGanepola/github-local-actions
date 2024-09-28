@@ -1,12 +1,12 @@
 export interface Component {
     name: string,
     icon: string,
-    status: Status,
+    status: ComponentStatus,
     required: boolean
     message?: string
 }
 
-export enum Status {
+export enum ComponentStatus {
     Enabled = 'Enabled',
     Warning = 'Warning',
     Disabled = 'Disabled'
@@ -18,26 +18,26 @@ export class ComponentManager {
             {
                 name: 'nektos/act',
                 icon: 'package',
-                status: Status.Enabled,
+                status: ComponentStatus.Enabled,
                 required: true
             },
             {
                 name: 'Docker Engine',
                 icon: 'dashboard',
-                status: Status.Enabled,
+                status: ComponentStatus.Enabled,
                 required: true
             },
             {
                 name: 'GitHub Actions Extension',
                 icon: 'extensions',
-                status: Status.Warning,
+                status: ComponentStatus.Warning,
                 required: false,
                 message: 'GitHub Actions extension is not required, but is recommended to take advantage of workflow editor features.'
             },
             {
                 name: 'GitHub CLI',
                 icon: 'terminal',
-                status: Status.Warning,
+                status: ComponentStatus.Warning,
                 required: false,
                 message: 'GitHub CLI is not required, but is recommended if you plan to use it to retrieve GitHub tokens.'
             }
@@ -46,6 +46,6 @@ export class ComponentManager {
 
     static async getUnreadyComponents(): Promise<Component[]> {
         const components = await ComponentManager.getComponents();
-        return components.filter(component => component.required && component.status !== Status.Enabled);
+        return components.filter(component => component.required && component.status !== ComponentStatus.Enabled);
     }
 }

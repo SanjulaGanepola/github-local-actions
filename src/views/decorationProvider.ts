@@ -1,5 +1,5 @@
 import { CancellationToken, Event, FileDecoration, FileDecorationProvider, ProviderResult, ThemeColor, Uri } from "vscode";
-import { Status } from "../componentManager";
+import { ComponentStatus } from "../componentManager";
 import ComponentTreeItem from "./components/component";
 import WorkflowTreeItem from "./workflows/workflow";
 
@@ -9,17 +9,17 @@ export class DecorationProvider implements FileDecorationProvider {
         const params = new URLSearchParams(uri.query);
 
         if (uri.scheme === ComponentTreeItem.contextValue) {
-            if (params.get('status') === Status.Enabled) {
+            if (params.get('status') === ComponentStatus.Enabled) {
                 return {
                     badge: '✅',
                     color: new ThemeColor('GitHubLocalActions.green')
                 };
-            } else if (params.get('status') === Status.Warning) {
+            } else if (params.get('status') === ComponentStatus.Warning) {
                 return {
                     badge: '⚠️',
                     color: new ThemeColor('GitHubLocalActions.yellow')
                 };
-            } else if (params.get('status') === Status.Disabled) {
+            } else if (params.get('status') === ComponentStatus.Disabled) {
                 return {
                     badge: '❌',
                     color: new ThemeColor('GitHubLocalActions.red')
