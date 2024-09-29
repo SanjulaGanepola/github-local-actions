@@ -21,11 +21,11 @@ export enum ExtensionStatus {
     NotActivated = 'Not Activated'
 }
 
-export class ComponentManager {
-    static async getComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
+export class ComponentsManager {
+    async getComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
         const components: Component<CliStatus | ExtensionStatus>[] = [];
 
-        const actCliInfo = await ComponentManager.getCliInfo('act', /act version (.+)/);
+        const actCliInfo = await this.getCliInfo('act', /act version (.+)/);
         components.push({
             name: 'nektos/act CLI',
             icon: 'terminal',
@@ -47,7 +47,7 @@ export class ComponentManager {
             required: true
         });
 
-        const githubActionsInfo = await ComponentManager.getExtensionInfo('github.vscode-github-actions');
+        const githubActionsInfo = await this.getExtensionInfo('github.vscode-github-actions');
         components.push({
             name: 'GitHub Actions Extension',
             icon: 'extensions',
@@ -58,7 +58,7 @@ export class ComponentManager {
             message: 'GitHub Actions extension is not required, but is recommended to take advantage of workflow editor features.'
         });
 
-        const githubCliInfo = await ComponentManager.getCliInfo('gh', /gh version (.+)/);
+        const githubCliInfo = await this.getCliInfo('gh', /gh version (.+)/);
         components.push({
             name: 'GitHub CLI',
             icon: 'terminal',
@@ -72,12 +72,12 @@ export class ComponentManager {
         return components;
     }
 
-    static async getUnreadyComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
-        const components = await ComponentManager.getComponents();
+    async getUnreadyComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
+        const components = await this.getComponents();
         return components.filter(component => component.required && (component.status === CliStatus.NotInstalled || component.status === ExtensionStatus.NotActivated));
     }
 
-    static async getCliInfo(component: string, versionRegex: RegExp): Promise<{ version?: string, status: CliStatus }> {
+    async getCliInfo(component: string, versionRegex: RegExp): Promise<{ version?: string, status: CliStatus }> {
         return new Promise<{ version?: string, status: CliStatus }>((resolve, reject) => {
             child_process.exec(`${component} --version`, (error, stdout, stderr) => {
                 if (error) {
@@ -96,7 +96,7 @@ export class ComponentManager {
         });
     }
 
-    static async getExtensionInfo(extensionId: string): Promise<{ version?: string, status: ExtensionStatus }> {
+    async getExtensionInfo(extensionId: string): Promise<{ version?: string, status: ExtensionStatus }> {
         const allExtensions = extensions.all;
         const extension = allExtensions.find(extension => extension.id === extensionId);
 

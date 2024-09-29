@@ -1,5 +1,5 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri } from "vscode";
-import { Workflow } from "../../workflowManager";
+import { Workflow } from "../../workflowsManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
 export default class WorkflowTreeItem extends TreeItem implements GithubLocalActionsTreeItem {

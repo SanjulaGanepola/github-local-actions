@@ -1,5 +1,5 @@
 import { CancellationToken, commands, env, EventEmitter, ExtensionContext, extensions, TreeDataProvider, TreeItem, Uri } from "vscode";
-import { ComponentManager } from "../../componentManager";
+import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import ComponentTreeItem from "./component";
 
@@ -43,7 +43,7 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
         if (element) {
             return element.getChildren();
         } else {
-            const components = await ComponentManager.getComponents();
+            const components = await act.componentsManager.getComponents();
             return components.map(component => new ComponentTreeItem(component));
         }
     }

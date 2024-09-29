@@ -41,14 +41,14 @@ export enum StepStatus {
   Cancelled = 'cancelled'
 }
 
-export class WorkflowManager {
+export class WorkflowsManager {
   private workflowLogs: WorkflowLog[] = [];
 
   constructor() {
 
   }
 
-  static async getWorkflows(): Promise<Workflow[]> {
+  async getWorkflows(): Promise<Workflow[]> {
     const workflows: Workflow[] = [];
 
     const workspaceFolders = workspace.workspaceFolders;

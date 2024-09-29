@@ -1,8 +1,9 @@
 import * as child_process from 'child_process';
 import * as path from "path";
 import { commands, CustomExecution, EventEmitter, Pseudoterminal, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace } from "vscode";
-import { ComponentManager } from "./componentManager";
-import { Workflow } from "./workflowManager";
+import { ComponentsManager } from "./componentsManager";
+import { SettingsManager } from './settingsManager';
+import { Workflow, WorkflowsManager } from "./workflowsManager";
 
 export enum EventTrigger {
     BranchProtectionRule = 'branch_protection_rule',
@@ -41,26 +42,36 @@ export enum EventTrigger {
 }
 
 export enum Option {
-    Workflows = '-W'
+    Workflows = '-W',
+    Variable = '-var'
 }
 
 export class Act {
     private static base: string = 'act';
+    componentsManager: ComponentsManager;
+    workflowsManager: WorkflowsManager;
+    settingsManager: SettingsManager;
 
-    static async runAllWorkflows() {
+    constructor() {
+        this.componentsManager = new ComponentsManager();
+        this.workflowsManager = new WorkflowsManager();
+        this.settingsManager = new SettingsManager();
+    }
+
+    async runAllWorkflows() {
         // TODO: Implement
     }
 
-    static async runEvent(eventTrigger: EventTrigger) {
-        // return await Act.runCommand(`${Act.base} ${eventTrigger}`);
+    async runEvent(eventTrigger: EventTrigger) {
+        // return await this.runCommand(`${Act.base} ${eventTrigger}`);
     }
 
-    static async runWorkflow(workflow: Workflow) {
-        return await Act.runCommand(workflow, `${Act.base} ${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`);
+    async runWorkflow(workflow: Workflow) {
+        return await this.runCommand(workflow, `${Act.base} ${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`);
     }
 
-    static async runCommand(workflow: Workflow, command: string) {
-        const unreadyComponents = await ComponentManager.getUnreadyComponents();
+    async runCommand(workflow: Workflow, command: string) {
+        const unreadyComponents = await this.componentsManager.getUnreadyComponents();
         if (unreadyComponents.length > 0) {
             window.showErrorMessage(`The following required components are not ready: ${unreadyComponents.map(component => component.name).join(', ')}`, 'Fix...').then(async value => {
                 if (value === 'Fix...') {

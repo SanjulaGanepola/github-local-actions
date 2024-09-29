@@ -1,6 +1,6 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, window, workspace } from "vscode";
-import { Act, EventTrigger } from "../../act";
-import { WorkflowManager } from "../../workflowManager";
+import { EventTrigger } from "../../act";
+import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import WorkflowTreeItem from "./workflow";
 
@@ -12,7 +12,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
     constructor(context: ExtensionContext) {
         context.subscriptions.push(
             commands.registerCommand('githubLocalActions.runAllWorkflows', async () => {
-                await Act.runAllWorkflows();
+                await act.runAllWorkflows();
             }),
             commands.registerCommand('githubLocalActions.runEvent', async () => {
                 const event = await window.showQuickPick(Object.values(EventTrigger), {
@@ -21,7 +21,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 });
 
                 if(event) {
-                    await Act.runEvent(event as EventTrigger);
+                    await act.runEvent(event as EventTrigger);
                 }
             }),
             commands.registerCommand('githubLocalActions.refreshWorkflows', async () => {
@@ -32,7 +32,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 await window.showTextDocument(document);
             }),
             commands.registerCommand('githubLocalActions.runWorkflow', async (workflowTreeItem: WorkflowTreeItem) => {
-                await Act.runWorkflow(workflowTreeItem.workflow);
+                await act.runWorkflow(workflowTreeItem.workflow);
             })
         );
     }
@@ -57,7 +57,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
         if (element) {
             return element.getChildren();
         } else {
-            const workflows = await WorkflowManager.getWorkflows();
+            const workflows = await act.workflowsManager.getWorkflows();
             return workflows.map(workflow => new WorkflowTreeItem(workflow));
         }
     }
