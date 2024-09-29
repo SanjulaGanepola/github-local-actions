@@ -6,7 +6,8 @@ import * as yaml from "yaml";
 export interface Workflow {
   name: string,
   uri: Uri,
-  content?: any,
+  fileContent?: string,
+  yaml?: any,
   error?: string
 }
 
@@ -65,7 +66,8 @@ export class WorkflowsManager {
           workflows.push({
             name: yamlContent.name || path.parse(workflowFileUri.fsPath).name,
             uri: workflowFileUri,
-            content: yaml.parse(fileContent)
+            fileContent: fileContent,
+            yaml: yaml.parse(fileContent)
           });
         } catch (error) {
           workflows.push({
