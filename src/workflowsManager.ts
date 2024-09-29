@@ -73,7 +73,7 @@ export class WorkflowsManager {
           workflows.push({
             name: (yamlContent ? yamlContent.name : undefined) || path.parse(workflowFileUri.fsPath).name,
             uri: workflowFileUri,
-            error: 'Failed to parse workflow file'
+            error: 'Failed to parse workflow file.'
           });
         }
       }
