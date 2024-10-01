@@ -74,6 +74,18 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.installComponent",
+        "title": "Install",
+        "icon": "$(desktop-download)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.startComponent",
+        "title": "Start",
+        "icon": "$(debug-start)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.runAllWorkflows",
         "title": "Run All Workflows",
         "icon": "$(run-all)"
@@ -117,6 +129,14 @@
         },
         {
           "command": "githubLocalActions.information",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.installComponent",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.startComponent",
           "when": "never"
         },
         {
@@ -176,6 +196,16 @@
           "command": "githubLocalActions.information",
           "when": "view == components && viewItem =~ /^githubLocalActions.component.*/",
           "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.installComponent",
+          "when": "view == components && viewItem =~ /^githubLocalActions.component_(Not Installed|Not Activated).*/",
+          "group": "inline@1"
+        },
+        {
+          "command": "githubLocalActions.startComponent",
+          "when": "view == components && viewItem =~ /^githubLocalActions.component_Not Running.*/",
+          "group": "inline@1"
         },
         {
           "command": "githubLocalActions.openWorkflow",

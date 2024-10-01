@@ -12,17 +12,17 @@ export class DecorationProvider implements FileDecorationProvider {
             const status = params.get('status');
             const required = params.get('required') === 'true';
 
-            if (status === CliStatus.Installed || status === ExtensionStatus.Activated) {
+            if (status === CliStatus.Installed || status === CliStatus.Running || status === ExtensionStatus.Activated) {
                 return {
                     badge: '✅',
                     color: new ThemeColor('GitHubLocalActions.green')
                 };
-            } else if (!required && (status === CliStatus.NotInstalled || status === ExtensionStatus.NotActivated)) {
+            } else if (!required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning|| status === ExtensionStatus.NotActivated)) {
                 return {
                     badge: '⚠️',
                     color: new ThemeColor('GitHubLocalActions.yellow')
                 };
-            } else if (required && (status === CliStatus.NotInstalled || status === ExtensionStatus.NotActivated)) {
+            } else if (required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning || status === ExtensionStatus.NotActivated)) {
                 return {
                     badge: '❌',
                     color: new ThemeColor('GitHubLocalActions.red')

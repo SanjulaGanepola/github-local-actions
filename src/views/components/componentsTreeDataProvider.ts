@@ -18,7 +18,19 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
                 this.refresh();
             }),
             commands.registerCommand('githubLocalActions.information', async (componentTreeItem: ComponentTreeItem) => {
-                env.openExternal(Uri.parse(componentTreeItem.component.information));
+                await env.openExternal(Uri.parse(componentTreeItem.component.information));
+            }),
+            commands.registerCommand('githubLocalActions.installComponent', async (componentTreeItem: ComponentTreeItem) => {
+                await componentTreeItem.component.installation();
+                this.refresh();
+            }),
+            commands.registerCommand('githubLocalActions.startComponent', async (componentTreeItem: ComponentTreeItem) => {
+                const start = componentTreeItem.component.start;
+                if (start) {
+                    await start();
+                }
+
+                this.refresh();
             })
         );
     }

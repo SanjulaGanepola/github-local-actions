@@ -1,6 +1,6 @@
 import * as child_process from 'child_process';
 import * as path from "path";
-import { commands, CustomExecution, EventEmitter, Pseudoterminal, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace } from "vscode";
+import { commands, CustomExecution, env, EventEmitter, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace } from "vscode";
 import { ComponentsManager } from "./componentsManager";
 import { SettingsManager } from './settingsManager';
 import { Workflow, WorkflowsManager } from "./workflowsManager";
@@ -51,11 +51,64 @@ export class Act {
     componentsManager: ComponentsManager;
     workflowsManager: WorkflowsManager;
     settingsManager: SettingsManager;
+    installationCommands: { [packageManager: string]: string };
+    prebuiltExecutables: { [architecture: string]: string };
 
     constructor() {
         this.componentsManager = new ComponentsManager();
         this.workflowsManager = new WorkflowsManager();
         this.settingsManager = new SettingsManager();
+
+        switch (process.platform) {
+            case 'win32':
+                this.installationCommands = {
+                    'Chocolatey': 'choco install act-cli',
+                    'Winget': 'winget install nektos.act',
+                    'Scoop': 'scoop install act',
+                    'GitHub CLI': 'gh extension install https://github.com/nektos/gh-act'
+                };
+
+                this.prebuiltExecutables = {
+                    'Windows 64-bit (arm64/aarch64)': 'https://github.com/nektos/act/releases/latest/download/act_Windows_arm64.zip',
+                    'Windows 64-bit (amd64/x86_64)': 'https://github.com/nektos/act/releases/latest/download/act_Windows_x86_64.zip',
+                    'Windows 32-bit (armv7)': 'https://github.com/nektos/act/releases/latest/download/act_Windows_armv7.zip',
+                    'Windows 32-bit (i386/x86)': 'https://github.com/nektos/act/releases/latest/download/act_Windows_i386.zip'
+                };
+                break;
+            case 'darwin':
+                this.installationCommands = {
+                    'Homebrew': 'brew install act',
+                    'Nix': 'nix run nixpkgs#act',
+                    'MacPorts': 'sudo port install act',
+                    'GitHub CLI': 'gh extension install https://github.com/nektos/gh-act'
+                };
+                
+                this.prebuiltExecutables = {
+                    'macOS 64-bit (Apple Silicon)': 'https://github.com/nektos/act/releases/latest/download/act_Darwin_arm64.tar.gz',
+                    'macOS 64-bit (Intel)': 'https://github.com/nektos/act/releases/latest/download/act_Darwin_x86_64.tar.gz'
+                };
+                break;
+            case 'linux':
+                this.installationCommands = {
+                    'Homebrew': 'brew install act',
+                    'Nix': 'nix run nixpkgs#act',
+                    'AUR': 'yay -Syu act',
+                    'COPR': 'dnf copr enable goncalossilva/act && dnf install act-cli',
+                    'GitHub CLI': 'gh extension install https://github.com/nektos/gh-act'
+                };
+                
+                this.prebuiltExecutables = {
+                    'Linux 64-bit (arm64/aarch64)': 'https://github.com/nektos/act/releases/latest/download/act_Linux_arm64.tar.gz',
+                    'Linux 64-bit (amd64/x86_64)': 'https://github.com/nektos/act/releases/latest/download/act_Linux_x86_64.tar.gz',
+                    'Linux 32-bit (armv7)': 'https://github.com/nektos/act/releases/latest/download/act_Linux_armv7.tar.gz',
+                    'Linux 32-bit (armv6)': 'https://github.com/nektos/act/releases/latest/download/act_Linux_armv6.tar.gz',
+                    'Linux 32-bit (i386/x86)': 'https://github.com/nektos/act/releases/latest/download/act_Linux_i386.tar.gz',
+                };
+                break;
+            default:
+                this.installationCommands = {};
+                this.prebuiltExecutables = {};
+        }
     }
 
     async runAllWorkflows() {
@@ -97,7 +150,7 @@ export class Act {
             presentationOptions: {
                 reveal: TaskRevealKind.Always,
                 focus: false,
-                clear: false,
+                clear: true,
                 close: false,
                 echo: true,
                 panel: TaskPanelKind.Dedicated,
@@ -123,14 +176,10 @@ export class Act {
                         writeEmitter.fire(`Timestamp:   ${new Date().toLocaleTimeString()}\r\n`);
                         writeEmitter.fire(`\r\n`);
 
-                        const exec = child_process.spawn(command, { cwd: workspaceFolder.uri.fsPath, shell: '/usr/bin/bash' });
+                        const exec = child_process.spawn(command, { cwd: workspaceFolder.uri.fsPath, shell: env.shell });
                         exec.stdout.on('data', (data) => {
-                            const output = data.toString();
+                            const output = data.toString().replaceAll('\n', '\r\n');
                             writeEmitter.fire(output);
-
-                            if (output.includes('success')) {
-                                window.showInformationMessage('Command succeeded!');
-                            }
                         });
 
                         exec.stderr.on('data', (data) => {
@@ -143,12 +192,36 @@ export class Act {
                         });
                     },
 
-                    close: () => {
-                        // TODO:
-                    }
+                    close: () => { }
                 };
-            }
-            )
+            })
         });
+    }
+
+    async install(packageManager: string) {
+        const command = this.installationCommands[packageManager];
+        if (command) {
+            await tasks.executeTask({
+                name: 'nektos/act',
+                detail: 'Install nektos/act',
+                definition: { type: 'GitHub Local Actions' },
+                source: 'GitHub Local Actions',
+                scope: TaskScope.Workspace,
+                isBackground: true,
+                presentationOptions: {
+                    reveal: TaskRevealKind.Always,
+                    focus: false,
+                    clear: true,
+                    close: false,
+                    echo: true,
+                    panel: TaskPanelKind.Shared,
+                    showReuseMessage: false
+                },
+                problemMatchers: [],
+                runOptions: {},
+                group: TaskGroup.Build,
+                execution: new ShellExecution(command)
+            });
+        }
     }
 }
