@@ -15,6 +15,7 @@ export default class ComponentTreeItem extends TreeItem implements GithubLocalAc
         this.resourceUri = Uri.parse(`${ComponentTreeItem.contextValue}:${component.name}?status=${component.status}&required=${component.required}`, true);
         this.tooltip = `Name: ${component.name}\n` +
             `Status: ${component.status}\n` +
+            `Required: ${component.required ? 'Yes' : 'No'}\n` +
             (component.message ? `Message: ${component.message}` : ``);
     }
 
