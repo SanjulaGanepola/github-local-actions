@@ -1,7 +1,9 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem } from "vscode";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
+import ContainerEnginesTreeItem from "./containerEngines";
 import EnvironmentsTreeItem from "./environments";
 import InputsTreeItem from "./inputs";
+import RunnersTreeItem from "./runners";
 import SecretsTreeItem from "./secrets";
 import VariablesTreeItem from "./variables";
 
@@ -42,7 +44,9 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 new EnvironmentsTreeItem(),
                 new SecretsTreeItem(),
                 new VariablesTreeItem(),
-                new InputsTreeItem()
+                new InputsTreeItem(),
+                new RunnersTreeItem(),
+                new ContainerEnginesTreeItem()
             ];
         }
     }
