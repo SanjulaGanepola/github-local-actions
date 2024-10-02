@@ -2,6 +2,7 @@ import * as child_process from 'child_process';
 import * as path from "path";
 import { commands, CustomExecution, env, EventEmitter, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace } from "vscode";
 import { ComponentsManager } from "./componentsManager";
+import { workflowsTreeDataProvider } from './extension';
 import { SettingsManager } from './settingsManager';
 import { Workflow, WorkflowsManager } from "./workflowsManager";
 
@@ -42,12 +43,73 @@ export enum EventTrigger {
 }
 
 export enum Option {
-    Workflows = '-W',
-    Variable = '-var'
+    Workflows = '--workflows',
+    Variable = '--var',
+    Json = "--json"
+}
+
+export interface WorkflowLog {
+    name: string,
+    status: WorkflowStatus
+    jobLogs: JobLog[]
+}
+
+export interface JobLog {
+    name: string,
+    status: JobStatus,
+    stepLogs: StepLog[]
+}
+
+export interface StepLog {
+    name: string,
+    status: StepStatus
+}
+
+export interface RawLog {
+    dryrun: boolean,
+    job: string,
+    jobID: string,
+    level: string, //TODO: Could be an enum?
+    matrix: any,
+    msg: string,
+    time: string,
+
+    stage: string,
+    step: string,
+    stepID: string[],
+
+    jobResult: string, //TODO: Could be an enum?
+}
+
+export enum WorkflowStatus {
+    Queued = 'queued',
+    InProgress = 'inProgress',
+    Success = 'success',
+    Failed = 'failed',
+    Cancelled = 'cancelled'
+}
+
+export enum JobStatus {
+    Queued = 'queued',
+    InProgress = 'inProgress',
+    Skipped = 'skipped',
+    Success = 'success',
+    Failed = 'failed',
+    Cancelled = 'cancelled'
+}
+
+export enum StepStatus {
+    Queued = 'queued',
+    InProgress = 'inProgress',
+    Skipped = 'skipped',
+    Success = 'success',
+    Failed = 'failed',
+    Cancelled = 'cancelled'
 }
 
 export class Act {
     private static base: string = 'act';
+    workflowLogs: { [path: string]: WorkflowLog[] };
     componentsManager: ComponentsManager;
     workflowsManager: WorkflowsManager;
     settingsManager: SettingsManager;
@@ -55,6 +117,7 @@ export class Act {
     prebuiltExecutables: { [architecture: string]: string };
 
     constructor() {
+        this.workflowLogs = {};
         this.componentsManager = new ComponentsManager();
         this.workflowsManager = new WorkflowsManager();
         this.settingsManager = new SettingsManager();
@@ -82,7 +145,7 @@ export class Act {
                     'MacPorts': 'sudo port install act',
                     'GitHub CLI': 'gh extension install https://github.com/nektos/gh-act'
                 };
-                
+
                 this.prebuiltExecutables = {
                     'macOS 64-bit (Apple Silicon)': 'https://github.com/nektos/act/releases/latest/download/act_Darwin_arm64.tar.gz',
                     'macOS 64-bit (Intel)': 'https://github.com/nektos/act/releases/latest/download/act_Darwin_x86_64.tar.gz'
@@ -96,7 +159,7 @@ export class Act {
                     'COPR': 'dnf copr enable goncalossilva/act && dnf install act-cli',
                     'GitHub CLI': 'gh extension install https://github.com/nektos/gh-act'
                 };
-                
+
                 this.prebuiltExecutables = {
                     'Linux 64-bit (arm64/aarch64)': 'https://github.com/nektos/act/releases/latest/download/act_Linux_arm64.tar.gz',
                     'Linux 64-bit (amd64/x86_64)': 'https://github.com/nektos/act/releases/latest/download/act_Linux_x86_64.tar.gz',
@@ -120,7 +183,7 @@ export class Act {
     }
 
     async runWorkflow(workflow: Workflow) {
-        return await this.runCommand(workflow, `${Act.base} ${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`);
+        return await this.runCommand(workflow, `${Act.base} ${Option.Json} ${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`);
     }
 
     async runCommand(workflow: Workflow, command: string) {
@@ -139,6 +202,29 @@ export class Act {
             window.showErrorMessage('Failed to detect workspace folder');
             return;
         }
+
+        if (!this.workflowLogs[workflow.uri.fsPath]) {
+            this.workflowLogs[workflow.uri.fsPath] = [];
+        }
+
+        this.workflowLogs[workflow.uri.fsPath].push({
+            name: `${workflow.name} #${this.workflowLogs[workflow.uri.fsPath].length + 1}`,
+            status: WorkflowStatus.Queued,
+            jobLogs: Object.entries<any>(workflow.yaml.jobs).map(([key, value]) => {
+                return {
+                    name: value.name ? value.name : key,
+                    status: JobStatus.Queued,
+                    stepLogs: Object.entries<any>(workflow.yaml.jobs[key].steps).map(([key, value]) => {
+                        return {
+                            name: value.name ? value.name : key,
+                            status: StepStatus.Queued,
+                            stepLogs: []
+                        }
+                    })
+                }
+            })
+        });
+        workflowsTreeDataProvider.refresh();
 
         await tasks.executeTask({
             name: workflow.name,
@@ -178,8 +264,25 @@ export class Act {
 
                         const exec = child_process.spawn(command, { cwd: workspaceFolder.uri.fsPath, shell: env.shell });
                         exec.stdout.on('data', (data) => {
-                            const output = data.toString().replaceAll('\n', '\r\n');
-                            writeEmitter.fire(output);
+                            const lines = data.toString().split('\n');
+                            for (const line of lines) {
+                                const rawLog: RawLog = JSON.parse(line);
+
+                                if (rawLog.stepID) {
+
+                                } else if (rawLog.jobID) {
+                                    // this.workflowLogs[workflow.uri.fsPath][Object.values(this.workflowLogs).length - 1].jobLogs.push({
+                                    //     name: '',
+                                    //     status: '',
+                                    //     stepLogs: []
+                                    // });
+                                } else if (rawLog.jobResult) {
+
+                                } else {
+
+                                }
+                            }
+                            writeEmitter.fire(lines);
                         });
 
                         exec.stderr.on('data', (data) => {

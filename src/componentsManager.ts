@@ -1,6 +1,6 @@
 import * as child_process from "child_process";
-import { commands, env, extensions, QuickPickItemKind, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, ThemeIcon, Uri, window } from "vscode";
-import { act } from "./extension";
+import { env, extensions, QuickPickItemKind, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, ThemeIcon, Uri, window } from "vscode";
+import { act, componentsTreeDataProvider } from "./extension";
 
 export interface Component<T extends CliStatus | ExtensionStatus> {
     name: string,
@@ -102,7 +102,7 @@ export class ComponentsManager {
                             await env.openExternal(Uri.parse(selectedPrebuiltExecutable.link));
                             window.showInformationMessage('Unpack and run the executable in the terminal specifying the full path or add it to one of the paths in your PATH environment variable. Once nektos/act is successfully installed, refresh the components view.', 'Refresh').then(async value => {
                                 if (value === 'Refresh') {
-                                    await commands.executeCommand('githubLocalActions.refreshComponents');
+                                    componentsTreeDataProvider.refresh();
                                 }
                             });
                         }
@@ -110,7 +110,7 @@ export class ComponentsManager {
                         await env.openExternal(Uri.parse(selectedInstallationMethod.link));
                         window.showInformationMessage('Once nektos/act is successfully installed, refresh the components view.', 'Refresh').then(async value => {
                             if (value === 'Refresh') {
-                                await commands.executeCommand('githubLocalActions.refreshComponents');
+                                componentsTreeDataProvider.refresh();
                             }
                         });
                     } else {
@@ -170,7 +170,7 @@ export class ComponentsManager {
 
                 window.showInformationMessage('Once Docker Engine is successfully started, refresh the components view.', 'Refresh').then(async value => {
                     if (value === 'Refresh') {
-                        await commands.executeCommand('githubLocalActions.refreshComponents');
+                        componentsTreeDataProvider.refresh();
                     }
                 });
             }
@@ -229,7 +229,7 @@ export class ComponentsManager {
                         });
                     }
                 } else {
-                    if(checksIfRunning) {
+                    if (checksIfRunning) {
                         resolve({
                             version: version ? version[1] : undefined,
                             status: CliStatus.Running

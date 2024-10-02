@@ -11,44 +11,7 @@ export interface Workflow {
   error?: string
 }
 
-export interface WorkflowLog {
-  workflow: Workflow,
-  status: WorkflowStatus
-}
-
-export enum WorkflowStatus {
-  Queued = 'queued',
-  InProgress = 'inProgress',
-  success = 'success',
-  failed = 'failed',
-  Cancelled = 'cancelled'
-}
-
-export enum JobStatus {
-  Queued = 'queued',
-  InProgress = 'inProgress',
-  Skipped = 'skipped',
-  success = 'success',
-  failed = 'failed',
-  Cancelled = 'cancelled'
-}
-
-export enum StepStatus {
-  Queued = 'queued',
-  InProgress = 'inProgress',
-  Skipped = 'skipped',
-  success = 'success',
-  failed = 'failed',
-  Cancelled = 'cancelled'
-}
-
 export class WorkflowsManager {
-  private workflowLogs: WorkflowLog[] = [];
-
-  constructor() {
-
-  }
-
   async getWorkflows(): Promise<Workflow[]> {
     const workflows: Workflow[] = [];
 
