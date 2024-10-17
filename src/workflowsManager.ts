@@ -11,6 +11,11 @@ export interface Workflow {
   error?: string
 }
 
+export interface Job {
+  name: string
+  id: string
+}
+
 export class WorkflowsManager {
   async getWorkflows(): Promise<Workflow[]> {
     const workflows: Workflow[] = [];

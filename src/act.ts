@@ -1,12 +1,12 @@
 import * as child_process from 'child_process';
 import * as path from "path";
-import { commands, CustomExecution, env, EventEmitter, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace } from "vscode";
+import { commands, CustomExecution, env, EventEmitter, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
-import { workflowsTreeDataProvider } from './extension';
+import { historyTreeDataProvider } from './extension';
 import { SettingsManager } from './settingsManager';
 import { Workflow, WorkflowsManager } from "./workflowsManager";
 
-export enum EventTrigger {
+export enum Event {
     BranchProtectionRule = 'branch_protection_rule',
     CheckRun = 'check_run',
     CheckSuite = 'check_suite',
@@ -44,25 +44,9 @@ export enum EventTrigger {
 
 export enum Option {
     Workflows = '--workflows',
+    Job = '--job',
     Variable = '--var',
     Json = "--json"
-}
-
-export interface WorkflowLog {
-    name: string,
-    status: WorkflowStatus
-    jobLogs: JobLog[]
-}
-
-export interface JobLog {
-    name: string,
-    status: JobStatus,
-    stepLogs: StepLog[]
-}
-
-export interface StepLog {
-    name: string,
-    status: StepStatus
 }
 
 export interface RawLog {
@@ -74,42 +58,34 @@ export interface RawLog {
     msg: string,
     time: string,
 
-    stage: string,
-    step: string,
-    stepID: string[],
+    raw_output?: boolean,
 
-    jobResult: string, //TODO: Could be an enum?
+    stage?: string,
+    step?: string,
+    stepID?: string[],
+    stepResult?: string, //TODO: Could be an enum?
+
+    jobResult?: string, //TODO: Could be an enum?
 }
 
-export enum WorkflowStatus {
-    Queued = 'queued',
-    InProgress = 'inProgress',
-    Success = 'success',
-    Failed = 'failed',
-    Cancelled = 'cancelled'
+export interface History {
+    name: string,
+    status: HistoryStatus,
+    start?: string,
+    end?: string,
+    output?: string
 }
 
-export enum JobStatus {
-    Queued = 'queued',
-    InProgress = 'inProgress',
-    Skipped = 'skipped',
-    Success = 'success',
-    Failed = 'failed',
-    Cancelled = 'cancelled'
-}
-
-export enum StepStatus {
-    Queued = 'queued',
-    InProgress = 'inProgress',
-    Skipped = 'skipped',
-    Success = 'success',
-    Failed = 'failed',
-    Cancelled = 'cancelled'
+export enum HistoryStatus {
+    Running = 'Running',
+    Success = 'Success',
+    Failed = 'Failed',
+    Cancelled = 'Cancelled'
 }
 
 export class Act {
     private static base: string = 'act';
-    workflowLogs: { [path: string]: WorkflowLog[] };
+    workspaceHistory: { [path: string]: History[] };
     componentsManager: ComponentsManager;
     workflowsManager: WorkflowsManager;
     settingsManager: SettingsManager;
@@ -117,7 +93,7 @@ export class Act {
     prebuiltExecutables: { [architecture: string]: string };
 
     constructor() {
-        this.workflowLogs = {};
+        this.workspaceHistory = {};
         this.componentsManager = new ComponentsManager();
         this.workflowsManager = new WorkflowsManager();
         this.settingsManager = new SettingsManager();
@@ -178,15 +154,28 @@ export class Act {
         // TODO: Implement
     }
 
-    async runEvent(eventTrigger: EventTrigger) {
-        // return await this.runCommand(`${Act.base} ${eventTrigger}`);
-    }
-
     async runWorkflow(workflow: Workflow) {
-        return await this.runCommand(workflow, `${Act.base} ${Option.Json} ${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`);
+        const workspaceFolder = workspace.getWorkspaceFolder(workflow.uri);
+        if (workspaceFolder) {
+            return await this.runCommand(workspaceFolder, `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`, workflow.name, [`Workflow:     ${workflow.name}`]);
+        } else {
+            window.showErrorMessage(`Failed to locate workspace folder for ${workflow.uri.fsPath}`);
+        }
     }
 
-    async runCommand(workflow: Workflow, command: string) {
+    // TODO: Implement
+    // async runJob(workspaceFolder: WorkspaceFolder, workflow: Workflow, job: Job) {
+    //     return await this.runCommand(workspaceFolder, `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}" ${Option.Job} "${job.id}"`, `${workflow.name}/${job.name}`, [`Workflow:     ${workflow.name}`, `Job:          ${job.name}`]);
+    // }
+
+    // TODO: Implement
+    // async runEvent(workspaceFolder: WorkspaceFolder, event: Event) {
+    //     return await this.runCommand(workspaceFolder, `${Option.Workflows} ${event}`, event, [`Event:        ${event}`]);
+    // }
+
+    async runCommand(workspaceFolder: WorkspaceFolder, options: string, name: string, typeText: string[]) {
+        const command = `${Act.base} ${Option.Json} ${options}`;
+
         const unreadyComponents = await this.componentsManager.getUnreadyComponents();
         if (unreadyComponents.length > 0) {
             window.showErrorMessage(`The following required components are not ready: ${unreadyComponents.map(component => component.name).join(', ')}`, 'Fix...').then(async value => {
@@ -197,37 +186,20 @@ export class Act {
             return;
         }
 
-        const workspaceFolder = workspace.getWorkspaceFolder(workflow.uri);
-        if (!workspaceFolder) {
-            window.showErrorMessage('Failed to detect workspace folder');
-            return;
+        if (!this.workspaceHistory[workspaceFolder.uri.fsPath]) {
+            this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
         }
 
-        if (!this.workflowLogs[workflow.uri.fsPath]) {
-            this.workflowLogs[workflow.uri.fsPath] = [];
-        }
-
-        this.workflowLogs[workflow.uri.fsPath].push({
-            name: `${workflow.name} #${this.workflowLogs[workflow.uri.fsPath].length + 1}`,
-            status: WorkflowStatus.Queued,
-            jobLogs: Object.entries<any>(workflow.yaml.jobs).map(([key, value]) => {
-                return {
-                    name: value.name ? value.name : key,
-                    status: JobStatus.Queued,
-                    stepLogs: Object.entries<any>(workflow.yaml.jobs[key].steps).map(([key, value]) => {
-                        return {
-                            name: value.name ? value.name : key,
-                            status: StepStatus.Queued,
-                            stepLogs: []
-                        }
-                    })
-                }
-            })
+        const historyIndex = this.workspaceHistory[workspaceFolder.uri.fsPath].length;
+        this.workspaceHistory[workspaceFolder.uri.fsPath].push({
+            name: `${name} #${this.workspaceHistory[workspaceFolder.uri.fsPath].length + 1}`,
+            status: HistoryStatus.Running,
+            start: new Date().toISOString()
         });
-        workflowsTreeDataProvider.refresh();
+        historyTreeDataProvider.refresh();
 
         await tasks.executeTask({
-            name: workflow.name,
+            name: name,
             detail: 'Run workflow',
             definition: { type: 'GitHub Local Actions' },
             source: 'GitHub Local Actions',
@@ -249,53 +221,77 @@ export class Act {
                 const writeEmitter = new EventEmitter<string>();
                 const closeEmitter = new EventEmitter<number>();
 
+                const exec = child_process.spawn(command, { cwd: workspaceFolder.uri.fsPath, shell: env.shell });
+                const handleIO = (data: any) => {
+                    const lines: string[] = data.toString().split('\n').filter((line: string) => line != '');
+                    for (const line of lines) {
+                        const jsonLine = JSON.parse(line);
+
+                        if (!this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].start) {
+                            this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].start = jsonLine.time;
+                        }
+
+                        if (jsonLine.jobResult) {
+                            this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].end = jsonLine.time;
+
+                            switch (jsonLine.jobResult) {
+                                case 'success':
+                                    this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Success;
+                                    break;
+                                case 'failure':
+                                    this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Failed;
+                                    break;
+                                // TODO: Handle cancelled
+                            }
+                        }
+
+                        historyTreeDataProvider.refresh();
+                        writeEmitter.fire(`${jsonLine.msg.trimEnd()}\r\n`);
+                    }
+                }
+                exec.stdout.on('data', handleIO);
+                exec.stderr.on('data', handleIO);
+                exec.on('close', (code) => {
+                    if (!this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].end) {
+                        this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].end = new Date().toISOString();
+                    }
+
+                    if (this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status === HistoryStatus.Running) {
+                        this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Failed;
+                    }
+
+                    historyTreeDataProvider.refresh();
+                    closeEmitter.fire(code || 0);
+                });
+
                 return {
                     onDidWrite: writeEmitter.event,
                     onDidClose: closeEmitter.event,
                     open: async (initialDimensions: TerminalDimensions | undefined): Promise<void> => {
-                        writeEmitter.fire(`Workflow:    ${workflow.name}\r\n`);
-                        writeEmitter.fire(`Path:        ${workflow.uri.fsPath}\r\n`);
-                        writeEmitter.fire(`Command:     ${command}\r\n`);
+                        writeEmitter.fire(`Name:         ${name}\r\n`);
+                        writeEmitter.fire(`Path:         ${workspaceFolder.uri.fsPath}\r\n`);
+                        for (const text of typeText) {
+                            writeEmitter.fire(`${text}\r\n`);
+                        }
                         writeEmitter.fire(`Environments: OSSBUILD\r\n`);
-                        writeEmitter.fire(`Variables:   VARIABLE1=ABC, VARIABLE2=DEF\r\n`);
-                        writeEmitter.fire(`Secrets:     SECRET1=ABC, SECRET2=DEF\r\n`);
-                        writeEmitter.fire(`Timestamp:   ${new Date().toLocaleTimeString()}\r\n`);
+                        writeEmitter.fire(`Variables:    VARIABLE1=ABC, VARIABLE2=DEF\r\n`);
+                        writeEmitter.fire(`Secrets:      SECRET1=ABC, SECRET2=DEF\r\n`);
+                        writeEmitter.fire(`Timestamp:    ${new Date().toLocaleTimeString()}\r\n`);
+                        writeEmitter.fire(`Command:      ${command}\r\n`);
                         writeEmitter.fire(`\r\n`);
-
-                        const exec = child_process.spawn(command, { cwd: workspaceFolder.uri.fsPath, shell: env.shell });
-                        exec.stdout.on('data', (data) => {
-                            const lines = data.toString().split('\n');
-                            for (const line of lines) {
-                                const rawLog: RawLog = JSON.parse(line);
-
-                                if (rawLog.stepID) {
-
-                                } else if (rawLog.jobID) {
-                                    // this.workflowLogs[workflow.uri.fsPath][Object.values(this.workflowLogs).length - 1].jobLogs.push({
-                                    //     name: '',
-                                    //     status: '',
-                                    //     stepLogs: []
-                                    // });
-                                } else if (rawLog.jobResult) {
-
-                                } else {
-
-                                }
-                            }
-                            writeEmitter.fire(lines);
-                        });
-
-                        exec.stderr.on('data', (data) => {
-                            const error = data.toString();
-                            writeEmitter.fire(error);
-                        });
-
-                        exec.on('close', (code) => {
-                            closeEmitter.fire(code || 0);
-                        });
                     },
 
-                    close: () => { }
+                    close: () => {
+                        if (this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status === HistoryStatus.Running) {
+                            this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Cancelled;
+                        }
+
+                        historyTreeDataProvider.refresh();
+                        exec.stdout.destroy();
+                        exec.stdin.destroy();
+                        exec.stderr.destroy();
+                        exec.kill();
+                    }
                 };
             })
         });

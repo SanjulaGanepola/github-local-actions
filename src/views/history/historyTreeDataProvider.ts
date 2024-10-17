@@ -1,21 +1,20 @@
-import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem } from "vscode";
+import { CancellationToken, commands, EventEmitter, ExtensionContext, extensions, TreeDataProvider, TreeItem, workspace } from "vscode";
 import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import ContainerEnginesTreeItem from "./containerEngines";
-import EnvironmentsTreeItem from "./environments";
-import InputsTreeItem from "./inputs";
-import RunnersTreeItem from "./runners";
-import SecretsTreeItem from "./secrets";
-import VariablesTreeItem from "./variables";
+import HistoryTreeItem from "./history";
 
-export default class SettingsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
+export default class HistoryTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    static VIEW_ID = 'settings';
+    static VIEW_ID = 'history';
 
     constructor(context: ExtensionContext) {
+        extensions.onDidChange(e => {
+            this.refresh();
+        });
+
         context.subscriptions.push(
-            commands.registerCommand('githubLocalActions.refreshSettings', async () => {
+            commands.registerCommand('githubLocalActions.refreshHistory', async () => {
                 this.refresh();
             })
         );
@@ -43,19 +42,17 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
         } else {
             const items: GithubLocalActionsTreeItem[] = [];
 
-            const workflows = await act.workflowsManager.getWorkflows();
-            if (workflows.length > 0) {
-                items.push(...[
-                    new EnvironmentsTreeItem(),
-                    new SecretsTreeItem(),
-                    new VariablesTreeItem(),
-                    new InputsTreeItem(),
-                    new RunnersTreeItem(),
-                    new ContainerEnginesTreeItem()
-                ]);
+            const workspaceFolders = workspace.workspaceFolders;
+            if (workspaceFolders && workspaceFolders.length > 0) {
+                const workspaceHistory = act.workspaceHistory[workspaceFolders[0].uri.fsPath]; //TODO: Fix for multi workspace support
+                if (workspaceHistory) {
+                    for (const history of workspaceHistory) {
+                        items.push(new HistoryTreeItem(history));
+                    }
+                }
             }
 
-            await commands.executeCommand('setContext', 'githubLocalActions:noSettings', items.length == 0);
+            await commands.executeCommand('setContext', 'githubLocalActions:noHistory', items.length == 0);
             return items;
         }
     }

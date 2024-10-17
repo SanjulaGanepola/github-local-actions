@@ -1,8 +1,7 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri } from "vscode";
-import { act } from "../../extension";
 import { Workflow } from "../../workflowsManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import WorkflowLogTreeItem from "./workflowLog";
+import JobTreeItem from "./job";
 
 export default class WorkflowTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.workflow';
@@ -23,11 +22,15 @@ export default class WorkflowTreeItem extends TreeItem implements GithubLocalAct
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
-        const workflowLogs = act.workflowLogs[this.workflow.uri.fsPath];
-        if (workflowLogs) {
-            return workflowLogs.map(workflowLog => new WorkflowLogTreeItem(workflowLog));
-        } else {
-            return [];
+        const items: GithubLocalActionsTreeItem[] = [];
+
+        const jobs = this.workflow.yaml.jobs;
+        if (jobs) {
+            for (const [key, value] of Object.entries<any>(jobs)) {
+                items.push(new JobTreeItem(this.workflow, { name: value.name ? value.name : key, id: key }));
+            }
         }
+
+        return items;
     }
 }

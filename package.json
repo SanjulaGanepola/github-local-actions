@@ -53,12 +53,53 @@
           "icon": "$(layers)"
         },
         {
+          "id": "history",
+          "name": "History",
+          "icon": "$(book)"
+        },
+        {
           "id": "settings",
           "name": "Settings",
           "icon": "$(gear)"
         }
       ]
     },
+    "viewsWelcome": [
+      {
+				"view": "components",
+				"contents": "Loading components..."
+			},
+      {
+				"view": "workflows",
+				"contents": "Loading components...",
+        "when": "!githubLocalActions:noWorkflows"
+			},
+      {
+				"view": "workflows",
+				"contents": "No workflows found.",
+        "when": "githubLocalActions:noWorkflows"
+			},
+      {
+				"view": "history",
+				"contents": "Loading history...",
+        "when": "!githubLocalActions:noHistory"
+			},
+      {
+				"view": "history",
+				"contents": "No history found.",
+        "when": "githubLocalActions:noHistory"
+			},
+      {
+				"view": "settings",
+				"contents": "Loading settings...",
+        "when": "!githubLocalActions:noSettings"
+			},
+      {
+				"view": "settings",
+				"contents": "No workflows found.",
+        "when": "githubLocalActions:noSettings"
+			}
+    ],
     "commands": [
       {
         "category": "GitHub Local Actions",
@@ -116,6 +157,18 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.runJob",
+        "title": "Run Job",
+        "icon": "$(debug-start)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.refreshHistory",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.refreshSettings",
         "title": "Refresh",
         "icon": "$(refresh)"
@@ -160,6 +213,14 @@
           "when": "never"
         },
         {
+          "command": "githubLocalActions.runJob",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.refreshHistory",
+          "when": "never"
+        },
+        {
           "command": "githubLocalActions.refreshSettings",
           "when": "never"
         }
@@ -184,6 +245,11 @@
           "command": "githubLocalActions.refreshWorkflows",
           "when": "view == workflows",
           "group": "navigation@2"
+        },
+        {
+          "command": "githubLocalActions.refreshHistory",
+          "when": "view == history",
+          "group": "navigation@0"
         },
         {
           "command": "githubLocalActions.refreshSettings",
@@ -216,6 +282,11 @@
           "command": "githubLocalActions.runWorkflow",
           "when": "view == workflows && viewItem =~ /^githubLocalActions.workflow.*/",
           "group": "inline@1"
+        },
+        {
+          "command": "githubLocalActions.runJob",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.job.*/",
+          "group": "inline@0"
         }
       ]
     },

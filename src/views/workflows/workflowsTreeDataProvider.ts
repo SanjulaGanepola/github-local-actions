@@ -1,5 +1,5 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, window, workspace } from "vscode";
-import { EventTrigger } from "../../act";
+import { Event } from "../../act";
 import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import WorkflowTreeItem from "./workflow";
@@ -15,13 +15,14 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 await act.runAllWorkflows();
             }),
             commands.registerCommand('githubLocalActions.runEvent', async () => {
-                const event = await window.showQuickPick(Object.values(EventTrigger), {
+                const event = await window.showQuickPick(Object.values(Event), {
                     title: 'Select the event to run',
                     placeHolder: 'Event'
                 });
 
-                if(event) {
-                    await act.runEvent(event as EventTrigger);
+                if (event) {
+                    // TODO: Implement running event
+                    // await act.runEvent(event as Event);
                 }
             }),
             commands.registerCommand('githubLocalActions.refreshWorkflows', async () => {
@@ -33,6 +34,10 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
             }),
             commands.registerCommand('githubLocalActions.runWorkflow', async (workflowTreeItem: WorkflowTreeItem) => {
                 await act.runWorkflow(workflowTreeItem.workflow);
+            }),
+            commands.registerCommand('githubLocalActions.runJob', async (workflowTreeItem: WorkflowTreeItem) => {
+                // TODO: Implement running job
+                // await act.runJob()
             })
         );
     }
@@ -57,8 +62,15 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
         if (element) {
             return element.getChildren();
         } else {
+            const items: GithubLocalActionsTreeItem[] = [];
+
             const workflows = await act.workflowsManager.getWorkflows();
-            return workflows.map(workflow => new WorkflowTreeItem(workflow));
+            for (const workflow of workflows) {
+                items.push(new WorkflowTreeItem(workflow));
+            }
+
+            await commands.executeCommand('setContext', 'githubLocalActions:noWorkflows', items.length == 0);
+            return items;
         }
     }
 }
