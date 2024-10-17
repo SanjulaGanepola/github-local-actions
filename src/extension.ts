@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { window } from 'vscode';
+import { window, workspace } from 'vscode';
 import { Act } from './act';
 import ComponentsTreeDataProvider from './views/components/componentsTreeDataProvider';
 import { DecorationProvider } from './views/decorationProvider';
@@ -16,6 +16,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	act = new Act();
 
+	// Create tree views
 	const decorationProvider = new DecorationProvider();
 	componentsTreeDataProvider = new ComponentsTreeDataProvider(context);
 	const componentsTreeView = window.createTreeView(ComponentsTreeDataProvider.VIEW_ID, { treeDataProvider: componentsTreeDataProvider });
@@ -23,11 +24,28 @@ export function activate(context: vscode.ExtensionContext) {
 	const workflowsTreeView = window.createTreeView(WorkflowsTreeDataProvider.VIEW_ID, { treeDataProvider: workflowsTreeDataProvider });
 	settingsTreeDataProvider = new SettingsTreeDataProvider(context);
 	const settingsTreeView = window.createTreeView(SettingsTreeDataProvider.VIEW_ID, { treeDataProvider: settingsTreeDataProvider });
+
+	// Create file watcher
+	const workflowsFileWatcher = workspace.createFileSystemWatcher('**/.github/workflows/*.{yml,yaml}');
+	workflowsFileWatcher.onDidCreate(() => {
+		workflowsTreeDataProvider.refresh();
+		settingsTreeDataProvider.refresh();
+	});
+	workflowsFileWatcher.onDidChange(() => {
+		workflowsTreeDataProvider.refresh();
+		settingsTreeDataProvider.refresh();
+	});
+	workflowsFileWatcher.onDidDelete(() => {
+		workflowsTreeDataProvider.refresh();
+		settingsTreeDataProvider.refresh();
+	});
+
 	context.subscriptions.push(
 		componentsTreeView,
 		workflowsTreeView,
 		settingsTreeView,
-		window.registerFileDecorationProvider(decorationProvider)
+		window.registerFileDecorationProvider(decorationProvider),
+		workflowsFileWatcher
 	);
 }
 
