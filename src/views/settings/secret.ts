@@ -7,7 +7,9 @@ export default class SecretTreeItem extends TreeItem implements GithubLocalActio
 
     constructor(secret: Secret) {
         super(secret.key, TreeItemCollapsibleState.None);
-        this.description = secret.value;
+        if (secret.value) {
+            this.description = '••••••••'
+        }
         this.contextValue = SecretTreeItem.contextValue;
         this.iconPath = new ThemeIcon('key');
     }
