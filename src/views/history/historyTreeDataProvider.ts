@@ -21,6 +21,9 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
             commands.registerCommand('githubLocalActions.refreshHistory', async () => {
                 this.refresh();
             }),
+            commands.registerCommand('githubLocalActions.viewOutput', async (historyTreeItem: HistoryTreeItem) => {
+                await act.viewOutput(historyTreeItem.history);
+            }),
             commands.registerCommand('githubLocalActions.restart', async (historyTreeItem: HistoryTreeItem) => {
                 await act.runCommand(historyTreeItem.history.commandArgs);
             }),

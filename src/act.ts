@@ -240,6 +240,14 @@ export class Act {
                 const writeEmitter = new EventEmitter<string>();
                 const closeEmitter = new EventEmitter<number>();
 
+                writeEmitter.event(data => {
+                    if (!this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].output) {
+                        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].output = data;
+                    } else {
+                        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].output += data;
+                    }
+                });
+
                 const exec = child_process.spawn(command, { cwd: commandArgs.workspaceFolder.uri.fsPath, shell: env.shell });
                 const handleIO = (data: any) => {
                     const lines: string[] = data.toString().split('\n').filter((line: string) => line != '');
@@ -352,6 +360,10 @@ export class Act {
                 historyTreeDataProvider.refresh();
             }
         }
+    }
+
+    async viewOutput(history: History) {
+        await workspace.openTextDocument({ content: history.output });
     }
 
     async stop(history: History) {
