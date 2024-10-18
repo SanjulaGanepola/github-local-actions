@@ -54,8 +54,10 @@ export interface History {
     index: number,
     name: string,
     status: HistoryStatus,
-    start?: string,
-    end?: string,
+    date?: {
+        start: string,
+        end: string,
+    }
     output?: string,
     taskExecution?: TaskExecution,
     commandArgs: CommandArgs
@@ -90,7 +92,18 @@ export class Act {
         this.workflowsManager = new WorkflowsManager();
         this.settingsManager = new SettingsManager();
         this.storageManager = new StorageManager(context);
-        this.workspaceHistory = this.storageManager.get<{ [path: string]: History[] }>(StorageKey.WorkspaceHistory) || {};
+
+        const workspaceHistory = this.storageManager.get<{ [path: string]: History[] }>(StorageKey.WorkspaceHistory) || {};
+        for (const [path, historyLogs] of Object.entries(workspaceHistory)) {
+            workspaceHistory[path] = historyLogs.map(history => {
+                if (history.status === HistoryStatus.Running) {
+                    history.status = HistoryStatus.Cancelled;
+                }
+
+                return history;
+            });
+        }
+        this.workspaceHistory = workspaceHistory;
 
         switch (process.platform) {
             case 'win32':
@@ -197,7 +210,6 @@ export class Act {
             index: historyIndex,
             name: `${commandArgs.name} #${this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length + 1}`,
             status: HistoryStatus.Running,
-            start: new Date().toISOString(),
             commandArgs: commandArgs
         });
         historyTreeDataProvider.refresh();
@@ -236,18 +248,25 @@ export class Act {
                 });
 
                 const exec = child_process.spawn(command, { cwd: commandArgs.workspaceFolder.uri.fsPath, shell: env.shell });
+                const setDate = (actDate?: string) => {
+                    const date = actDate ? new Date(actDate).toString() : new Date().toString();
+
+                    if (!this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].date) {
+                        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].date = {
+                            start: date,
+                            end: date,
+                        }
+                    } else {
+                        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].date!.end = date;
+                    }
+                }
                 const handleIO = (data: any) => {
                     const lines: string[] = data.toString().split('\n').filter((line: string) => line != '');
                     for (const line of lines) {
                         const jsonLine = JSON.parse(line);
-
-                        if (!this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].start) {
-                            this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].start = jsonLine.time;
-                        }
+                        setDate(jsonLine.time);
 
                         if (jsonLine.jobResult) {
-                            this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].end = jsonLine.time;
-
                             switch (jsonLine.jobResult) {
                                 case 'success':
                                     this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Success;
@@ -266,9 +285,7 @@ export class Act {
                 exec.stdout.on('data', handleIO);
                 exec.stderr.on('data', handleIO);
                 exec.on('close', (code) => {
-                    if (!this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].end) {
-                        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].end = new Date().toISOString();
-                    }
+                    setDate();
 
                     if (this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status === HistoryStatus.Running) {
                         this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Failed;
@@ -291,7 +308,6 @@ export class Act {
                         writeEmitter.fire(`Environments: OSSBUILD\r\n`);
                         writeEmitter.fire(`Variables:    VARIABLE1=ABC, VARIABLE2=DEF\r\n`);
                         writeEmitter.fire(`Secrets:      SECRET1=ABC, SECRET2=DEF\r\n`);
-                        writeEmitter.fire(`Timestamp:    ${new Date().toLocaleTimeString()}\r\n`);
                         writeEmitter.fire(`Command:      ${command}\r\n`);
                         writeEmitter.fire(`\r\n`);
                     },

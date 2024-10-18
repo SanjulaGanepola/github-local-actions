@@ -11,9 +11,9 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
         this.history = history;
 
         let totalDuration: string | undefined;
-        if (history.start) {
-            const start = new Date(history.start).getTime();
-            const end = history.end ? new Date(history.end).getTime() : new Date().getTime();
+        if (history.date) {
+            const start = new Date(history.date.start).getTime();
+            const end = new Date(history.date.end).getTime();
             totalDuration = `${((end - start) / 1000).toFixed(0).toString()}s`;
             this.description = totalDuration;
         }
@@ -35,8 +35,8 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
         }
         this.tooltip = `Name: ${history.name}\n` +
             `Status: ${history.status}\n` +
-            `Started: ${history.start ? history.start : 'N/A'}\n` +
-            `Ended: ${history.end ? history.end : 'N/A'}\n` +
+            `Started: ${history.date ? history.date.start : 'N/A'}\n` +
+            `Ended: ${history.date ? history.date.end : 'N/A'}\n` +
             (totalDuration ? `Total Duration: ${totalDuration}\n` : ``);
     }
 
