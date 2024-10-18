@@ -1,4 +1,4 @@
-import { ThemeIcon, TreeItem, TreeItemCollapsibleState } from "vscode";
+import { ThemeIcon, TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState } from "vscode";
 import { Input } from "../../settingsManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
@@ -10,6 +10,7 @@ export default class InputTreeItem extends TreeItem implements GithubLocalAction
         this.description = input.value;
         this.contextValue = InputTreeItem.contextValue;
         this.iconPath = new ThemeIcon('symbol-parameter');
+        this.checkboxState = TreeItemCheckboxState.Unchecked;
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {

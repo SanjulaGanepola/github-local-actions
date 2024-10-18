@@ -1,4 +1,4 @@
-import { ThemeIcon, TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState } from "vscode";
+import { ThemeIcon, TreeItem, TreeItemCollapsibleState } from "vscode";
 import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SecretTreeItem from "./secret";
@@ -10,7 +10,6 @@ export default class SecretsTreeItem extends TreeItem implements GithubLocalActi
         super('Secrets', TreeItemCollapsibleState.Collapsed);
         this.contextValue = SecretsTreeItem.contextValue;
         this.iconPath = new ThemeIcon('lock');
-        this.checkboxState = TreeItemCheckboxState.Unchecked;
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {

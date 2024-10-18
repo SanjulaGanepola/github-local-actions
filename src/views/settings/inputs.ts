@@ -1,4 +1,4 @@
-import { ThemeIcon, TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState } from "vscode";
+import { ThemeIcon, TreeItem, TreeItemCollapsibleState } from "vscode";
 import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import InputTreeItem from "./input";
@@ -10,7 +10,6 @@ export default class InputsTreeItem extends TreeItem implements GithubLocalActio
         super('Inputs', TreeItemCollapsibleState.Collapsed);
         this.contextValue = InputsTreeItem.contextValue;
         this.iconPath = new ThemeIcon('record-keys');
-        this.checkboxState = TreeItemCheckboxState.Unchecked;
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
