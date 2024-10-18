@@ -1,4 +1,4 @@
-export namespace Util {
+export namespace DateUtils {
     /**
      * Get date time string.
      * 
