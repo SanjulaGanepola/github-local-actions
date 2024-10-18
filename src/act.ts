@@ -1,6 +1,6 @@
 import * as child_process from 'child_process';
 import * as path from "path";
-import { commands, CustomExecution, env, EventEmitter, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace, WorkspaceFolder } from "vscode";
+import { commands, CustomExecution, env, EventEmitter, Pseudoterminal, ShellExecution, TaskDefinition, TaskExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
 import { historyTreeDataProvider } from './extension';
 import { SettingsManager } from './settingsManager';
@@ -68,12 +68,22 @@ export interface RawLog {
     jobResult?: string, //TODO: Could be an enum?
 }
 
+export interface CommandArgs {
+    workspaceFolder: WorkspaceFolder,
+    options: string,
+    name: string,
+    typeText: string[]
+}
+
 export interface History {
+    index: number,
     name: string,
     status: HistoryStatus,
     start?: string,
     end?: string,
-    output?: string
+    output?: string,
+    taskExecution?: TaskExecution,
+    commandArgs: CommandArgs
 }
 
 export enum HistoryStatus {
@@ -157,7 +167,14 @@ export class Act {
     async runWorkflow(workflow: Workflow) {
         const workspaceFolder = workspace.getWorkspaceFolder(workflow.uri);
         if (workspaceFolder) {
-            return await this.runCommand(workspaceFolder, `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`, workflow.name, [`Workflow:     ${workflow.name}`]);
+            return await this.runCommand({
+                workspaceFolder: workspaceFolder,
+                options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`,
+                name: workflow.name,
+                typeText: [
+                    `Workflow:     ${workflow.name}`
+                ]
+            });
         } else {
             window.showErrorMessage(`Failed to locate workspace folder for ${workflow.uri.fsPath}`);
         }
@@ -173,8 +190,8 @@ export class Act {
     //     return await this.runCommand(workspaceFolder, `${Option.Workflows} ${event}`, event, [`Event:        ${event}`]);
     // }
 
-    async runCommand(workspaceFolder: WorkspaceFolder, options: string, name: string, typeText: string[]) {
-        const command = `${Act.base} ${Option.Json} ${options}`;
+    async runCommand(commandArgs: CommandArgs) {
+        const command = `${Act.base} ${Option.Json} ${commandArgs.options}`;
 
         const unreadyComponents = await this.componentsManager.getUnreadyComponents();
         if (unreadyComponents.length > 0) {
@@ -186,24 +203,26 @@ export class Act {
             return;
         }
 
-        if (!this.workspaceHistory[workspaceFolder.uri.fsPath]) {
-            this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
+        if (!this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath]) {
+            this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath] = [];
         }
 
-        const historyIndex = this.workspaceHistory[workspaceFolder.uri.fsPath].length;
-        this.workspaceHistory[workspaceFolder.uri.fsPath].push({
-            name: `${name} #${this.workspaceHistory[workspaceFolder.uri.fsPath].length + 1}`,
+        const historyIndex = this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length;
+        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].push({
+            index: historyIndex,
+            name: `${commandArgs.name} #${this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length + 1}`,
             status: HistoryStatus.Running,
-            start: new Date().toISOString()
+            start: new Date().toISOString(),
+            commandArgs: commandArgs
         });
         historyTreeDataProvider.refresh();
 
-        await tasks.executeTask({
-            name: name,
+        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].taskExecution = await tasks.executeTask({
+            name: commandArgs.name,
             detail: 'Run workflow',
             definition: { type: 'GitHub Local Actions' },
             source: 'GitHub Local Actions',
-            scope: workspaceFolder || TaskScope.Workspace,
+            scope: commandArgs.workspaceFolder || TaskScope.Workspace,
             isBackground: true,
             presentationOptions: {
                 reveal: TaskRevealKind.Always,
@@ -221,25 +240,25 @@ export class Act {
                 const writeEmitter = new EventEmitter<string>();
                 const closeEmitter = new EventEmitter<number>();
 
-                const exec = child_process.spawn(command, { cwd: workspaceFolder.uri.fsPath, shell: env.shell });
+                const exec = child_process.spawn(command, { cwd: commandArgs.workspaceFolder.uri.fsPath, shell: env.shell });
                 const handleIO = (data: any) => {
                     const lines: string[] = data.toString().split('\n').filter((line: string) => line != '');
                     for (const line of lines) {
                         const jsonLine = JSON.parse(line);
 
-                        if (!this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].start) {
-                            this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].start = jsonLine.time;
+                        if (!this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].start) {
+                            this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].start = jsonLine.time;
                         }
 
                         if (jsonLine.jobResult) {
-                            this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].end = jsonLine.time;
+                            this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].end = jsonLine.time;
 
                             switch (jsonLine.jobResult) {
                                 case 'success':
-                                    this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Success;
+                                    this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Success;
                                     break;
                                 case 'failure':
-                                    this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Failed;
+                                    this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Failed;
                                     break;
                                 // TODO: Handle cancelled
                             }
@@ -252,12 +271,12 @@ export class Act {
                 exec.stdout.on('data', handleIO);
                 exec.stderr.on('data', handleIO);
                 exec.on('close', (code) => {
-                    if (!this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].end) {
-                        this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].end = new Date().toISOString();
+                    if (!this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].end) {
+                        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].end = new Date().toISOString();
                     }
 
-                    if (this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status === HistoryStatus.Running) {
-                        this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Failed;
+                    if (this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status === HistoryStatus.Running) {
+                        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Failed;
                     }
 
                     historyTreeDataProvider.refresh();
@@ -268,9 +287,9 @@ export class Act {
                     onDidWrite: writeEmitter.event,
                     onDidClose: closeEmitter.event,
                     open: async (initialDimensions: TerminalDimensions | undefined): Promise<void> => {
-                        writeEmitter.fire(`Name:         ${name}\r\n`);
-                        writeEmitter.fire(`Path:         ${workspaceFolder.uri.fsPath}\r\n`);
-                        for (const text of typeText) {
+                        writeEmitter.fire(`Name:         ${commandArgs.name}\r\n`);
+                        writeEmitter.fire(`Path:         ${commandArgs.workspaceFolder.uri.fsPath}\r\n`);
+                        for (const text of commandArgs.typeText) {
                             writeEmitter.fire(`${text}\r\n`);
                         }
                         writeEmitter.fire(`Environments: OSSBUILD\r\n`);
@@ -282,8 +301,8 @@ export class Act {
                     },
 
                     close: () => {
-                        if (this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status === HistoryStatus.Running) {
-                            this.workspaceHistory[workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Cancelled;
+                        if (this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status === HistoryStatus.Running) {
+                            this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Cancelled;
                         }
 
                         historyTreeDataProvider.refresh();
@@ -322,5 +341,27 @@ export class Act {
                 execution: new ShellExecution(command)
             });
         }
+    }
+
+    async clearAll() {
+        //TODO: Fix for multi workspace support
+        const workspaceFolders = workspace.workspaceFolders;
+        if (workspaceFolders && workspaceFolders.length > 0) {
+            for (const workspaceFolder of workspaceFolders) {
+                this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
+                historyTreeDataProvider.refresh();
+            }
+        }
+    }
+
+    async stop(history: History) {
+        history.taskExecution?.terminate();
+        historyTreeDataProvider.refresh();
+    }
+
+    async remove(history: History) {
+        const historyIndex = this.workspaceHistory[history.commandArgs.workspaceFolder.uri.fsPath].findIndex(workspaceHistory => workspaceHistory.index === history.index)
+        this.workspaceHistory[history.commandArgs.workspaceFolder.uri.fsPath].splice(historyIndex, 1);
+        historyTreeDataProvider.refresh();
     }
 }

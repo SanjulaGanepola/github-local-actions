@@ -66,39 +66,65 @@
     },
     "viewsWelcome": [
       {
-				"view": "components",
-				"contents": "Loading components..."
-			},
+        "view": "components",
+        "contents": "Loading components...",
+        "when": "!githubLocalActions:noComponents && workspaceFolderCount > 0"
+      },
       {
-				"view": "workflows",
-				"contents": "Loading components...",
-        "when": "!githubLocalActions:noWorkflows"
-			},
+        "view": "components",
+        "contents": "No workspace folder opened",
+        "when": "workspaceFolderCount == 0"
+      },
       {
-				"view": "workflows",
-				"contents": "No workflows found.",
-        "when": "githubLocalActions:noWorkflows"
-			},
+        "view": "components",
+        "contents": "No components found.",
+        "when": "githubLocalActions:noComponents && workspaceFolderCount > 0"
+      },
       {
-				"view": "history",
-				"contents": "Loading history...",
-        "when": "!githubLocalActions:noHistory"
-			},
+        "view": "workflows",
+        "contents": "Loading components...",
+        "when": "!githubLocalActions:noWorkflows && workspaceFolderCount > 0"
+      },
       {
-				"view": "history",
-				"contents": "No history found.",
-        "when": "githubLocalActions:noHistory"
-			},
+        "view": "workflows",
+        "contents": "No workspace folder opened",
+        "when": "workspaceFolderCount == 0"
+      },
       {
-				"view": "settings",
-				"contents": "Loading settings...",
-        "when": "!githubLocalActions:noSettings"
-			},
+        "view": "workflows",
+        "contents": "No workflows found.",
+        "when": "githubLocalActions:noWorkflows && workspaceFolderCount > 0"
+      },
       {
-				"view": "settings",
-				"contents": "No workflows found.",
-        "when": "githubLocalActions:noSettings"
-			}
+        "view": "history",
+        "contents": "Loading history...",
+        "when": "!githubLocalActions:noHistory && workspaceFolderCount > 0"
+      },
+      {
+        "view": "history",
+        "contents": "No workspace folder opened",
+        "when": "workspaceFolderCount == 0"
+      },
+      {
+        "view": "history",
+        "contents": "No history found.",
+        "when": "githubLocalActions:noHistory && workspaceFolderCount > 0"
+      },
+      {
+        "view": "settings",
+        "contents": "Loading settings...",
+        "when": "!githubLocalActions:noSettings && workspaceFolderCount > 0"
+      },
+      {
+        "view": "settings",
+        "contents": "No workspace folder opened",
+        "when": "workspaceFolderCount == 0"
+      },
+      {
+        "view": "settings",
+        "contents": "No workflows found.",
+        "when": "githubLocalActions:noSettings && workspaceFolderCount > 0"
+      }
     ],
     "commands": [
       {
@@ -129,12 +155,14 @@
         "category": "GitHub Local Actions",
         "command": "githubLocalActions.runAllWorkflows",
         "title": "Run All Workflows",
+        "enablement": "!githubLocalActions:noWorkflows && workspaceFolderCount > 0",
         "icon": "$(run-all)"
       },
       {
         "category": "GitHub Local Actions",
         "command": "githubLocalActions.runEvent",
         "title": "Run Event",
+        "enablement": "!githubLocalActions:noWorkflows && workspaceFolderCount > 0",
         "icon": "$(symbol-event)"
       },
       {
@@ -163,9 +191,37 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.clearAll",
+        "title": "Clear All",
+        "enablement": "!githubLocalActions:isRunning && !githubLocalActions:noWorkflows && workspaceFolderCount > 0",
+        "icon": "$(clear-all)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.refreshHistory",
         "title": "Refresh",
         "icon": "$(refresh)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.restart",
+        "title": "Restart",
+        "enablement": "viewItem =~ /^githubLocalActions.history_(Success|Failed|Cancelled).*/",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.stop",
+        "title": "Stop",
+        "enablement": "viewItem =~ /^githubLocalActions.history_(Running).*/",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.remove",
+        "title": "Remove",
+        "enablement": "viewItem =~ /^githubLocalActions.history_(Success|Failed|Cancelled).*/",
+        "icon": "$(close)"
       },
       {
         "category": "GitHub Local Actions",
@@ -217,7 +273,23 @@
           "when": "never"
         },
         {
+          "command": "githubLocalActions.clearAll",
+          "when": "never"
+        },
+        {
           "command": "githubLocalActions.refreshHistory",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.restart",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.stop",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.remove",
           "when": "never"
         },
         {
@@ -247,9 +319,14 @@
           "group": "navigation@2"
         },
         {
-          "command": "githubLocalActions.refreshHistory",
+          "command": "githubLocalActions.clearAll",
           "when": "view == history",
           "group": "navigation@0"
+        },
+        {
+          "command": "githubLocalActions.refreshHistory",
+          "when": "view == history",
+          "group": "navigation@1"
         },
         {
           "command": "githubLocalActions.refreshSettings",
@@ -287,6 +364,21 @@
           "command": "githubLocalActions.runJob",
           "when": "view == workflows && viewItem =~ /^githubLocalActions.job.*/",
           "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.restart",
+          "when": "view == history && viewItem =~ /^githubLocalActions.history.*/",
+          "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.stop",
+          "when": "view == history && viewItem =~ /^githubLocalActions.history.*/",
+          "group": "inline@1"
+        },
+        {
+          "command": "githubLocalActions.remove",
+          "when": "view == history && viewItem =~ /^githubLocalActions.history.*/",
+          "group": "inline@2"
         }
       ]
     },

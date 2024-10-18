@@ -55,8 +55,15 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
         if (element) {
             return element.getChildren();
         } else {
+            const items: GithubLocalActionsTreeItem[] = [];
+
             const components = await act.componentsManager.getComponents();
-            return components.map(component => new ComponentTreeItem(component));
+            for (const component of components) {
+                items.push(new ComponentTreeItem(component));
+            }
+
+            await commands.executeCommand('setContext', 'githubLocalActions:noComponents', items.length == 0);
+            return items;
         }
     }
 }
