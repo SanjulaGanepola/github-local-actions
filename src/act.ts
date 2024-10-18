@@ -1,9 +1,10 @@
 import * as child_process from 'child_process';
 import * as path from "path";
-import { commands, CustomExecution, env, EventEmitter, Pseudoterminal, ShellExecution, TaskDefinition, TaskExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace, WorkspaceFolder } from "vscode";
+import { commands, CustomExecution, env, EventEmitter, ExtensionContext, Pseudoterminal, ShellExecution, TaskDefinition, TaskExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
 import { historyTreeDataProvider } from './extension';
 import { SettingsManager } from './settingsManager';
+import { StorageKey, StorageManager } from './storageManager';
 import { Workflow, WorkflowsManager } from "./workflowsManager";
 
 export enum Event {
@@ -49,32 +50,6 @@ export enum Option {
     Json = "--json"
 }
 
-export interface RawLog {
-    dryrun: boolean,
-    job: string,
-    jobID: string,
-    level: string, //TODO: Could be an enum?
-    matrix: any,
-    msg: string,
-    time: string,
-
-    raw_output?: boolean,
-
-    stage?: string,
-    step?: string,
-    stepID?: string[],
-    stepResult?: string, //TODO: Could be an enum?
-
-    jobResult?: string, //TODO: Could be an enum?
-}
-
-export interface CommandArgs {
-    workspaceFolder: WorkspaceFolder,
-    options: string,
-    name: string,
-    typeText: string[]
-}
-
 export interface History {
     index: number,
     name: string,
@@ -93,20 +68,29 @@ export enum HistoryStatus {
     Cancelled = 'Cancelled'
 }
 
+export interface CommandArgs {
+    workspaceFolder: WorkspaceFolder,
+    options: string,
+    name: string,
+    typeText: string[]
+}
+
 export class Act {
     private static base: string = 'act';
-    workspaceHistory: { [path: string]: History[] };
     componentsManager: ComponentsManager;
     workflowsManager: WorkflowsManager;
     settingsManager: SettingsManager;
+    storageManager: StorageManager;
+    workspaceHistory: { [path: string]: History[] };
     installationCommands: { [packageManager: string]: string };
     prebuiltExecutables: { [architecture: string]: string };
 
-    constructor() {
-        this.workspaceHistory = {};
+    constructor(context: ExtensionContext) {
         this.componentsManager = new ComponentsManager();
         this.workflowsManager = new WorkflowsManager();
         this.settingsManager = new SettingsManager();
+        this.storageManager = new StorageManager(context);
+        this.workspaceHistory = this.storageManager.get<{ [path: string]: History[] }>(StorageKey.WorkspaceHistory) || {};
 
         switch (process.platform) {
             case 'win32':
@@ -205,10 +189,11 @@ export class Act {
 
         if (!this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath]) {
             this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath] = [];
+            this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
         }
 
         const historyIndex = this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length;
-        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].push({
+        this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].unshift({
             index: historyIndex,
             name: `${commandArgs.name} #${this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length + 1}`,
             status: HistoryStatus.Running,
@@ -216,6 +201,7 @@ export class Act {
             commandArgs: commandArgs
         });
         historyTreeDataProvider.refresh();
+        this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
 
         this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].taskExecution = await tasks.executeTask({
             name: commandArgs.name,
@@ -246,6 +232,7 @@ export class Act {
                     } else {
                         this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].output += data;
                     }
+                    this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
                 });
 
                 const exec = child_process.spawn(command, { cwd: commandArgs.workspaceFolder.uri.fsPath, shell: env.shell });
@@ -268,11 +255,11 @@ export class Act {
                                 case 'failure':
                                     this.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Failed;
                                     break;
-                                // TODO: Handle cancelled
                             }
                         }
 
                         historyTreeDataProvider.refresh();
+                        this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
                         writeEmitter.fire(`${jsonLine.msg.trimEnd()}\r\n`);
                     }
                 }
@@ -288,6 +275,7 @@ export class Act {
                     }
 
                     historyTreeDataProvider.refresh();
+                    this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
                     closeEmitter.fire(code || 0);
                 });
 
@@ -314,6 +302,8 @@ export class Act {
                         }
 
                         historyTreeDataProvider.refresh();
+                        this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
+
                         exec.stdout.destroy();
                         exec.stdin.destroy();
                         exec.stderr.destroy();
@@ -322,6 +312,7 @@ export class Act {
                 };
             })
         });
+        this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
     }
 
     async install(packageManager: string) {
@@ -358,12 +349,15 @@ export class Act {
             for (const workspaceFolder of workspaceFolders) {
                 this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
                 historyTreeDataProvider.refresh();
+                this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
             }
         }
     }
 
     async viewOutput(history: History) {
-        await workspace.openTextDocument({ content: history.output });
+        await workspace.openTextDocument({ content: history.output }).then(async document => {
+            await window.showTextDocument(document);
+        })
     }
 
     async stop(history: History) {
@@ -375,5 +369,6 @@ export class Act {
         const historyIndex = this.workspaceHistory[history.commandArgs.workspaceFolder.uri.fsPath].findIndex(workspaceHistory => workspaceHistory.index === history.index)
         this.workspaceHistory[history.commandArgs.workspaceFolder.uri.fsPath].splice(historyIndex, 1);
         historyTreeDataProvider.refresh();
+        this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
     }
 }

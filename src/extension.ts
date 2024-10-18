@@ -16,7 +16,7 @@ export let settingsTreeDataProvider: SettingsTreeDataProvider;
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "github-local-actions" is now active!');
 
-	act = new Act();
+	act = new Act(context);
 
 	// Create tree views
 	const decorationProvider = new DecorationProvider();
