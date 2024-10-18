@@ -13,7 +13,7 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
 
         let totalDuration: string | undefined;
         if (history.date) {
-            totalDuration = `${DateUtils.getTimeDuration(history.date.start, history.date.end)}s`;
+            totalDuration = DateUtils.getTimeDuration(history.date.start, history.date.end);
         }
 
         this.description = totalDuration;

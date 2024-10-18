@@ -20,11 +20,21 @@ export namespace DateUtils {
     }
 
     /**
-     * Get time duration in seconds.
+     * Get time duration in minutes and seconds.
+     * 
+     * Examples: 31s or 2m 52s
      */
     export function getTimeDuration(startValue: string, endValue: string) {
         const start = new Date(startValue).getTime();
         const end = new Date(endValue).getTime();
-        return ((end - start) / 1000).toFixed(0).toString();
+
+        const totalSeconds = Math.floor((end - start) / 1000);
+        if (totalSeconds < 60) {
+            return `${totalSeconds}s`;
+        }
+
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}m ${seconds}s`;
     }
 }
