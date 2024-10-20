@@ -21,6 +21,6 @@ export default class SecretsTreeItem extends TreeItem implements GithubLocalActi
             items.push(new SecretTreeItem(this.workspaceFolder, secret));
         }
 
-        return items;
+        return items.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString()));
     }
 }

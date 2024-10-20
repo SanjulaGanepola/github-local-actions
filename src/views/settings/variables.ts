@@ -1,8 +1,8 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
+import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import VariableTreeItem from "./variable";
-import { StorageKey } from "../../storageManager";
 
 export default class VariablesTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.variables';
@@ -21,6 +21,6 @@ export default class VariablesTreeItem extends TreeItem implements GithubLocalAc
             items.push(new VariableTreeItem(this.workspaceFolder, variable));
         }
 
-        return items;
+        return items.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString()));
     }
 }

@@ -20,6 +20,6 @@ export default class EnvironmentsTreeItem extends TreeItem implements GithubLoca
             items.push(new EnvironmentTreeItem(this.workspaceFolder, environment));
         }
 
-        return items;
+        return items.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString()));
     }
 }

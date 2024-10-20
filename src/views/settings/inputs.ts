@@ -21,6 +21,6 @@ export default class InputsTreeItem extends TreeItem implements GithubLocalActio
             items.push(new InputTreeItem(this.workspaceFolder, input));
         }
 
-        return items;
+        return items.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString()));
     }
 }

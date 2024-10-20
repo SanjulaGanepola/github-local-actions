@@ -14,12 +14,12 @@ export default class WorkspaceFolderWorkflowsTreeItem extends TreeItem implement
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
         const items: GithubLocalActionsTreeItem[] = [];
-        
+
         const workflows = await act.workflowsManager.getWorkflows(this.workspaceFolder);
         for (const workflow of workflows) {
             items.push(new WorkflowTreeItem(this.workspaceFolder, workflow));
         }
 
-        return items;
+        return items.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString()));
     }
 }
