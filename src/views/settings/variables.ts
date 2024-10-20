@@ -2,6 +2,7 @@ import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "
 import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import VariableTreeItem from "./variable";
+import { StorageKey } from "../../storageManager";
 
 export default class VariablesTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.variables';
@@ -13,8 +14,13 @@ export default class VariablesTreeItem extends TreeItem implements GithubLocalAc
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
-        const workflows = await act.workflowsManager.getWorkflows(this.workspaceFolder);
-        const variables = [...new Set(workflows.map(workflow => act.settingsManager.getVariables(workflow)).flat())];
-        return variables.map(variable => new VariableTreeItem(this.workspaceFolder, variable));
+        const items: GithubLocalActionsTreeItem[] = [];
+
+        const variables = await act.settingsManager.getSetting(this.workspaceFolder, /\${{\s*vars\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g, StorageKey.Variables);
+        for (const variable of variables) {
+            items.push(new VariableTreeItem(this.workspaceFolder, variable));
+        }
+
+        return items;
     }
 }

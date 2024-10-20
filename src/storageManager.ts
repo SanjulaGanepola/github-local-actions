@@ -1,12 +1,15 @@
 import { ExtensionContext } from "vscode";
 
 export enum StorageKey {
-    WorkspaceHistory = 'workspaceHistory'
+    WorkspaceHistory = 'workspaceHistory',
+    Secrets = 'secrets',
+    Variables = 'variables',
+    Inputs = 'inputs'
 }
 
 export class StorageManager {
     private context: ExtensionContext;
-    private storageKey: string = 'githubLocalActions';
+    private extensionKey: string = 'githubLocalActions';
 
     constructor(context: ExtensionContext) {
         this.context = context;
@@ -16,11 +19,11 @@ export class StorageManager {
         return this.context.globalState.keys();
     }
 
-    get<T>(key: StorageKey): T | undefined {
-        return this.context.globalState.get<T>(`${this.storageKey}.${key}`);
+    get<T>(storageKey: StorageKey): T | undefined {
+        return this.context.globalState.get<T>(`${this.extensionKey}.${storageKey}`);
     }
 
-    async update(key: StorageKey, value: any): Promise<void> {
-        await this.context.globalState.update(`${this.storageKey}.${key}`, value);
+    async update(storageKey: StorageKey, value: any): Promise<void> {
+        await this.context.globalState.update(`${this.extensionKey}.${storageKey}`, value);
     }
 }

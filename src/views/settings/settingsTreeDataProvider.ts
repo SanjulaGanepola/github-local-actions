@@ -1,7 +1,7 @@
-import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, workspace } from "vscode";
+import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, window, workspace } from "vscode";
 import { act } from "../../extension";
+import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import ContainerEngineTreeItem from "./containerEngine";
 import InputTreeItem from "./input";
 import RunnersTreeItem from "./runners";
 import SecretTreeItem from "./secret";
@@ -19,18 +19,43 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 this.refresh();
             }),
             commands.registerCommand('githubLocalActions.editSecret', async (secretTreeItem: SecretTreeItem) => {
-                //TODO: Implement
+                const newValue = await window.showInputBox({
+                    prompt: `Enter the value for ${secretTreeItem.secret.value}`,
+                    placeHolder: `Secret value`,
+                    value: secretTreeItem.secret.value,
+                    password: true
+                });
+
+                if (newValue) {
+                    act.settingsManager.editSetting(secretTreeItem.workspaceFolder, { key: secretTreeItem.secret.key, value: newValue, selected: secretTreeItem.secret.selected }, StorageKey.Secrets);
+                    this.refresh();
+                }
             }),
             commands.registerCommand('githubLocalActions.editVariable', async (variableTreeItem: VariableTreeItem) => {
-                //TODO: Implement
+                const newValue = await window.showInputBox({
+                    prompt: `Enter the value for ${variableTreeItem.variable.value}`,
+                    placeHolder: `Variable value`,
+                    value: variableTreeItem.variable.value
+                });
+
+                if (newValue) {
+                    act.settingsManager.editSetting(variableTreeItem.workspaceFolder, { key: variableTreeItem.variable.key, value: newValue, selected: variableTreeItem.variable.selected }, StorageKey.Variables);
+                    this.refresh();
+                }
             }),
             commands.registerCommand('githubLocalActions.editInput', async (inputTreeItem: InputTreeItem) => {
-                //TODO: Implement
+                const newValue = await window.showInputBox({
+                    prompt: `Enter the value for ${inputTreeItem.input.value}`,
+                    placeHolder: `Input value`,
+                    value: inputTreeItem.input.value
+                });
+
+                if (newValue) {
+                    act.settingsManager.editSetting(inputTreeItem.workspaceFolder, { key: inputTreeItem.input.key, value: newValue, selected: inputTreeItem.input.selected }, StorageKey.Inputs);
+                    this.refresh();
+                }
             }),
             commands.registerCommand('githubLocalActions.addRunner', async (runnersTreeItem: RunnersTreeItem) => {
-                //TODO: Implement
-            }),
-            commands.registerCommand('githubLocalActions.editContainerEngine', async (containerEngineTreeItem: ContainerEngineTreeItem) => {
                 //TODO: Implement
             })
         );
@@ -62,7 +87,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
             const workspaceFolders = workspace.workspaceFolders;
             if (workspaceFolders) {
                 if (workspaceFolders.length === 1) {
-                    return await new WorkspaceFolderSettingsTreeItem(workspaceFolders[0]).getChildren();
+                    items.push(...await new WorkspaceFolderSettingsTreeItem(workspaceFolders[0]).getChildren());
                 } else if (workspaceFolders.length > 1) {
                     for (const workspaceFolder of workspaceFolders) {
                         items.push(new WorkspaceFolderSettingsTreeItem(workspaceFolder));

@@ -70,7 +70,7 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
             const workspaceFolders = workspace.workspaceFolders;
             if (workspaceFolders) {
                 if (workspaceFolders.length === 1) {
-                    return await new WorkspaceFolderHistoryTreeItem(workspaceFolders[0]).getChildren();
+                    items.push(...await new WorkspaceFolderHistoryTreeItem(workspaceFolders[0]).getChildren());
                 } else if (workspaceFolders.length > 1) {
                     for (const workspaceFolder of workspaceFolders) {
                         items.push(new WorkspaceFolderHistoryTreeItem(workspaceFolder));

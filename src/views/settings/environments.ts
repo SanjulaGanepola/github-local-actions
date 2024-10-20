@@ -13,8 +13,13 @@ export default class EnvironmentsTreeItem extends TreeItem implements GithubLoca
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
-        const workflows = await act.workflowsManager.getWorkflows(this.workspaceFolder);
-        const environments = [...new Set(workflows.map(workflow => act.settingsManager.getEnvironments(workflow)).flat())];
-        return environments.map(environment => new EnvironmentTreeItem(this.workspaceFolder, environment));
+        const items: GithubLocalActionsTreeItem[] = [];
+
+        const environments = await act.settingsManager.getEnvironments(this.workspaceFolder);
+        for (const environment of environments) {
+            items.push(new EnvironmentTreeItem(this.workspaceFolder, environment));
+        }
+
+        return items;
     }
 }

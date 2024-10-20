@@ -4,13 +4,15 @@ import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
 export default class VariableTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.variable';
+    variable: Variable;
 
     constructor(public workspaceFolder: WorkspaceFolder, variable: Variable) {
         super(variable.key, TreeItemCollapsibleState.None);
+        this.variable = variable;
         this.description = variable.value;
         this.contextValue = VariableTreeItem.contextValue;
         this.iconPath = new ThemeIcon('symbol-variable');
-        this.checkboxState = TreeItemCheckboxState.Unchecked;
+        this.checkboxState = variable.selected ? TreeItemCheckboxState.Checked : TreeItemCheckboxState.Unchecked;
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {

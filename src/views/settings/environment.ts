@@ -4,9 +4,11 @@ import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
 export default class EnvironmentTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.environment';
+    environment: Environment;
 
     constructor(public workspaceFolder: WorkspaceFolder, environment: Environment) {
         super(environment.name, TreeItemCollapsibleState.None);
+        this.environment = environment;
         this.contextValue = EnvironmentTreeItem.contextValue;
         this.iconPath = new ThemeIcon('server');
     }

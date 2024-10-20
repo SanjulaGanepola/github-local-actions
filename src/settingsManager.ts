@@ -1,14 +1,6 @@
 import { WorkspaceFolder } from "vscode";
-import { Workflow } from "./workflowsManager";
-
-export interface Settings {
-    environments: Environment[],
-    secrets: Secret[],
-    variables: Variable[],
-    inputs: Input[],
-    runners: Runner[],
-    containerEngines: ContainerEngine[]
-}
+import { act } from "./extension";
+import { StorageKey, StorageManager } from "./storageManager";
 
 export interface Environment {
     name: string
@@ -38,115 +30,105 @@ export interface Runner {
     selected: boolean
 }
 
-export interface ContainerEngine {
-    key: string,
-    value: string,
-    selected: boolean
-}
-
 export class SettingsManager {
-    settings: { [path: string]: Settings }
+    storageManager: StorageManager;
 
-    constructor() {
-        this.settings = {};
+    constructor(storageManager: StorageManager) {
+        this.storageManager = storageManager;
     }
 
-    getSettings(workspaceFolder: WorkspaceFolder) {
-        if (!this.settings[workspaceFolder.uri.fsPath]) {
-            this.settings[workspaceFolder.uri.fsPath] = {
-                environments: [],
-                secrets: [],
-                variables: [],
-                inputs: [],
-                runners: [],
-                containerEngines: [
-                    {
-                        key: 'DOCKER_HOST',
-                        value: '',
-                        selected: false
-                    }
-                ]
-            }
-        }
-
-        return this.settings[workspaceFolder.uri.fsPath];
-    }
-
-    getEnvironments(workflow: Workflow): Environment[] {
+    async getEnvironments(workspaceFolder: WorkspaceFolder): Promise<Environment[]> {
         const environments: Environment[] = [];
-        if (!workflow.yaml) {
-            return environments;
-        }
 
-        const jobs = workflow.yaml?.jobs;
-        if (jobs) {
-            for (const details of Object.values<any>(jobs)) {
-                if (details.environment) {
-                    environments.push({
-                        name: details.environment
-                    });
+        const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
+        for (const workflow of workflows) {
+            if (!workflow.yaml) {
+                continue;
+            }
+
+            const jobs = workflow.yaml?.jobs;
+            if (jobs) {
+                for (const details of Object.values<any>(jobs)) {
+                    if (details.environment) {
+                        const existingEnvironment = environments.find(environment => environment.name === details.environment);
+                        if (!existingEnvironment) {
+                            environments.push({
+                                name: details.environment
+                            });
+                        }
+                    }
                 }
             }
         }
 
         return environments;
     }
+    
 
-    getSecrets(workflow: Workflow): Secret[] {
-        const secrets: Secret[] = [];
-        if (!workflow.fileContent) {
-            return secrets;
+    async getSetting<T extends Secret | Variable | Input>(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey): Promise<T[]> {
+        const existingSettings = this.storageManager.get<{ [path: string]: T[] }>(storageKey) || {};
+
+        const settings: T[] = [];
+
+        const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
+        for (const workflow of workflows) {
+            if (!workflow.fileContent) {
+                continue;
+            }
+
+            settings.push(...this.findInWorkflow<T>(workflow.fileContent, regExp));
         }
 
-        return this.findInWorkflow(workflow.fileContent, /\${{\s*secrets\.(.*?)\s*}}/g);
+        if (existingSettings[workspaceFolder.uri.fsPath]) {
+            for (const [index, setting] of settings.entries()) {
+                const existingSetting = existingSettings[workspaceFolder.uri.fsPath].find(existingSetting => existingSetting.key === setting.key);
+                if (existingSetting) {
+                    settings[index] = {
+                        key: setting.key,
+                        value: existingSetting.value,
+                        selected: existingSetting.selected
+                    } as T;
+                }
+            }
+        }
+        existingSettings[workspaceFolder.uri.fsPath] = settings;
+        this.storageManager.update(storageKey, existingSettings);
+
+        return settings;
     }
 
-    getVariables(workflow: Workflow): Variable[] {
-        const variables: Variable[] = [];
-        if (!workflow.fileContent) {
-            return variables;
+    editSetting<T extends Secret | Variable | Input>(workspaceFolder: WorkspaceFolder, newSetting: T, storageKey: StorageKey) {
+        const existingSettings = this.storageManager.get<{ [path: string]: T[] }>(storageKey) || {};
+        if (existingSettings[workspaceFolder.uri.fsPath]) {
+            const index = existingSettings[workspaceFolder.uri.fsPath].findIndex(setting => setting.key === newSetting.key);
+            if (index > -1) {
+                existingSettings[workspaceFolder.uri.fsPath][index] = newSetting;
+            } else {
+                existingSettings[workspaceFolder.uri.fsPath].push(newSetting);
+            }
+        } else {
+            existingSettings[workspaceFolder.uri.fsPath] = [newSetting];
         }
 
-        return this.findInWorkflow(workflow.fileContent, /\${{\s*vars\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g);
+        this.storageManager.update(storageKey, existingSettings);
     }
 
-    getInputs(workflow: Workflow): Input[] {
-        const inputs: Variable[] = [];
-        if (!workflow.fileContent) {
-            return inputs;
+    private findInWorkflow<T extends Secret | Variable | Input>(content: string, regExp: RegExp) {
+        const results: (T)[] = [];
+
+        const matches = content.matchAll(regExp);
+        for (const match of matches) {
+            results.push({ key: match[1], value: '', selected: false } as T);
         }
 
-        return this.findInWorkflow(workflow.fileContent, /\${{\s*(?:inputs|github\.event\.inputs)\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g);
+        return results;
     }
 
-    editSecret(workspaceFolder: WorkspaceFolder, secret: Secret, newValue: string) {
-
-    }
-
-    editVariable(workspaceFolder: WorkspaceFolder, variable: Variable, newValue: string) {
-
-    }
-
-    editInput(workspaceFolder: WorkspaceFolder, input: Input, newValue: string) {
-
+    getRunners(workspaceFolder: WorkspaceFolder): Runner[] {
+        return [];
     }
 
     addRunner(workspaceFolder: WorkspaceFolder, runner: Runner) {
 
-    }
-
-    editContainerEngine(workspaceFolder: WorkspaceFolder, containerEngine: ContainerEngine, newValue: string) {
-
-    }
-
-    private findInWorkflow(content: string, regExp: RegExp) {
-        const results: (Secret | Variable | Input)[] = [];
-
-        const matches = content.matchAll(regExp);
-        for (const match of matches) {
-            results.push({ key: match[1], value: '', selected: false });
-        }
-
-        return results;
     }
 }

@@ -1,5 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
+import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SecretTreeItem from "./secret";
 
@@ -13,8 +14,13 @@ export default class SecretsTreeItem extends TreeItem implements GithubLocalActi
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
-        const workflows = await act.workflowsManager.getWorkflows(this.workspaceFolder);
-        const secrets = [...new Set(workflows.map(workflow => act.settingsManager.getSecrets(workflow)).flat())];
-        return secrets.map(secret => new SecretTreeItem(this.workspaceFolder, secret));
+        const items: GithubLocalActionsTreeItem[] = [];
+
+        const secrets = await act.settingsManager.getSetting(this.workspaceFolder, /\${{\s*secrets\.(.*?)\s*}}/g, StorageKey.Secrets);
+        for (const secret of secrets) {
+            items.push(new SecretTreeItem(this.workspaceFolder, secret));
+        }
+
+        return items;
     }
 }

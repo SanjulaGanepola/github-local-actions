@@ -259,12 +259,6 @@
         "command": "githubLocalActions.addRunner",
         "title": "Add Runner",
         "icon": "$(add)"
-      },
-      {
-        "category": "GitHub Local Actions",
-        "command": "githubLocalActions.editContainerEngine",
-        "title": "Edit Container Engine",
-        "icon": "$(edit)"
       }
     ],
     "menus": {
@@ -351,10 +345,6 @@
         },
         {
           "command": "githubLocalActions.addRunner",
-          "when": "never"
-        },
-        {
-          "command": "githubLocalActions.editContainerEngine",
           "when": "never"
         }
       ],
@@ -479,11 +469,6 @@
         {
           "command": "githubLocalActions.addRunner",
           "when": "view == settings && viewItem =~ /^githubLocalActions.runners.*/",
-          "group": "inline@0"
-        },
-        {
-          "command": "githubLocalActions.editContainerEngine",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.containerEngine(?!s).*/",
           "group": "inline@0"
         }
       ]

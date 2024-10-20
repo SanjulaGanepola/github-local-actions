@@ -45,10 +45,67 @@ export enum Event {
 }
 
 export enum Option {
-    Workflows = '--workflows',
+    ActionCachePath = '--action-cache-path',
+    ActionOfflineMode = '--action-offline-mode',
+    Actor = '--actor',
+    ArtifactServerAddr = '--artifact-server-addr',
+    ArtifactServerPath = '--artifact-server-path',
+    ArtifactServerPort = '--artifact-server-port',
+    Bind = '--bind',
+    BugReport = '--bug-report',
+    CacheServerAddr = '--cache-server-addr',
+    CacheServerPath = '--cache-server-path',
+    CacheServerPort = '--cache-server-port',
+    ContainerArchitecture = '--container-architecture',
+    ContainerCapAdd = '--container-cap-add',
+    ContainerCapDrop = '--container-cap-drop',
+    ContainerDaemonSocket = '--container-daemon-socket',
+    ContainerOptions = '--container-options',
+    DefaultBranch = '--defaultbranch',
+    DetectEvent = '--detect-event',
+    Directory = '--directory',
+    DryRun = '--dryrun',
+    Env = '--env',
+    EnvFile = '--env-file',
+    EventPath = '--eventpath',
+    GitHubInstance = '--github-instance',
+    Graph = '--graph',
+    Help = '--help',
+    Input = '--input',
+    InputFile = '--input-file',
+    InsecureSecrets = '--insecure-secrets',
     Job = '--job',
-    Variable = '--var',
-    Json = "--json"
+    Json = '--json',
+    List = '--list',
+    LocalRepository = '--local-repository',
+    LogPrefixJobId = '--log-prefix-job-id',
+    ManPage = '--man-page',
+    Matrix = '--matrix',
+    Network = '--network',
+    NoCacheServer = '--no-cache-server',
+    NoRecurse = '--no-recurse',
+    NoSkipCheckout = '--no-skip-checkout',
+    Platform = '--platform',
+    Privileged = '--privileged',
+    Pull = '--pull',
+    Quiet = '--quiet',
+    Rebuild = '--rebuild',
+    RemoteName = '--remote-name',
+    ReplaceGHEActionTokenWithGitHubCom = '--replace-ghe-action-token-with-github-com',
+    ReplaceGHEActionWithGitHubCom = '--replace-ghe-action-with-github-com',
+    Reuse = '--reuse',
+    Rm = '--rm',
+    Secret = '--secret',
+    SecretFile = '--secret-file',
+    UseGitignore = '--use-gitignore',
+    UseNewActionCache = '--use-new-action-cache',
+    Userns = '--userns',
+    Var = '--var',
+    VarFile = '--var-file',
+    Verbose = '--verbose',
+    Version = '--version',
+    Watch = '--watch',
+    Workflows = '--workflows'
 }
 
 export interface CommandArgs {
@@ -73,7 +130,7 @@ export class Act {
         this.componentsManager = new ComponentsManager();
         this.workflowsManager = new WorkflowsManager();
         this.historyManager = new HistoryManager(this.storageManager);
-        this.settingsManager = new SettingsManager();
+        this.settingsManager = new SettingsManager(this.storageManager);
 
         switch (process.platform) {
             case 'win32':
