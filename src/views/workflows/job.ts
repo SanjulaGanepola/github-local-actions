@@ -1,4 +1,4 @@
-import { ThemeIcon, TreeItem, TreeItemCollapsibleState } from "vscode";
+import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { Job, Workflow } from "../../workflowsManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
@@ -7,7 +7,7 @@ export default class JobTreeItem extends TreeItem implements GithubLocalActionsT
     job: Job;
     workflow: Workflow;
 
-    constructor(workflow: Workflow, job: Job) {
+    constructor(public workspaceFolder: WorkspaceFolder, workflow: Workflow, job: Job) {
         super(job.name, TreeItemCollapsibleState.None);
         this.workflow = workflow;
         this.job = job;

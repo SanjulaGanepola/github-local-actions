@@ -1,12 +1,12 @@
-import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem } from "vscode";
+import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, workspace } from "vscode";
 import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import ContainerEnginesTreeItem from "./containerEngines";
-import EnvironmentsTreeItem from "./environments";
-import InputsTreeItem from "./inputs";
+import ContainerEngineTreeItem from "./containerEngine";
+import InputTreeItem from "./input";
 import RunnersTreeItem from "./runners";
-import SecretsTreeItem from "./secrets";
-import VariablesTreeItem from "./variables";
+import SecretTreeItem from "./secret";
+import VariableTreeItem from "./variable";
+import WorkspaceFolderSettingsTreeItem from "./workspaceFolderSettings";
 
 export default class SettingsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
@@ -17,6 +17,21 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
         context.subscriptions.push(
             commands.registerCommand('githubLocalActions.refreshSettings', async () => {
                 this.refresh();
+            }),
+            commands.registerCommand('githubLocalActions.editSecret', async (secretTreeItem: SecretTreeItem) => {
+                //TODO: Implement
+            }),
+            commands.registerCommand('githubLocalActions.editVariable', async (variableTreeItem: VariableTreeItem) => {
+                //TODO: Implement
+            }),
+            commands.registerCommand('githubLocalActions.editInput', async (inputTreeItem: InputTreeItem) => {
+                //TODO: Implement
+            }),
+            commands.registerCommand('githubLocalActions.addRunner', async (runnersTreeItem: RunnersTreeItem) => {
+                //TODO: Implement
+            }),
+            commands.registerCommand('githubLocalActions.editContainerEngine', async (containerEngineTreeItem: ContainerEngineTreeItem) => {
+                //TODO: Implement
             })
         );
     }
@@ -42,20 +57,21 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
             return element.getChildren();
         } else {
             const items: GithubLocalActionsTreeItem[] = [];
+            let noSettings: boolean = true;
 
-            const workflows = await act.workflowsManager.getWorkflows();
-            if (workflows.length > 0) {
-                items.push(...[
-                    new EnvironmentsTreeItem(),
-                    new SecretsTreeItem(),
-                    new VariablesTreeItem(),
-                    new InputsTreeItem(),
-                    new RunnersTreeItem(),
-                    new ContainerEnginesTreeItem()
-                ]);
+            const workspaceFolders = workspace.workspaceFolders;
+            if (workspaceFolders) {
+                for (const workspaceFolder of workspaceFolders) {
+                    items.push(new WorkspaceFolderSettingsTreeItem(workspaceFolder));
+
+                    const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
+                    if (workflows.length > 0) {
+                        noSettings = false;
+                    }
+                }
             }
 
-            await commands.executeCommand('setContext', 'githubLocalActions:noSettings', items.length == 0);
+            await commands.executeCommand('setContext', 'githubLocalActions:noSettings', noSettings);
             return items;
         }
     }

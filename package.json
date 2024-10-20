@@ -193,7 +193,7 @@
         "category": "GitHub Local Actions",
         "command": "githubLocalActions.clearAll",
         "title": "Clear All",
-        "enablement": "!githubLocalActions:isRunning && !githubLocalActions:noWorkflows && workspaceFolderCount > 0",
+        "enablement": "!githubLocalActions:noHistory && !githubLocalActions:isRunning && !githubLocalActions:noWorkflows && workspaceFolderCount > 0",
         "icon": "$(clear-all)"
       },
       {
@@ -235,6 +235,36 @@
         "command": "githubLocalActions.refreshSettings",
         "title": "Refresh",
         "icon": "$(refresh)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.editSecret",
+        "title": "Edit Secret",
+        "icon": "$(edit)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.editVariable",
+        "title": "Edit Variable",
+        "icon": "$(edit)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.editInput",
+        "title": "Edit Input",
+        "icon": "$(edit)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.addRunner",
+        "title": "Add Runner",
+        "icon": "$(add)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.editContainerEngine",
+        "title": "Edit Container Engine",
+        "icon": "$(edit)"
       }
     ],
     "menus": {
@@ -305,6 +335,26 @@
         },
         {
           "command": "githubLocalActions.refreshSettings",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.editSecret",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.editVariable",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.editInput",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.addRunner",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.editContainerEngine",
           "when": "never"
         }
       ],
@@ -395,6 +445,31 @@
           "command": "githubLocalActions.remove",
           "when": "view == history && viewItem =~ /^githubLocalActions.history.*/",
           "group": "inline@3"
+        },
+        {
+          "command": "githubLocalActions.editSecret",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.secret(?!s).*/",
+          "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.editVariable",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.variable(?!s).*/",
+          "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.editInput",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.input(?!s).*/",
+          "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.addRunner",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.runners.*/",
+          "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.editContainerEngine",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.containerEngine(?!s).*/",
+          "group": "inline@0"
         }
       ]
     },

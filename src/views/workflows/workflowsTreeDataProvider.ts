@@ -3,6 +3,7 @@ import { Event } from "../../act";
 import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import WorkflowTreeItem from "./workflow";
+import WorkspaceFolderWorkflowsTreeItem from "./workspaceFolderWorkflows";
 
 export default class WorkflowsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
@@ -63,13 +64,22 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
             return element.getChildren();
         } else {
             const items: GithubLocalActionsTreeItem[] = [];
+            let noWorkflows: boolean = true;
 
-            const workflows = await act.workflowsManager.getWorkflows();
-            for (const workflow of workflows) {
-                items.push(new WorkflowTreeItem(workflow));
+            const workspaceFolders = workspace.workspaceFolders;
+            if (workspaceFolders) {
+                for (const workspaceFolder of workspaceFolders) {
+                    items.push(new WorkspaceFolderWorkflowsTreeItem(workspaceFolder));
+
+                    const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
+                    if (workflows.length > 0) {
+                        noWorkflows = false;
+                    }
+                }
+
             }
 
-            await commands.executeCommand('setContext', 'githubLocalActions:noWorkflows', items.length == 0);
+            await commands.executeCommand('setContext', 'githubLocalActions:noWorkflows', noWorkflows);
             return items;
         }
     }

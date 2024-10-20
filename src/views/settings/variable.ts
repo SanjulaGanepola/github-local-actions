@@ -1,11 +1,11 @@
-import { ThemeIcon, TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState } from "vscode";
+import { ThemeIcon, TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { Variable } from "../../settingsManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
 export default class VariableTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.variable';
 
-    constructor(variable: Variable) {
+    constructor(public workspaceFolder: WorkspaceFolder, variable: Variable) {
         super(variable.key, TreeItemCollapsibleState.None);
         this.description = variable.value;
         this.contextValue = VariableTreeItem.contextValue;

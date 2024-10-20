@@ -1,13 +1,13 @@
-import { ThemeColor, ThemeIcon, TreeItem, TreeItemCollapsibleState } from "vscode";
-import { History, HistoryStatus } from "../../act";
+import { ThemeColor, ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { DateUtils } from "../../dateUtils";
+import { History, HistoryStatus } from "../../historyManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
 export default class HistoryTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.history';
     history: History;
 
-    constructor(history: History) {
+    constructor(public workspaceFolder: WorkspaceFolder, history: History) {
         super(history.name, TreeItemCollapsibleState.None);
         this.history = history;
 

@@ -1,8 +1,9 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, extensions, TreeDataProvider, TreeItem, workspace } from "vscode";
-import { HistoryStatus } from "../../act";
 import { act } from "../../extension";
+import { HistoryStatus } from "../../historyManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import HistoryTreeItem from "./history";
+import WorkspaceFolderHistoryTreeItem from "./workspaceFolderHistory";
 
 export default class HistoryTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
@@ -16,22 +17,24 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
 
         context.subscriptions.push(
             commands.registerCommand('githubLocalActions.clearAll', async () => {
-                await act.clearAll();
+                await act.historyManager.clearAll();
             }),
             commands.registerCommand('githubLocalActions.refreshHistory', async () => {
                 this.refresh();
             }),
             commands.registerCommand('githubLocalActions.viewOutput', async (historyTreeItem: HistoryTreeItem) => {
-                await act.viewOutput(historyTreeItem.history);
+                await act.historyManager.viewOutput(historyTreeItem.history);
             }),
             commands.registerCommand('githubLocalActions.restart', async (historyTreeItem: HistoryTreeItem) => {
-                await act.runCommand(historyTreeItem.history.commandArgs);
+                await act.historyManager.restart(historyTreeItem.history);
             }),
             commands.registerCommand('githubLocalActions.stop', async (historyTreeItem: HistoryTreeItem) => {
-                await act.stop(historyTreeItem.history);
+                await act.historyManager.stop(historyTreeItem.history);
+                this.refresh();
             }),
             commands.registerCommand('githubLocalActions.remove', async (historyTreeItem: HistoryTreeItem) => {
-                await act.remove(historyTreeItem.history);
+                await act.historyManager.remove(historyTreeItem.history);
+                this.refresh();
             })
         );
     }
@@ -57,25 +60,24 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
             return element.getChildren();
         } else {
             const items: GithubLocalActionsTreeItem[] = [];
+            let isRunning: boolean = false;
+            let noHistory: boolean = true;
 
             const workspaceFolders = workspace.workspaceFolders;
-            let isRunning: boolean = false;
-            if (workspaceFolders && workspaceFolders.length > 0) {
-                //TODO: Fix for multi workspace support
-                const workspaceHistory = act.workspaceHistory[workspaceFolders[0].uri.fsPath];
-                if (workspaceHistory) {
-                    for (const history of workspaceHistory) {
-                        items.push(new HistoryTreeItem(history));
+            if (workspaceFolders) {
+                for (const workspaceFolder of workspaceFolders) {
+                    items.push(new WorkspaceFolderHistoryTreeItem(workspaceFolder));
 
-                        if (history.status === HistoryStatus.Running) {
-                            isRunning = true;
-                        }
+                    const workspaceHistory = act.historyManager.workspaceHistory[workspaceFolders[0].uri.fsPath];
+                    if (workspaceHistory.length > 0) {
+                        isRunning = act.historyManager.workspaceHistory[workspaceFolders[0].uri.fsPath].find(workspaceHistory => workspaceHistory.status === HistoryStatus.Running) !== undefined;
+                        noHistory = false;
                     }
                 }
             }
 
             await commands.executeCommand('setContext', 'githubLocalActions:isRunning', isRunning);
-            await commands.executeCommand('setContext', 'githubLocalActions:noHistory', items.length == 0);
+            await commands.executeCommand('setContext', 'githubLocalActions:noHistory', noHistory);
             return items;
         }
     }
