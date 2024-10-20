@@ -1,7 +1,9 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, window, workspace } from "vscode";
 import { Event } from "../../act";
 import { act } from "../../extension";
+import { Utils } from "../../utils";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
+import JobTreeItem from "./job";
 import WorkflowTreeItem from "./workflow";
 import WorkspaceFolderWorkflowsTreeItem from "./workspaceFolderWorkflows";
 
@@ -12,18 +14,23 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
 
     constructor(context: ExtensionContext) {
         context.subscriptions.push(
-            commands.registerCommand('githubLocalActions.runAllWorkflows', async () => {
-                await act.runAllWorkflows();
+            commands.registerCommand('githubLocalActions.runAllWorkflows', async (workspaceFolderWorkflowsTreeItem?: WorkspaceFolderWorkflowsTreeItem) => {
+                const workspaceFolder = await Utils.getWorkspaceFolder(workspaceFolderWorkflowsTreeItem?.workspaceFolder);
+                if (workspaceFolder) {
+                    await act.runAllWorkflows(workspaceFolder);
+                }
             }),
-            commands.registerCommand('githubLocalActions.runEvent', async () => {
-                const event = await window.showQuickPick(Object.values(Event), {
-                    title: 'Select the event to run',
-                    placeHolder: 'Event'
-                });
+            commands.registerCommand('githubLocalActions.runEvent', async (workspaceFolderWorkflowsTreeItem?: WorkspaceFolderWorkflowsTreeItem) => {
+                const workspaceFolder = await Utils.getWorkspaceFolder(workspaceFolderWorkflowsTreeItem?.workspaceFolder);
+                if (workspaceFolder) {
+                    const event = await window.showQuickPick(Object.values(Event), {
+                        title: 'Select the event to run',
+                        placeHolder: 'Event'
+                    });
 
-                if (event) {
-                    // TODO: Implement running event
-                    // await act.runEvent(event as Event);
+                    if (event) {
+                        await act.runEvent(workspaceFolder, event as Event);
+                    }
                 }
             }),
             commands.registerCommand('githubLocalActions.refreshWorkflows', async () => {
@@ -34,11 +41,10 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 await window.showTextDocument(document);
             }),
             commands.registerCommand('githubLocalActions.runWorkflow', async (workflowTreeItem: WorkflowTreeItem) => {
-                await act.runWorkflow(workflowTreeItem.workflow);
+                await act.runWorkflow(workflowTreeItem.workspaceFolder, workflowTreeItem.workflow);
             }),
-            commands.registerCommand('githubLocalActions.runJob', async (workflowTreeItem: WorkflowTreeItem) => {
-                // TODO: Implement running job
-                // await act.runJob()
+            commands.registerCommand('githubLocalActions.runJob', async (jobTreeItem: JobTreeItem) => {
+                await act.runJob(jobTreeItem.workspaceFolder, jobTreeItem.workflow, jobTreeItem.job);
             })
         );
     }
@@ -68,15 +74,18 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
 
             const workspaceFolders = workspace.workspaceFolders;
             if (workspaceFolders) {
-                for (const workspaceFolder of workspaceFolders) {
-                    items.push(new WorkspaceFolderWorkflowsTreeItem(workspaceFolder));
+                if (workspaceFolders.length === 1) {
+                    return await new WorkspaceFolderWorkflowsTreeItem(workspaceFolders[0]).getChildren();
+                } else if (workspaceFolders.length > 1) {
+                    for (const workspaceFolder of workspaceFolders) {
+                        items.push(new WorkspaceFolderWorkflowsTreeItem(workspaceFolder));
 
-                    const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
-                    if (workflows.length > 0) {
-                        noWorkflows = false;
+                        const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
+                        if (workflows.length > 0) {
+                            noWorkflows = false;
+                        }
                     }
                 }
-
             }
 
             await commands.executeCommand('setContext', 'githubLocalActions:noWorkflows', noWorkflows);

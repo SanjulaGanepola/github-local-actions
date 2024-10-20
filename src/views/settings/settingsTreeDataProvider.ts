@@ -61,12 +61,16 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
 
             const workspaceFolders = workspace.workspaceFolders;
             if (workspaceFolders) {
-                for (const workspaceFolder of workspaceFolders) {
-                    items.push(new WorkspaceFolderSettingsTreeItem(workspaceFolder));
+                if (workspaceFolders.length === 1) {
+                    return await new WorkspaceFolderSettingsTreeItem(workspaceFolders[0]).getChildren();
+                } else if (workspaceFolders.length > 1) {
+                    for (const workspaceFolder of workspaceFolders) {
+                        items.push(new WorkspaceFolderSettingsTreeItem(workspaceFolder));
 
-                    const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
-                    if (workflows.length > 0) {
-                        noSettings = false;
+                        const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
+                        if (workflows.length > 0) {
+                            noSettings = false;
+                        }
                     }
                 }
             }

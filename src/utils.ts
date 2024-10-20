@@ -1,4 +1,6 @@
-export namespace DateUtils {
+import { window, workspace, WorkspaceFolder } from "vscode";
+
+export namespace Utils {
     /**
      * Get date time string.
      * 
@@ -36,5 +38,22 @@ export namespace DateUtils {
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
         return `${minutes}m ${seconds}s`;
+    }
+
+    /**
+     * Get the provided workspace folder or the first one if there are multiple.
+     */
+    export async function getWorkspaceFolder(workspaceFolder?: WorkspaceFolder) {
+        if (workspaceFolder) {
+            return workspaceFolder;
+        } else {
+            const workspaceFolders = workspace.workspaceFolders;
+            if (workspaceFolders && workspaceFolders.length > 0) {
+                return workspaceFolders[0];
+            } else {
+                await window.showErrorMessage('Failed to find a workspace folder');
+                return;
+            }
+        }
     }
 }

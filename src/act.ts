@@ -1,12 +1,12 @@
 import * as child_process from 'child_process';
 import * as path from "path";
-import { commands, CustomExecution, env, EventEmitter, ExtensionContext, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, workspace, WorkspaceFolder } from "vscode";
+import { commands, CustomExecution, env, EventEmitter, ExtensionContext, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
 import { historyTreeDataProvider } from './extension';
 import { HistoryManager, HistoryStatus } from './historyManager';
 import { SettingsManager } from './settingsManager';
 import { StorageKey, StorageManager } from './storageManager';
-import { Workflow, WorkflowsManager } from "./workflowsManager";
+import { Job, Workflow, WorkflowsManager } from "./workflowsManager";
 
 export enum Event {
     BranchProtectionRule = 'branch_protection_rule',
@@ -127,35 +127,48 @@ export class Act {
         }
     }
 
-    async runAllWorkflows() {
-        // TODO: Implement
+    async runAllWorkflows(workspaceFolder: WorkspaceFolder) {
+        return await this.runCommand({
+            workspaceFolder: workspaceFolder,
+            options: ``,
+            name: workspaceFolder.name,
+            typeText: []
+        });
     }
 
-    async runWorkflow(workflow: Workflow) {
-        const workspaceFolder = workspace.getWorkspaceFolder(workflow.uri);
-        if (workspaceFolder) {
-            return await this.runCommand({
-                workspaceFolder: workspaceFolder,
-                options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`,
-                name: workflow.name,
-                typeText: [
-                    `Workflow:     ${workflow.name}`
-                ]
-            });
-        } else {
-            window.showErrorMessage(`Failed to locate workspace folder for ${workflow.uri.fsPath}`);
-        }
+    async runWorkflow(workspaceFolder: WorkspaceFolder, workflow: Workflow) {
+        return await this.runCommand({
+            workspaceFolder: workspaceFolder,
+            options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`,
+            name: workflow.name,
+            typeText: [
+                `Workflow:     ${workflow.name}`
+            ]
+        });
     }
 
-    // TODO: Implement
-    // async runJob(workspaceFolder: WorkspaceFolder, workflow: Workflow, job: Job) {
-    //     return await this.runCommand(workspaceFolder, `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}" ${Option.Job} "${job.id}"`, `${workflow.name}/${job.name}`, [`Workflow:     ${workflow.name}`, `Job:          ${job.name}`]);
-    // }
+    async runJob(workspaceFolder: WorkspaceFolder, workflow: Workflow, job: Job) {
+        return await this.runCommand({
+            workspaceFolder: workspaceFolder,
+            options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}" ${Option.Job} "${job.id}"`,
+            name: `${workflow.name}/${job.name}`,
+            typeText: [
+                `Workflow:     ${workflow.name}`,
+                `Job:          ${job.name}`
+            ]
+        });
+    }
 
-    // TODO: Implement
-    // async runEvent(workspaceFolder: WorkspaceFolder, event: Event) {
-    //     return await this.runCommand(workspaceFolder, `${Option.Workflows} ${event}`, event, [`Event:        ${event}`]);
-    // }
+    async runEvent(workspaceFolder: WorkspaceFolder, event: Event) {
+        return await this.runCommand({
+            workspaceFolder: workspaceFolder,
+            options: event,
+            name: event,
+            typeText: [
+                `Event:        ${event}`
+            ]
+        });
+    }
 
     async runCommand(commandArgs: CommandArgs) {
         const command = `${Act.base} ${Option.Json} ${commandArgs.options}`;
@@ -289,7 +302,7 @@ export class Act {
                         writeEmitter.fire(`Environments: OSSBUILD\r\n`);
                         writeEmitter.fire(`Variables:    VARIABLE1=ABC, VARIABLE2=DEF\r\n`);
                         writeEmitter.fire(`Secrets:      SECRET1=ABC, SECRET2=DEF\r\n`);
-                        writeEmitter.fire(`Command:      ${command}\r\n`);
+                        writeEmitter.fire(`Command:      ${command.replace(` ${Option.Json}`, ``)}\r\n`);
                         writeEmitter.fire(`\r\n`);
                     },
 

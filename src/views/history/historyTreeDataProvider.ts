@@ -1,6 +1,7 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, extensions, TreeDataProvider, TreeItem, workspace } from "vscode";
 import { act } from "../../extension";
 import { HistoryStatus } from "../../historyManager";
+import { Utils } from "../../utils";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import HistoryTreeItem from "./history";
 import WorkspaceFolderHistoryTreeItem from "./workspaceFolderHistory";
@@ -16,8 +17,11 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
         });
 
         context.subscriptions.push(
-            commands.registerCommand('githubLocalActions.clearAll', async () => {
-                await act.historyManager.clearAll();
+            commands.registerCommand('githubLocalActions.clearAll', async (workspaceFolderHistoryTreeItem?: WorkspaceFolderHistoryTreeItem) => {
+                const workspaceFolder = await Utils.getWorkspaceFolder(workspaceFolderHistoryTreeItem?.workspaceFolder);
+                if (workspaceFolder) {
+                    await act.historyManager.clearAll(workspaceFolder);
+                }
             }),
             commands.registerCommand('githubLocalActions.refreshHistory', async () => {
                 this.refresh();
@@ -65,13 +69,17 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
 
             const workspaceFolders = workspace.workspaceFolders;
             if (workspaceFolders) {
-                for (const workspaceFolder of workspaceFolders) {
-                    items.push(new WorkspaceFolderHistoryTreeItem(workspaceFolder));
+                if (workspaceFolders.length === 1) {
+                    return await new WorkspaceFolderHistoryTreeItem(workspaceFolders[0]).getChildren();
+                } else if (workspaceFolders.length > 1) {
+                    for (const workspaceFolder of workspaceFolders) {
+                        items.push(new WorkspaceFolderHistoryTreeItem(workspaceFolder));
 
-                    const workspaceHistory = act.historyManager.workspaceHistory[workspaceFolders[0].uri.fsPath];
-                    if (workspaceHistory.length > 0) {
-                        isRunning = act.historyManager.workspaceHistory[workspaceFolders[0].uri.fsPath].find(workspaceHistory => workspaceHistory.status === HistoryStatus.Running) !== undefined;
-                        noHistory = false;
+                        const workspaceHistory = act.historyManager.workspaceHistory[workspaceFolders[0].uri.fsPath];
+                        if (workspaceHistory.length > 0) {
+                            isRunning = act.historyManager.workspaceHistory[workspaceFolders[0].uri.fsPath].find(workspaceHistory => workspaceHistory.status === HistoryStatus.Running) !== undefined;
+                            noHistory = false;
+                        }
                     }
                 }
             }

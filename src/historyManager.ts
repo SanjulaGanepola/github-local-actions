@@ -1,4 +1,4 @@
-import { TaskExecution, window, workspace } from "vscode";
+import { TaskExecution, window, workspace, WorkspaceFolder } from "vscode";
 import { CommandArgs } from "./act";
 import { act, historyTreeDataProvider } from "./extension";
 import { StorageKey, StorageManager } from "./storageManager";
@@ -42,16 +42,10 @@ export class HistoryManager {
         this.workspaceHistory = workspaceHistory;
     }
 
-    async clearAll() {
-        //TODO: Fix for multi workspace support
-        const workspaceFolders = workspace.workspaceFolders;
-        if (workspaceFolders && workspaceFolders.length > 0) {
-            for (const workspaceFolder of workspaceFolders) {
-                this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
-                historyTreeDataProvider.refresh();
-                this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
-            }
-        }
+    async clearAll(workspaceFolder: WorkspaceFolder) {
+        this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
+        historyTreeDataProvider.refresh();
+        this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
     }
 
     async viewOutput(history: History) {

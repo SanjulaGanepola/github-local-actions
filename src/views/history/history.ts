@@ -1,6 +1,6 @@
 import { ThemeColor, ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
-import { DateUtils } from "../../dateUtils";
 import { History, HistoryStatus } from "../../historyManager";
+import { Utils } from "../../utils";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
 export default class HistoryTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
@@ -13,7 +13,7 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
 
         let totalDuration: string | undefined;
         if (history.date) {
-            totalDuration = DateUtils.getTimeDuration(history.date.start, history.date.end);
+            totalDuration = Utils.getTimeDuration(history.date.start, history.date.end);
         }
 
         this.description = totalDuration;
@@ -34,8 +34,8 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
         }
         this.tooltip = `Name: ${history.name}\n` +
             `Status: ${history.status}\n` +
-            `Started: ${history.date ? DateUtils.getDateString(history.date.start) : 'N/A'}\n` +
-            `Ended: ${history.date ? DateUtils.getDateString(history.date.end) : 'N/A'}\n` +
+            `Started: ${history.date ? Utils.getDateString(history.date.start) : 'N/A'}\n` +
+            `Ended: ${history.date ? Utils.getDateString(history.date.end) : 'N/A'}\n` +
             (totalDuration ? `Total Duration: ${totalDuration}\n` : ``);
     }
 
