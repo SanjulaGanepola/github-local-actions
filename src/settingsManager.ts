@@ -32,6 +32,9 @@ export interface Runner {
 
 export class SettingsManager {
     storageManager: StorageManager;
+    static secretsRegExp: RegExp = /\${{\s*secrets\.(.*?)\s*}}/g;
+    static variablesRegExp: RegExp = /\${{\s*vars\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
+    static inputsRegExp: RegExp = /\${{\s*(?:inputs|github\.event\.inputs)\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
 
     constructor(storageManager: StorageManager) {
         this.storageManager = storageManager;
@@ -63,7 +66,7 @@ export class SettingsManager {
 
         return environments;
     }
-    
+
 
     async getSetting<T extends Secret | Variable | Input>(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey): Promise<T[]> {
         const existingSettings = this.storageManager.get<{ [path: string]: T[] }>(storageKey) || {};
@@ -76,7 +79,13 @@ export class SettingsManager {
                 continue;
             }
 
-            settings.push(...this.findInWorkflow<T>(workflow.fileContent, regExp));
+            const workflowSettings = this.findInWorkflow<T>(workflow.fileContent, regExp);
+            for (const workflowSetting of workflowSettings) {
+                const existingSetting = settings.find(setting => setting.key === workflowSetting.key);
+                if (!existingSetting) {
+                    settings.push(workflowSetting);
+                }
+            }
         }
 
         if (existingSettings[workspaceFolder.uri.fsPath]) {
@@ -97,7 +106,7 @@ export class SettingsManager {
         return settings;
     }
 
-    editSetting<T extends Secret | Variable | Input>(workspaceFolder: WorkspaceFolder, newSetting: T, storageKey: StorageKey) {
+    async editSetting<T extends Secret | Variable | Input>(workspaceFolder: WorkspaceFolder, newSetting: T, storageKey: StorageKey) {
         const existingSettings = this.storageManager.get<{ [path: string]: T[] }>(storageKey) || {};
         if (existingSettings[workspaceFolder.uri.fsPath]) {
             const index = existingSettings[workspaceFolder.uri.fsPath].findIndex(setting => setting.key === newSetting.key);
@@ -110,7 +119,7 @@ export class SettingsManager {
             existingSettings[workspaceFolder.uri.fsPath] = [newSetting];
         }
 
-        this.storageManager.update(storageKey, existingSettings);
+        await this.storageManager.update(storageKey, existingSettings);
     }
 
     private findInWorkflow<T extends Secret | Variable | Input>(content: string, regExp: RegExp) {

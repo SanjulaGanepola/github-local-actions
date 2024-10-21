@@ -1,5 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
+import { SettingsManager } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import InputTreeItem from "./input";
@@ -16,7 +17,7 @@ export default class InputsTreeItem extends TreeItem implements GithubLocalActio
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
         const items: GithubLocalActionsTreeItem[] = [];
 
-        const inputs = await act.settingsManager.getSetting(this.workspaceFolder, /\${{\s*(?:inputs|github\.event\.inputs)\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g, StorageKey.Inputs);
+        const inputs = await act.settingsManager.getSetting(this.workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs);
         for (const input of inputs) {
             items.push(new InputTreeItem(this.workspaceFolder, input));
         }

@@ -1,10 +1,14 @@
 import * as vscode from 'vscode';
-import { window, workspace } from 'vscode';
+import { TreeCheckboxChangeEvent, window, workspace } from 'vscode';
 import { Act } from './act';
 import ComponentsTreeDataProvider from './views/components/componentsTreeDataProvider';
 import { DecorationProvider } from './views/decorationProvider';
+import { GithubLocalActionsTreeItem } from './views/githubLocalActionsTreeItem';
 import HistoryTreeDataProvider from './views/history/historyTreeDataProvider';
+import InputTreeItem from './views/settings/input';
+import SecretTreeItem from './views/settings/secret';
 import SettingsTreeDataProvider from './views/settings/settingsTreeDataProvider';
+import VariableTreeItem from './views/settings/variable';
 import WorkflowsTreeDataProvider from './views/workflows/workflowsTreeDataProvider';
 
 export let act: Act;
@@ -28,6 +32,9 @@ export function activate(context: vscode.ExtensionContext) {
 	const historyTreeView = window.createTreeView(HistoryTreeDataProvider.VIEW_ID, { treeDataProvider: historyTreeDataProvider });
 	settingsTreeDataProvider = new SettingsTreeDataProvider(context);
 	const settingsTreeView = window.createTreeView(SettingsTreeDataProvider.VIEW_ID, { treeDataProvider: settingsTreeDataProvider });
+	settingsTreeView.onDidChangeCheckboxState(async (event: TreeCheckboxChangeEvent<GithubLocalActionsTreeItem>) => {
+		await settingsTreeDataProvider.onDidChangeCheckboxState(event as TreeCheckboxChangeEvent<SecretTreeItem | VariableTreeItem | InputTreeItem>);
+	});
 
 	// Create file watcher
 	const workflowsFileWatcher = workspace.createFileSystemWatcher('**/.github/workflows/*.{yml,yaml}');

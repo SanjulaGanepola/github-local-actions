@@ -1,4 +1,4 @@
-import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, window, workspace } from "vscode";
+import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeCheckboxChangeEvent, TreeDataProvider, TreeItem, TreeItemCheckboxState, window, workspace } from "vscode";
 import { act } from "../../extension";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
@@ -26,8 +26,8 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                     password: true
                 });
 
-                if (newValue) {
-                    act.settingsManager.editSetting(secretTreeItem.workspaceFolder, { key: secretTreeItem.secret.key, value: newValue, selected: secretTreeItem.secret.selected }, StorageKey.Secrets);
+                if (newValue !== undefined) {
+                    await act.settingsManager.editSetting(secretTreeItem.workspaceFolder, { key: secretTreeItem.secret.key, value: newValue, selected: secretTreeItem.secret.selected }, StorageKey.Secrets);
                     this.refresh();
                 }
             }),
@@ -38,8 +38,8 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                     value: variableTreeItem.variable.value
                 });
 
-                if (newValue) {
-                    act.settingsManager.editSetting(variableTreeItem.workspaceFolder, { key: variableTreeItem.variable.key, value: newValue, selected: variableTreeItem.variable.selected }, StorageKey.Variables);
+                if (newValue !== undefined) {
+                    await act.settingsManager.editSetting(variableTreeItem.workspaceFolder, { key: variableTreeItem.variable.key, value: newValue, selected: variableTreeItem.variable.selected }, StorageKey.Variables);
                     this.refresh();
                 }
             }),
@@ -50,8 +50,8 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                     value: inputTreeItem.input.value
                 });
 
-                if (newValue) {
-                    act.settingsManager.editSetting(inputTreeItem.workspaceFolder, { key: inputTreeItem.input.key, value: newValue, selected: inputTreeItem.input.selected }, StorageKey.Inputs);
+                if (newValue !== undefined) {
+                    await act.settingsManager.editSetting(inputTreeItem.workspaceFolder, { key: inputTreeItem.input.key, value: newValue, selected: inputTreeItem.input.selected }, StorageKey.Inputs);
                     this.refresh();
                 }
             }),
@@ -75,6 +75,18 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
         }
 
         return element;
+    }
+
+    async onDidChangeCheckboxState(event: TreeCheckboxChangeEvent<SecretTreeItem | VariableTreeItem | InputTreeItem>) {
+        for await (const [treeItem, state] of event.items) {
+            if (treeItem instanceof SecretTreeItem) {
+                await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.secret.key, value: treeItem.secret.value, selected: state === TreeItemCheckboxState.Checked }, StorageKey.Secrets);
+            } else if (treeItem instanceof VariableTreeItem) {
+                await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.variable.key, value: treeItem.variable.value, selected: state === TreeItemCheckboxState.Checked }, StorageKey.Variables);
+            } else {
+                await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.input.key, value: treeItem.input.value, selected: state === TreeItemCheckboxState.Checked }, StorageKey.Inputs);
+            }
+        }
     }
 
     async getChildren(element?: GithubLocalActionsTreeItem): Promise<GithubLocalActionsTreeItem[]> {

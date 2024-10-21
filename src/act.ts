@@ -47,11 +47,11 @@ export enum Event {
 export enum Option {
     ActionCachePath = '--action-cache-path',
     ActionOfflineMode = '--action-offline-mode',
-    Actor = '--actor',
+    Actor = '--a',
     ArtifactServerAddr = '--artifact-server-addr',
     ArtifactServerPath = '--artifact-server-path',
     ArtifactServerPort = '--artifact-server-port',
-    Bind = '--bind',
+    Bind = '--b',
     BugReport = '--bug-report',
     CacheServerAddr = '--cache-server-addr',
     CacheServerPath = '--cache-server-path',
@@ -63,20 +63,20 @@ export enum Option {
     ContainerOptions = '--container-options',
     DefaultBranch = '--defaultbranch',
     DetectEvent = '--detect-event',
-    Directory = '--directory',
-    DryRun = '--dryrun',
+    Directory = '--C',
+    DryRun = '--n',
     Env = '--env',
     EnvFile = '--env-file',
-    EventPath = '--eventpath',
+    EventPath = '--e',
     GitHubInstance = '--github-instance',
-    Graph = '--graph',
-    Help = '--help',
+    Graph = '--g',
+    Help = '--h',
     Input = '--input',
     InputFile = '--input-file',
     InsecureSecrets = '--insecure-secrets',
-    Job = '--job',
+    Job = '--j',
     Json = '--json',
-    List = '--list',
+    List = '--l',
     LocalRepository = '--local-repository',
     LogPrefixJobId = '--log-prefix-job-id',
     ManPage = '--man-page',
@@ -85,15 +85,15 @@ export enum Option {
     NoCacheServer = '--no-cache-server',
     NoRecurse = '--no-recurse',
     NoSkipCheckout = '--no-skip-checkout',
-    Platform = '--platform',
+    Platform = '--P',
     Privileged = '--privileged',
-    Pull = '--pull',
-    Quiet = '--quiet',
+    Pull = '--p',
+    Quiet = '--q',
     Rebuild = '--rebuild',
     RemoteName = '--remote-name',
     ReplaceGHEActionTokenWithGitHubCom = '--replace-ghe-action-token-with-github-com',
     ReplaceGHEActionWithGitHubCom = '--replace-ghe-action-with-github-com',
-    Reuse = '--reuse',
+    Reuse = '--r',
     Rm = '--rm',
     Secret = '--secret',
     SecretFile = '--secret-file',
@@ -102,17 +102,17 @@ export enum Option {
     Userns = '--userns',
     Var = '--var',
     VarFile = '--var-file',
-    Verbose = '--verbose',
+    Verbose = '--v',
     Version = '--version',
-    Watch = '--watch',
-    Workflows = '--workflows'
+    Watch = '--w',
+    Workflows = '--W'
 }
 
 export interface CommandArgs {
     workspaceFolder: WorkspaceFolder,
     options: string,
     name: string,
-    typeText: string[]
+    extraHeader: { key: string, value: string }[]
 }
 
 export class Act {
@@ -189,7 +189,7 @@ export class Act {
             workspaceFolder: workspaceFolder,
             options: ``,
             name: workspaceFolder.name,
-            typeText: []
+            extraHeader: []
         });
     }
 
@@ -198,8 +198,8 @@ export class Act {
             workspaceFolder: workspaceFolder,
             options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`,
             name: workflow.name,
-            typeText: [
-                `Workflow:     ${workflow.name}`
+            extraHeader: [
+                { key: 'Workflow', value: workflow.name }
             ]
         });
     }
@@ -209,9 +209,9 @@ export class Act {
             workspaceFolder: workspaceFolder,
             options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}" ${Option.Job} "${job.id}"`,
             name: `${workflow.name}/${job.name}`,
-            typeText: [
-                `Workflow:     ${workflow.name}`,
-                `Job:          ${job.name}`
+            extraHeader: [
+                { key: 'Workflow', value: workflow.name },
+                { key: 'Job', value: job.name }
             ]
         });
     }
@@ -221,15 +221,13 @@ export class Act {
             workspaceFolder: workspaceFolder,
             options: event,
             name: event,
-            typeText: [
-                `Event:        ${event}`
+            extraHeader: [
+                { key: 'Event', value: event }
             ]
         });
     }
 
     async runCommand(commandArgs: CommandArgs) {
-        const command = `${Act.base} ${Option.Json} ${commandArgs.options}`;
-
         const unreadyComponents = await this.componentsManager.getUnreadyComponents();
         if (unreadyComponents.length > 0) {
             window.showErrorMessage(`The following required components are not ready: ${unreadyComponents.map(component => component.name).join(', ')}`, 'Fix...').then(async value => {
@@ -240,12 +238,6 @@ export class Act {
             return;
         }
 
-        if (!this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath]) {
-            this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath] = [];
-            this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-        }
-
-        const historyIndex = this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length;
         const taskExecution = await tasks.executeTask({
             name: commandArgs.name,
             detail: 'Run workflow',
@@ -266,6 +258,48 @@ export class Act {
             runOptions: {},
             group: TaskGroup.Build,
             execution: new CustomExecution(async (resolvedDefinition: TaskDefinition): Promise<Pseudoterminal> => {
+                const environments = await this.settingsManager.getEnvironments(commandArgs.workspaceFolder);
+                const secrets = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets)).filter(secret => secret.selected && secret.value);
+                const variables = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables)).filter(variable => variable.selected && variable.value);
+                const inputs = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs)).filter(input => input.selected && input.value);
+
+
+
+                // TODO: Fix secrets, variables, and inputs in below command
+                // How to pass in secrets
+                // Is there any point to show environments in the header? Is it needed in the tree view?
+
+
+                const command = `${Act.base} ${Option.Json} ${commandArgs.options}`;
+
+
+
+
+
+
+
+
+
+
+
+
+
+                const historyIndex = this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length;
+                if (!this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath]) {
+                    this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath] = [];
+                    this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+                }
+
+                this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].push({
+                    index: historyIndex,
+                    name: `${commandArgs.name} #${this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length + 1}`,
+                    status: HistoryStatus.Running,
+                    taskExecution: taskExecution,
+                    commandArgs: commandArgs
+                });
+                historyTreeDataProvider.refresh();
+                this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+
                 const writeEmitter = new EventEmitter<string>();
                 const closeEmitter = new EventEmitter<number>();
 
@@ -292,18 +326,6 @@ export class Act {
                     }
                 }
                 const handleIO = (data: any) => {
-                    if (typeof this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex] === 'undefined') {
-                        this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].push({
-                            index: historyIndex,
-                            name: `${commandArgs.name} #${this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length + 1}`,
-                            status: HistoryStatus.Running,
-                            taskExecution: taskExecution,
-                            commandArgs: commandArgs
-                        });
-                        historyTreeDataProvider.refresh();
-                        this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-                    }
-
                     const lines: string[] = data.toString().split('\n').filter((line: string) => line != '');
                     for (const line of lines) {
                         let jsonLine: any;
@@ -351,16 +373,36 @@ export class Act {
                     onDidWrite: writeEmitter.event,
                     onDidClose: closeEmitter.event,
                     open: async (initialDimensions: TerminalDimensions | undefined): Promise<void> => {
-                        writeEmitter.fire(`Name:         ${commandArgs.name}\r\n`);
-                        writeEmitter.fire(`Path:         ${commandArgs.workspaceFolder.uri.fsPath}\r\n`);
-                        for (const text of commandArgs.typeText) {
-                            writeEmitter.fire(`${text}\r\n`);
+                        let headerText: string = '';
+                        const addMultipleEntries = (key: string, values: string[]): { key: string, value: string }[] => {
+                            if (values.length === 0) return [];
+                            return values.map((value, index) => ({
+                                key: index === 0 ? key : '',  // Show the key only for the first entry
+                                value
+                            }));
+                        };
+
+                        const header: { key: string, value: string }[] = [
+                            { key: 'Name', value: commandArgs.name },
+                            { key: 'Path', value: commandArgs.workspaceFolder.uri.fsPath },
+                            ...commandArgs.extraHeader,
+                            ...addMultipleEntries('Environments', environments.map(env => env.name)),
+                            ...addMultipleEntries('Variables', variables.map(variable => `${variable.key}=${variable.value}`)),
+                            ...addMultipleEntries('Secrets', secrets.map(secret => `${secret.key}=••••••••`)),
+                            ...addMultipleEntries('Inputs', inputs.map(input => `${input.key}=${input.value}`)),
+                            { key: 'Command', value: command.replace(` ${Option.Json}`, ``) }
+                        ];
+
+                        const maxKeyLength = Math.max(...header.map(item => item.key.length));
+                        for (const { key, value } of header) {
+                            const spaces = ' '.repeat(maxKeyLength - key.length + 1);
+                            headerText += key ? `${key}:${spaces}${value}\r\n` : ` ${spaces}${value}\r\n`;
                         }
-                        writeEmitter.fire(`Environments: OSSBUILD\r\n`);
-                        writeEmitter.fire(`Variables:    VARIABLE1=ABC, VARIABLE2=DEF\r\n`);
-                        writeEmitter.fire(`Secrets:      SECRET1=ABC, SECRET2=DEF\r\n`);
-                        writeEmitter.fire(`Command:      ${command.replace(` ${Option.Json}`, ``)}\r\n`);
-                        writeEmitter.fire(`\r\n`);
+
+                        const maxValueLength = Math.max(...header.map(item => item.value.length));
+                        const borderText = '-'.repeat(maxKeyLength + 2 + maxValueLength);
+
+                        writeEmitter.fire(`${borderText}\r\n${headerText}${borderText}\r\n\r\n`);
                     },
 
                     close: () => {
