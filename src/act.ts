@@ -263,27 +263,10 @@ export class Act {
                 const inputs = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs)).filter(input => input.selected && input.value);
                 const runners = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners)).filter(runner => runner.selected && runner.value);
 
-
-                // TODO: Fix secrets, variables, and inputs in below command
-                // How to pass in secrets
-                // Is there any point to show environments in the header? Is it needed in the tree view?
                 const variablesOption = variables.length > 0 ? `${Option.Var} ${variables.map(variable => `${variable.key}=${variable.value}`).join(` ${Option.Var} `)}` : ``;
                 const inputsOption = inputs.length > 0 ? `${Option.Input} ${inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``;
                 const runnersOption = runners.length > 0 ? `${Option.Platform} ${runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``;
-
                 const command = `${Act.base} ${Option.Json} ${variablesOption} ${inputsOption} ${runnersOption} ${commandArgs.options}`;
-
-
-
-
-
-
-
-
-
-
-
-
 
                 const historyIndex = this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length;
                 if (!this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath]) {
