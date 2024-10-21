@@ -2,29 +2,7 @@ import { WorkspaceFolder } from "vscode";
 import { act } from "./extension";
 import { StorageKey, StorageManager } from "./storageManager";
 
-export interface Environment {
-    name: string
-}
-
-export interface Secret {
-    key: string,
-    value: string,
-    selected: boolean
-}
-
-export interface Variable {
-    key: string,
-    value: string,
-    selected: boolean
-}
-
-export interface Input {
-    key: string,
-    value: string,
-    selected: boolean
-}
-
-export interface Runner {
+export interface Setting {
     key: string,
     value: string,
     selected: boolean
@@ -35,43 +13,14 @@ export class SettingsManager {
     static secretsRegExp: RegExp = /\${{\s*secrets\.(.*?)\s*}}/g;
     static variablesRegExp: RegExp = /\${{\s*vars\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
     static inputsRegExp: RegExp = /\${{\s*(?:inputs|github\.event\.inputs)\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
+    static runnersRegExp: RegExp = /runs-on:\s*(.+)/g;
 
     constructor(storageManager: StorageManager) {
         this.storageManager = storageManager;
     }
 
-    async getEnvironments(workspaceFolder: WorkspaceFolder): Promise<Environment[]> {
-        const environments: Environment[] = [];
-
-        const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
-        for (const workflow of workflows) {
-            if (!workflow.yaml) {
-                continue;
-            }
-
-            const jobs = workflow.yaml?.jobs;
-            if (jobs) {
-                for (const details of Object.values<any>(jobs)) {
-                    if (details.environment) {
-                        const existingEnvironment = environments.find(environment => environment.name === details.environment);
-                        if (!existingEnvironment) {
-                            environments.push({
-                                name: details.environment
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        return environments;
-    }
-
-
-    async getSetting<T extends Secret | Variable | Input>(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey): Promise<T[]> {
-        const existingSettings = this.storageManager.get<{ [path: string]: T[] }>(storageKey) || {};
-
-        const settings: T[] = [];
+    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey): Promise<Setting[]> {
+        const settings: Setting[] = [];
 
         const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
         for (const workflow of workflows) {
@@ -79,7 +28,7 @@ export class SettingsManager {
                 continue;
             }
 
-            const workflowSettings = this.findInWorkflow<T>(workflow.fileContent, regExp);
+            const workflowSettings = this.findInWorkflow(workflow.fileContent, regExp);
             for (const workflowSetting of workflowSettings) {
                 const existingSetting = settings.find(setting => setting.key === workflowSetting.key);
                 if (!existingSetting) {
@@ -88,6 +37,7 @@ export class SettingsManager {
             }
         }
 
+        const existingSettings = this.storageManager.get<{ [path: string]: Setting[] }>(storageKey) || {};
         if (existingSettings[workspaceFolder.uri.fsPath]) {
             for (const [index, setting] of settings.entries()) {
                 const existingSetting = existingSettings[workspaceFolder.uri.fsPath].find(existingSetting => existingSetting.key === setting.key);
@@ -96,7 +46,7 @@ export class SettingsManager {
                         key: setting.key,
                         value: existingSetting.value,
                         selected: existingSetting.selected
-                    } as T;
+                    };
                 }
             }
         }
@@ -106,8 +56,9 @@ export class SettingsManager {
         return settings;
     }
 
-    async editSetting<T extends Secret | Variable | Input>(workspaceFolder: WorkspaceFolder, newSetting: T, storageKey: StorageKey) {
-        const existingSettings = this.storageManager.get<{ [path: string]: T[] }>(storageKey) || {};
+    async editSetting(workspaceFolder: WorkspaceFolder, newSetting: Setting, storageKey: StorageKey) {
+        const existingSettings = this.storageManager.get<{ [path: string]: Setting[] }>(storageKey) || {};
+
         if (existingSettings[workspaceFolder.uri.fsPath]) {
             const index = existingSettings[workspaceFolder.uri.fsPath].findIndex(setting => setting.key === newSetting.key);
             if (index > -1) {
@@ -122,22 +73,14 @@ export class SettingsManager {
         await this.storageManager.update(storageKey, existingSettings);
     }
 
-    private findInWorkflow<T extends Secret | Variable | Input>(content: string, regExp: RegExp) {
-        const results: (T)[] = [];
+    private findInWorkflow(content: string, regExp: RegExp) {
+        const results: Setting[] = [];
 
         const matches = content.matchAll(regExp);
         for (const match of matches) {
-            results.push({ key: match[1], value: '', selected: false } as T);
+            results.push({ key: match[1], value: '', selected: false });
         }
 
         return results;
-    }
-
-    getRunners(workspaceFolder: WorkspaceFolder): Runner[] {
-        return [];
-    }
-
-    addRunner(workspaceFolder: WorkspaceFolder, runner: Runner) {
-
     }
 }

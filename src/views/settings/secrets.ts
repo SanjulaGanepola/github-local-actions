@@ -3,7 +3,7 @@ import { act } from "../../extension";
 import { SettingsManager } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import SecretTreeItem from "./secret";
+import SettingTreeItem from "./setting";
 
 export default class SecretsTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.secrets';
@@ -19,7 +19,7 @@ export default class SecretsTreeItem extends TreeItem implements GithubLocalActi
 
         const secrets = await act.settingsManager.getSetting(this.workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets);
         for (const secret of secrets) {
-            items.push(new SecretTreeItem(this.workspaceFolder, secret));
+            items.push(SettingTreeItem.getSecretTreeItem(this.workspaceFolder, secret));
         }
 
         return items.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString()));

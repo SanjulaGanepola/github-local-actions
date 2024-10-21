@@ -4,7 +4,8 @@ export enum StorageKey {
     WorkspaceHistory = 'workspaceHistory',
     Secrets = 'secrets',
     Variables = 'variables',
-    Inputs = 'inputs'
+    Inputs = 'inputs',
+    Runners = 'runners'
 }
 
 export class StorageManager {

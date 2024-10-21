@@ -5,10 +5,8 @@ import ComponentsTreeDataProvider from './views/components/componentsTreeDataPro
 import { DecorationProvider } from './views/decorationProvider';
 import { GithubLocalActionsTreeItem } from './views/githubLocalActionsTreeItem';
 import HistoryTreeDataProvider from './views/history/historyTreeDataProvider';
-import InputTreeItem from './views/settings/input';
-import SecretTreeItem from './views/settings/secret';
+import SettingTreeItem from './views/settings/setting';
 import SettingsTreeDataProvider from './views/settings/settingsTreeDataProvider';
-import VariableTreeItem from './views/settings/variable';
 import WorkflowsTreeDataProvider from './views/workflows/workflowsTreeDataProvider';
 
 export let act: Act;
@@ -33,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
 	settingsTreeDataProvider = new SettingsTreeDataProvider(context);
 	const settingsTreeView = window.createTreeView(SettingsTreeDataProvider.VIEW_ID, { treeDataProvider: settingsTreeDataProvider });
 	settingsTreeView.onDidChangeCheckboxState(async (event: TreeCheckboxChangeEvent<GithubLocalActionsTreeItem>) => {
-		await settingsTreeDataProvider.onDidChangeCheckboxState(event as TreeCheckboxChangeEvent<SecretTreeItem | VariableTreeItem | InputTreeItem>);
+		await settingsTreeDataProvider.onDidChangeCheckboxState(event as TreeCheckboxChangeEvent<SettingTreeItem>);
 	});
 
 	// Create file watcher

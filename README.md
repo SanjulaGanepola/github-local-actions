@@ -9,7 +9,7 @@ Run your GitHub Actions locally with the power of the [GitHub Local Actions](htt
 
 * Run Workflows:
 * View Workflow Run History: 
-* Manage Environments, Secrets, and Variables:
+* Manage Secrets, Variables, and Inputs:
 
 ## Getting Started
 

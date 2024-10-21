@@ -1,6 +1,5 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import EnvironmentsTreeItem from "./environments";
 import InputsTreeItem from "./inputs";
 import RunnersTreeItem from "./runners";
 import SecretsTreeItem from "./secrets";
@@ -19,7 +18,6 @@ export default class WorkspaceFolderSettingsTreeItem extends TreeItem implements
         const items: GithubLocalActionsTreeItem[] = [];
 
         items.push(...[
-            new EnvironmentsTreeItem(this.workspaceFolder),
             new SecretsTreeItem(this.workspaceFolder),
             new VariablesTreeItem(this.workspaceFolder),
             new InputsTreeItem(this.workspaceFolder),

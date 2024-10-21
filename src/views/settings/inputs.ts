@@ -3,7 +3,7 @@ import { act } from "../../extension";
 import { SettingsManager } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import InputTreeItem from "./input";
+import SettingTreeItem from "./setting";
 
 export default class InputsTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.inputs';
@@ -19,7 +19,7 @@ export default class InputsTreeItem extends TreeItem implements GithubLocalActio
 
         const inputs = await act.settingsManager.getSetting(this.workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs);
         for (const input of inputs) {
-            items.push(new InputTreeItem(this.workspaceFolder, input));
+            items.push(SettingTreeItem.getInputTreeItem(this.workspaceFolder, input));
         }
 
         return items.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString()));

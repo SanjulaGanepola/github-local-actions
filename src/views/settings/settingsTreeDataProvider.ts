@@ -1,11 +1,7 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeCheckboxChangeEvent, TreeDataProvider, TreeItem, TreeItemCheckboxState, window, workspace } from "vscode";
 import { act } from "../../extension";
-import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import InputTreeItem from "./input";
-import RunnersTreeItem from "./runners";
-import SecretTreeItem from "./secret";
-import VariableTreeItem from "./variable";
+import SettingTreeItem from "./setting";
 import WorkspaceFolderSettingsTreeItem from "./workspaceFolderSettings";
 
 export default class SettingsTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
@@ -18,45 +14,18 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
             commands.registerCommand('githubLocalActions.refreshSettings', async () => {
                 this.refresh();
             }),
-            commands.registerCommand('githubLocalActions.editSecret', async (secretTreeItem: SecretTreeItem) => {
+            commands.registerCommand('githubLocalActions.editSetting', async (settingTreeItem: SettingTreeItem) => {
                 const newValue = await window.showInputBox({
-                    prompt: `Enter the value for ${secretTreeItem.secret.value}`,
-                    placeHolder: `Secret value`,
-                    value: secretTreeItem.secret.value,
+                    prompt: `Enter the value for ${settingTreeItem.setting.value}`,
+                    placeHolder: `Setting value`,
+                    value: settingTreeItem.setting.value,
                     password: true
                 });
 
                 if (newValue !== undefined) {
-                    await act.settingsManager.editSetting(secretTreeItem.workspaceFolder, { key: secretTreeItem.secret.key, value: newValue, selected: secretTreeItem.secret.selected }, StorageKey.Secrets);
+                    await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, { key: settingTreeItem.setting.key, value: newValue, selected: settingTreeItem.setting.selected }, settingTreeItem.storageKey);
                     this.refresh();
                 }
-            }),
-            commands.registerCommand('githubLocalActions.editVariable', async (variableTreeItem: VariableTreeItem) => {
-                const newValue = await window.showInputBox({
-                    prompt: `Enter the value for ${variableTreeItem.variable.value}`,
-                    placeHolder: `Variable value`,
-                    value: variableTreeItem.variable.value
-                });
-
-                if (newValue !== undefined) {
-                    await act.settingsManager.editSetting(variableTreeItem.workspaceFolder, { key: variableTreeItem.variable.key, value: newValue, selected: variableTreeItem.variable.selected }, StorageKey.Variables);
-                    this.refresh();
-                }
-            }),
-            commands.registerCommand('githubLocalActions.editInput', async (inputTreeItem: InputTreeItem) => {
-                const newValue = await window.showInputBox({
-                    prompt: `Enter the value for ${inputTreeItem.input.value}`,
-                    placeHolder: `Input value`,
-                    value: inputTreeItem.input.value
-                });
-
-                if (newValue !== undefined) {
-                    await act.settingsManager.editSetting(inputTreeItem.workspaceFolder, { key: inputTreeItem.input.key, value: newValue, selected: inputTreeItem.input.selected }, StorageKey.Inputs);
-                    this.refresh();
-                }
-            }),
-            commands.registerCommand('githubLocalActions.addRunner', async (runnersTreeItem: RunnersTreeItem) => {
-                //TODO: Implement
             })
         );
     }
@@ -77,15 +46,9 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
         return element;
     }
 
-    async onDidChangeCheckboxState(event: TreeCheckboxChangeEvent<SecretTreeItem | VariableTreeItem | InputTreeItem>) {
+    async onDidChangeCheckboxState(event: TreeCheckboxChangeEvent<SettingTreeItem>) {
         for await (const [treeItem, state] of event.items) {
-            if (treeItem instanceof SecretTreeItem) {
-                await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.secret.key, value: treeItem.secret.value, selected: state === TreeItemCheckboxState.Checked }, StorageKey.Secrets);
-            } else if (treeItem instanceof VariableTreeItem) {
-                await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.variable.key, value: treeItem.variable.value, selected: state === TreeItemCheckboxState.Checked }, StorageKey.Variables);
-            } else {
-                await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.input.key, value: treeItem.input.value, selected: state === TreeItemCheckboxState.Checked }, StorageKey.Inputs);
-            }
+            await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.setting.key, value: treeItem.setting.value, selected: state === TreeItemCheckboxState.Checked }, treeItem.storageKey);
         }
     }
 

@@ -3,7 +3,7 @@ import { act } from "../../extension";
 import { SettingsManager } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import VariableTreeItem from "./variable";
+import SettingTreeItem from "./setting";
 
 export default class VariablesTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.variables';
@@ -19,7 +19,7 @@ export default class VariablesTreeItem extends TreeItem implements GithubLocalAc
 
         const variables = await act.settingsManager.getSetting(this.workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables);
         for (const variable of variables) {
-            items.push(new VariableTreeItem(this.workspaceFolder, variable));
+            items.push(SettingTreeItem.getVariableTreeItem(this.workspaceFolder, variable));
         }
 
         return items.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString()));

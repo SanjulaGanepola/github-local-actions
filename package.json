@@ -238,27 +238,9 @@
       },
       {
         "category": "GitHub Local Actions",
-        "command": "githubLocalActions.editSecret",
-        "title": "Edit Secret",
+        "command": "githubLocalActions.editSetting",
+        "title": "Edit",
         "icon": "$(edit)"
-      },
-      {
-        "category": "GitHub Local Actions",
-        "command": "githubLocalActions.editVariable",
-        "title": "Edit Variable",
-        "icon": "$(edit)"
-      },
-      {
-        "category": "GitHub Local Actions",
-        "command": "githubLocalActions.editInput",
-        "title": "Edit Input",
-        "icon": "$(edit)"
-      },
-      {
-        "category": "GitHub Local Actions",
-        "command": "githubLocalActions.addRunner",
-        "title": "Add Runner",
-        "icon": "$(add)"
       }
     ],
     "menus": {
@@ -332,19 +314,7 @@
           "when": "never"
         },
         {
-          "command": "githubLocalActions.editSecret",
-          "when": "never"
-        },
-        {
-          "command": "githubLocalActions.editVariable",
-          "when": "never"
-        },
-        {
-          "command": "githubLocalActions.editInput",
-          "when": "never"
-        },
-        {
-          "command": "githubLocalActions.addRunner",
+          "command": "githubLocalActions.editSetting",
           "when": "never"
         }
       ],
@@ -452,23 +422,8 @@
           "group": "inline@3"
         },
         {
-          "command": "githubLocalActions.editSecret",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.secret(?!s).*/",
-          "group": "inline@0"
-        },
-        {
-          "command": "githubLocalActions.editVariable",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.variable(?!s).*/",
-          "group": "inline@0"
-        },
-        {
-          "command": "githubLocalActions.editInput",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.input(?!s).*/",
-          "group": "inline@0"
-        },
-        {
-          "command": "githubLocalActions.addRunner",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.runners.*/",
+          "command": "githubLocalActions.editSetting",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|runner)(?!s).*/",
           "group": "inline@0"
         }
       ]

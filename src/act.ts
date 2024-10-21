@@ -47,11 +47,11 @@ export enum Event {
 export enum Option {
     ActionCachePath = '--action-cache-path',
     ActionOfflineMode = '--action-offline-mode',
-    Actor = '--a',
+    Actor = '-a',
     ArtifactServerAddr = '--artifact-server-addr',
     ArtifactServerPath = '--artifact-server-path',
     ArtifactServerPort = '--artifact-server-port',
-    Bind = '--b',
+    Bind = '-b',
     BugReport = '--bug-report',
     CacheServerAddr = '--cache-server-addr',
     CacheServerPath = '--cache-server-path',
@@ -63,20 +63,20 @@ export enum Option {
     ContainerOptions = '--container-options',
     DefaultBranch = '--defaultbranch',
     DetectEvent = '--detect-event',
-    Directory = '--C',
-    DryRun = '--n',
+    Directory = '-C',
+    DryRun = '-n',
     Env = '--env',
     EnvFile = '--env-file',
-    EventPath = '--e',
+    EventPath = '-e',
     GitHubInstance = '--github-instance',
-    Graph = '--g',
-    Help = '--h',
+    Graph = '-g',
+    Help = '-h',
     Input = '--input',
     InputFile = '--input-file',
     InsecureSecrets = '--insecure-secrets',
-    Job = '--j',
+    Job = '-j',
     Json = '--json',
-    List = '--l',
+    List = '-l',
     LocalRepository = '--local-repository',
     LogPrefixJobId = '--log-prefix-job-id',
     ManPage = '--man-page',
@@ -85,15 +85,15 @@ export enum Option {
     NoCacheServer = '--no-cache-server',
     NoRecurse = '--no-recurse',
     NoSkipCheckout = '--no-skip-checkout',
-    Platform = '--P',
+    Platform = '-P',
     Privileged = '--privileged',
-    Pull = '--p',
-    Quiet = '--q',
+    Pull = '-p',
+    Quiet = '-q',
     Rebuild = '--rebuild',
     RemoteName = '--remote-name',
     ReplaceGHEActionTokenWithGitHubCom = '--replace-ghe-action-token-with-github-com',
     ReplaceGHEActionWithGitHubCom = '--replace-ghe-action-with-github-com',
-    Reuse = '--r',
+    Reuse = '-r',
     Rm = '--rm',
     Secret = '--secret',
     SecretFile = '--secret-file',
@@ -102,10 +102,10 @@ export enum Option {
     Userns = '--userns',
     Var = '--var',
     VarFile = '--var-file',
-    Verbose = '--v',
+    Verbose = '-v',
     Version = '--version',
-    Watch = '--w',
-    Workflows = '--W'
+    Watch = '-w',
+    Workflows = '-W'
 }
 
 export interface CommandArgs {
@@ -258,19 +258,20 @@ export class Act {
             runOptions: {},
             group: TaskGroup.Build,
             execution: new CustomExecution(async (resolvedDefinition: TaskDefinition): Promise<Pseudoterminal> => {
-                const environments = await this.settingsManager.getEnvironments(commandArgs.workspaceFolder);
                 const secrets = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets)).filter(secret => secret.selected && secret.value);
                 const variables = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables)).filter(variable => variable.selected && variable.value);
                 const inputs = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs)).filter(input => input.selected && input.value);
-
+                const runners = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners)).filter(runner => runner.selected && runner.value);
 
 
                 // TODO: Fix secrets, variables, and inputs in below command
                 // How to pass in secrets
                 // Is there any point to show environments in the header? Is it needed in the tree view?
+                const variablesOption = variables.length > 0 ? `${Option.Var} ${variables.map(variable => `${variable.key}=${variable.value}`).join(` ${Option.Var} `)}` : ``;
+                const inputsOption = inputs.length > 0 ? `${Option.Input} ${inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``;
+                const runnersOption = runners.length > 0 ? `${Option.Platform} ${runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``;
 
-
-                const command = `${Act.base} ${Option.Json} ${commandArgs.options}`;
+                const command = `${Act.base} ${Option.Json} ${variablesOption} ${inputsOption} ${runnersOption} ${commandArgs.options}`;
 
 
 
@@ -375,9 +376,8 @@ export class Act {
                     open: async (initialDimensions: TerminalDimensions | undefined): Promise<void> => {
                         let headerText: string = '';
                         const addMultipleEntries = (key: string, values: string[]): { key: string, value: string }[] => {
-                            if (values.length === 0) return [];
                             return values.map((value, index) => ({
-                                key: index === 0 ? key : '',  // Show the key only for the first entry
+                                key: index === 0 ? key : '',
                                 value
                             }));
                         };
@@ -386,10 +386,10 @@ export class Act {
                             { key: 'Name', value: commandArgs.name },
                             { key: 'Path', value: commandArgs.workspaceFolder.uri.fsPath },
                             ...commandArgs.extraHeader,
-                            ...addMultipleEntries('Environments', environments.map(env => env.name)),
-                            ...addMultipleEntries('Variables', variables.map(variable => `${variable.key}=${variable.value}`)),
-                            ...addMultipleEntries('Secrets', secrets.map(secret => `${secret.key}=••••••••`)),
-                            ...addMultipleEntries('Inputs', inputs.map(input => `${input.key}=${input.value}`)),
+                            ...(variables.length > 0 ? addMultipleEntries('Variables', variables.map(variable => `${variable.key}=${variable.value}`)) : []),
+                            ...(secrets.length > 0 ? addMultipleEntries('Secrets', secrets.map(secret => `${secret.key}`)) : []),
+                            ...(inputs.length > 0 ? addMultipleEntries('Inputs', inputs.map(input => `${input.key}=${input.value}`)) : []),
+                            ...(runners.length > 0 ? addMultipleEntries('Runners', runners.map(runner => `${runner.key}=${runner.value}`)) : []),
                             { key: 'Command', value: command.replace(` ${Option.Json}`, ``) }
                         ];
 
