@@ -176,33 +176,33 @@ export class ComponentsManager {
             }
         });
 
-        const githubActionsInfo = await this.getExtensionInfo('github.vscode-github-actions');
-        components.push({
-            name: 'GitHub Actions Extension',
-            icon: 'extensions',
-            version: githubActionsInfo.version,
-            status: githubActionsInfo.status,
-            required: false,
-            information: 'https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-github-actions',
-            installation: async () => {
-                await env.openExternal(Uri.parse('https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-github-actions'));
-            },
-            message: 'GitHub Actions extension is not required, but is recommended to take advantage of workflow editor features.'
-        });
+        // const githubActionsInfo = await this.getExtensionInfo('github.vscode-github-actions');
+        // components.push({
+        //     name: 'GitHub Actions Extension',
+        //     icon: 'extensions',
+        //     version: githubActionsInfo.version,
+        //     status: githubActionsInfo.status,
+        //     required: false,
+        //     information: 'https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-github-actions',
+        //     installation: async () => {
+        //         await env.openExternal(Uri.parse('https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-github-actions'));
+        //     },
+        //     message: 'GitHub Actions extension is not required, but is recommended to take advantage of workflow editor features.'
+        // });
 
-        const githubCliInfo = await this.getCliInfo('gh', /gh version (.+)/, false, false);
-        components.push({
-            name: 'GitHub CLI',
-            icon: 'terminal',
-            version: githubCliInfo.version,
-            status: githubCliInfo.status,
-            required: false,
-            information: 'https://cli.github.com',
-            installation: async () => {
-                await env.openExternal(Uri.parse('https://cli.github.com'));
-            },
-            message: 'GitHub CLI is not required, but is recommended if you plan to use it to retrieve GitHub tokens.'
-        });
+        // const githubCliInfo = await this.getCliInfo('gh', /gh version (.+)/, false, false);
+        // components.push({
+        //     name: 'GitHub CLI',
+        //     icon: 'terminal',
+        //     version: githubCliInfo.version,
+        //     status: githubCliInfo.status,
+        //     required: false,
+        //     information: 'https://cli.github.com',
+        //     installation: async () => {
+        //         await env.openExternal(Uri.parse('https://cli.github.com'));
+        //     },
+        //     message: 'GitHub CLI is not required, but is recommended if you plan to use it to retrieve GitHub tokens.'
+        // });
 
         return components;
     }
