@@ -82,7 +82,7 @@
       },
       {
         "view": "workflows",
-        "contents": "Loading components...",
+        "contents": "Loading workflows...",
         "when": "!githubLocalActions:noWorkflows && workspaceFolderCount > 0"
       },
       {
