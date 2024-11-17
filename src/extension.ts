@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TreeCheckboxChangeEvent, window, workspace } from 'vscode';
+import { commands, env, TreeCheckboxChangeEvent, Uri, window, workspace } from 'vscode';
 import { Act } from './act';
 import ComponentsTreeDataProvider from './views/components/componentsTreeDataProvider';
 import { DecorationProvider } from './views/decorationProvider';
@@ -55,7 +55,13 @@ export function activate(context: vscode.ExtensionContext) {
 		historyTreeView,
 		settingsTreeView,
 		window.registerFileDecorationProvider(decorationProvider),
-		workflowsFileWatcher
+		workflowsFileWatcher,
+		commands.registerCommand('githubLocalActions.viewDocumentation', async () => {
+			await env.openExternal(Uri.parse('https://nektosact.com'));
+		}),
+		commands.registerCommand('githubLocalActions.helpAndSupport', async () => {
+			await env.openExternal(Uri.parse('https://github.com/SanjulaGanepola/github-local-actions/issues'));
+		}),
 	);
 }
 
