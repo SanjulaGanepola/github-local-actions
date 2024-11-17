@@ -127,6 +127,7 @@ export class Act {
                 this.prebuiltExecutables = {};
         }
 
+        // Setup automatic history view refreshing
         let refreshInterval: NodeJS.Timeout | undefined;
         tasks.onDidStartTask(e => {
             const taskDefinition = e.execution.task.definition;
