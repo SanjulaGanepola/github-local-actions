@@ -168,7 +168,7 @@ export class ComponentsManager {
                         return;
                 }
 
-                window.showInformationMessage('Once Docker Engine is successfully started, refresh the components view.', 'Refresh').then(async value => {
+                window.showInformationMessage('Once Docker Engine is successfully started (this could take a few seconds), refresh the components view.', 'Refresh').then(async value => {
                     if (value === 'Refresh') {
                         componentsTreeDataProvider.refresh();
                     }

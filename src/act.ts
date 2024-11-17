@@ -1,7 +1,7 @@
 import * as path from "path";
 import { commands, ExtensionContext, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
-import { historyTreeDataProvider } from './extension';
+import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
 import { HistoryManager, HistoryStatus } from './historyManager';
 import { SettingsManager } from './settingsManager';
 import { StorageKey, StorageManager } from './storageManager';
@@ -144,6 +144,14 @@ export class Act {
                     clearInterval(refreshInterval);
                     refreshInterval = undefined;
                 }
+            }
+        });
+
+        // Refresh components view after installation
+        tasks.onDidEndTask(e => {
+            const taskDefinition = e.execution.task.definition;
+            if (taskDefinition.type === 'nektos/act installation') {
+                componentsTreeDataProvider.refresh();
             }
         });
 
@@ -307,7 +315,7 @@ export class Act {
             await tasks.executeTask({
                 name: 'nektos/act',
                 detail: 'Install nektos/act',
-                definition: { type: 'GitHub Local Actions' },
+                definition: { type: 'nektos/act installation' },
                 source: 'GitHub Local Actions',
                 scope: TaskScope.Workspace,
                 isBackground: true,
