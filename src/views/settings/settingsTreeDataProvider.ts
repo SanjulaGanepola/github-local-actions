@@ -66,7 +66,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                     items.push(...await new WorkspaceFolderSettingsTreeItem(workspaceFolders[0]).getChildren());
 
                     const workflows = await act.workflowsManager.getWorkflows(workspaceFolders[0]);
-                    if (workflows.length > 0) {
+                    if (workflows && workflows.length > 0) {
                         noSettings = false;
                     }
                 } else if (workspaceFolders.length > 1) {
@@ -74,7 +74,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                         items.push(new WorkspaceFolderSettingsTreeItem(workspaceFolder));
 
                         const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
-                        if (workflows.length > 0) {
+                        if (workflows && workflows.length > 0) {
                             noSettings = false;
                         }
                     }

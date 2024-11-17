@@ -73,7 +73,7 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
                     items.push(...await new WorkspaceFolderHistoryTreeItem(workspaceFolders[0]).getChildren());
 
                     const workspaceHistory = act.historyManager.workspaceHistory[workspaceFolders[0].uri.fsPath];
-                    if (workspaceHistory.length > 0) {
+                    if (workspaceHistory && workspaceHistory.length > 0) {
                         isRunning = act.historyManager.workspaceHistory[workspaceFolders[0].uri.fsPath].find(workspaceHistory => workspaceHistory.status === HistoryStatus.Running) !== undefined;
                         noHistory = false;
                     }
@@ -82,7 +82,7 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
                         items.push(new WorkspaceFolderHistoryTreeItem(workspaceFolder));
 
                         const workspaceHistory = act.historyManager.workspaceHistory[workspaceFolder.uri.fsPath];
-                        if (workspaceHistory.length > 0) {
+                        if (workspaceHistory && workspaceHistory.length > 0) {
                             isRunning = act.historyManager.workspaceHistory[workspaceFolder.uri.fsPath].find(workspaceHistory => workspaceHistory.status === HistoryStatus.Running) !== undefined;
                             noHistory = false;
                         }

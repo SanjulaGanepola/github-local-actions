@@ -161,12 +161,6 @@ export class Act {
                 const commandArgs: CommandArgs = taskDefinition.commandArgs;
                 const historyIndex = taskDefinition.historyIndex;
 
-                // Initialize history for workspace
-                if (!this.historyManager.workspaceHistory[commandArgs.fsPath]) {
-                    this.historyManager.workspaceHistory[commandArgs.fsPath] = [];
-                    this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-                }
-
                 // Add new entry to workspace history
                 this.historyManager.workspaceHistory[commandArgs.fsPath].push({
                     index: historyIndex,
@@ -253,6 +247,7 @@ export class Act {
     }
 
     async runCommand(commandArgs: CommandArgs) {
+        // Check if required components are ready
         const unreadyComponents = await this.componentsManager.getUnreadyComponents();
         if (unreadyComponents.length > 0) {
             window.showErrorMessage(`The following required components are not ready: ${unreadyComponents.map(component => component.name).join(', ')}`, 'Fix...').then(async value => {
@@ -263,12 +258,20 @@ export class Act {
             return;
         }
 
+        // Map to workspace folder
         const workspaceFolder = workspace.getWorkspaceFolder(Uri.file(commandArgs.fsPath));
         if (!workspaceFolder) {
             window.showErrorMessage(`Failed to locate workspace folder for ${commandArgs.fsPath}`);
             return;
         }
 
+        // Initialize history for workspace
+        if (!this.historyManager.workspaceHistory[commandArgs.fsPath]) {
+            this.historyManager.workspaceHistory[commandArgs.fsPath] = [];
+            this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+        }
+
+        // Build command with settings
         const secrets = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true)).filter(secret => secret.selected);
         const variables = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false)).filter(variable => variable.selected);
         const inputs = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false)).filter(input => input.selected && input.value);
@@ -279,13 +282,15 @@ export class Act {
             (inputs.length > 0 ? ` ${Option.Input} ${inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
             (runners.length > 0 ? ` ${Option.Platform} ${runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``);
 
+        // Process task count suffix
         const historyIndex = this.historyManager.workspaceHistory[commandArgs.fsPath].length;
         const matchingTasks = this.historyManager.workspaceHistory[commandArgs.fsPath]
             .filter(history => history.name === commandArgs.name)
             .sort((a, b) => b.count - a.count);
         const count = matchingTasks && matchingTasks.length > 0 ? matchingTasks[0].count + 1 : 1;
 
-        const taskExecution = await tasks.executeTask({
+        // Execute task
+        await tasks.executeTask({
             name: `${commandArgs.name} #${count}`,
             detail: `${commandArgs.name} #${count}`,
             definition: { type: 'GitHub Local Actions', commandArgs: commandArgs, historyIndex: historyIndex, count: count },
