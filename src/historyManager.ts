@@ -6,10 +6,11 @@ import { StorageKey, StorageManager } from "./storageManager";
 export interface History {
     index: number,
     name: string,
+    count: number,
     status: HistoryStatus,
-    date?: {
+    date: {
         start: string,
-        end: string,
+        end?: string,
     }
     output?: string,
     taskExecution?: TaskExecution,
@@ -63,8 +64,8 @@ export class HistoryManager {
     }
 
     async remove(history: History) {
-        const historyIndex = this.workspaceHistory[history.commandArgs.workspaceFolder.uri.fsPath].findIndex(workspaceHistory => workspaceHistory.index === history.index)
-        this.workspaceHistory[history.commandArgs.workspaceFolder.uri.fsPath].splice(historyIndex, 1);
+        const historyIndex = this.workspaceHistory[history.commandArgs.fsPath].findIndex(workspaceHistory => workspaceHistory.index === history.index)
+        this.workspaceHistory[history.commandArgs.fsPath].splice(historyIndex, 1);
         this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
     }
 }

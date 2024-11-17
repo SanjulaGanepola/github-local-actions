@@ -8,12 +8,17 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
     history: History;
 
     constructor(public workspaceFolder: WorkspaceFolder, history: History) {
-        super(history.name, TreeItemCollapsibleState.None);
+        super(`${history.name} #${history.count}`, TreeItemCollapsibleState.None);
         this.history = history;
 
+        let endTime: string | undefined;
         let totalDuration: string | undefined;
-        if (history.date) {
-            totalDuration = Utils.getTimeDuration(history.date.start, history.date.end);
+        if (history.date.end) {
+            endTime = history.date.end;
+            totalDuration = Utils.getTimeDuration(history.date.start, endTime);
+        } else if (history.status == HistoryStatus.Running) {
+            endTime = new Date().toString();
+            totalDuration = Utils.getTimeDuration(history.date.start, endTime);
         }
 
         this.description = totalDuration;
@@ -34,9 +39,9 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
         }
         this.tooltip = `Name: ${history.name}\n` +
             `Status: ${history.status}\n` +
-            `Started: ${history.date ? Utils.getDateString(history.date.start) : 'N/A'}\n` +
-            `Ended: ${history.date ? Utils.getDateString(history.date.end) : 'N/A'}\n` +
-            (totalDuration ? `Total Duration: ${totalDuration}\n` : ``);
+            `Started: ${Utils.getDateString(history.date.start)}\n` +
+            `Ended: ${endTime ? Utils.getDateString(endTime) : 'N/A'}\n` +
+            `Total Duration: ${totalDuration ? totalDuration : 'N/A'}`;
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {

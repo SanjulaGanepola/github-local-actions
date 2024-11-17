@@ -1,6 +1,5 @@
-import * as child_process from 'child_process';
 import * as path from "path";
-import { commands, CustomExecution, env, EventEmitter, ExtensionContext, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, window, WorkspaceFolder } from "vscode";
+import { commands, ExtensionContext, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
 import { historyTreeDataProvider } from './extension';
 import { HistoryManager, HistoryStatus } from './historyManager';
@@ -45,71 +44,16 @@ export enum Event {
 }
 
 export enum Option {
-    ActionCachePath = '--action-cache-path',
-    ActionOfflineMode = '--action-offline-mode',
-    Actor = '-a',
-    ArtifactServerAddr = '--artifact-server-addr',
-    ArtifactServerPath = '--artifact-server-path',
-    ArtifactServerPort = '--artifact-server-port',
-    Bind = '-b',
-    BugReport = '--bug-report',
-    CacheServerAddr = '--cache-server-addr',
-    CacheServerPath = '--cache-server-path',
-    CacheServerPort = '--cache-server-port',
-    ContainerArchitecture = '--container-architecture',
-    ContainerCapAdd = '--container-cap-add',
-    ContainerCapDrop = '--container-cap-drop',
-    ContainerDaemonSocket = '--container-daemon-socket',
-    ContainerOptions = '--container-options',
-    DefaultBranch = '--defaultbranch',
-    DetectEvent = '--detect-event',
-    Directory = '-C',
-    DryRun = '-n',
-    Env = '--env',
-    EnvFile = '--env-file',
-    EventPath = '-e',
-    GitHubInstance = '--github-instance',
-    Graph = '-g',
-    Help = '-h',
     Input = '--input',
-    InputFile = '--input-file',
-    InsecureSecrets = '--insecure-secrets',
     Job = '-j',
-    Json = '--json',
-    List = '-l',
-    LocalRepository = '--local-repository',
-    LogPrefixJobId = '--log-prefix-job-id',
-    ManPage = '--man-page',
-    Matrix = '--matrix',
-    Network = '--network',
-    NoCacheServer = '--no-cache-server',
-    NoRecurse = '--no-recurse',
-    NoSkipCheckout = '--no-skip-checkout',
     Platform = '-P',
-    Privileged = '--privileged',
-    Pull = '-p',
-    Quiet = '-q',
-    Rebuild = '--rebuild',
-    RemoteName = '--remote-name',
-    ReplaceGHEActionTokenWithGitHubCom = '--replace-ghe-action-token-with-github-com',
-    ReplaceGHEActionWithGitHubCom = '--replace-ghe-action-with-github-com',
-    Reuse = '-r',
-    Rm = '--rm',
     Secret = '--secret',
-    SecretFile = '--secret-file',
-    UseGitignore = '--use-gitignore',
-    UseNewActionCache = '--use-new-action-cache',
-    Userns = '--userns',
     Var = '--var',
-    VarFile = '--var-file',
-    Verbose = '-v',
-    Version = '--version',
-    Watch = '-w',
     Workflows = '-W'
 }
 
 export interface CommandArgs {
-    workspaceFolder: WorkspaceFolder,
+    fsPath: string,
     options: string,
     name: string,
     extraHeader: { key: string, value: string }[]
@@ -182,11 +126,83 @@ export class Act {
                 this.installationCommands = {};
                 this.prebuiltExecutables = {};
         }
+
+        let refreshInterval: NodeJS.Timeout | undefined;
+        tasks.onDidStartTask(e => {
+            const taskDefinition = e.execution.task.definition;
+            if (taskDefinition.type === 'GitHub Local Actions' && !refreshInterval) {
+                refreshInterval = setInterval(() => {
+                    historyTreeDataProvider.refresh();
+                }, 1000);
+            }
+        });
+        tasks.onDidEndTask(e => {
+            const taskDefinition = e.execution.task.definition;
+            if (taskDefinition.type === 'GitHub Local Actions') {
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                    refreshInterval = undefined;
+                }
+            }
+        });
+
+        tasks.onDidStartTaskProcess(e => {
+            const taskDefinition = e.execution.task.definition;
+            if (taskDefinition.type === 'GitHub Local Actions') {
+                const commandArgs: CommandArgs = taskDefinition.commandArgs;
+                const historyIndex = taskDefinition.historyIndex;
+
+                // Initialize history for workspace
+                if (!this.historyManager.workspaceHistory[commandArgs.fsPath]) {
+                    this.historyManager.workspaceHistory[commandArgs.fsPath] = [];
+                    this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+                }
+
+                // Add new entry to workspace history
+                this.historyManager.workspaceHistory[commandArgs.fsPath].push({
+                    index: historyIndex,
+                    count: taskDefinition.count,
+                    name: `${commandArgs.name}`,
+                    status: HistoryStatus.Running,
+                    date: {
+                        start: new Date().toString()
+                    },
+                    taskExecution: e.execution,
+                    commandArgs: commandArgs
+                });
+                historyTreeDataProvider.refresh();
+                this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+            }
+        });
+        tasks.onDidEndTaskProcess(e => {
+            const taskDefinition = e.execution.task.definition;
+            if (taskDefinition.type === 'GitHub Local Actions') {
+                const commandArgs: CommandArgs = taskDefinition.commandArgs;
+                const historyIndex = taskDefinition.historyIndex;
+
+                // Set end status
+                if (this.historyManager.workspaceHistory[commandArgs.fsPath][historyIndex].status === HistoryStatus.Running) {
+                    if (e.exitCode === 0) {
+                        this.historyManager.workspaceHistory[commandArgs.fsPath][historyIndex].status = HistoryStatus.Success;
+                    } else if (!e.exitCode) {
+                        this.historyManager.workspaceHistory[commandArgs.fsPath][historyIndex].status = HistoryStatus.Cancelled;
+                    } else {
+                        this.historyManager.workspaceHistory[commandArgs.fsPath][historyIndex].status = HistoryStatus.Failed;
+                    }
+                }
+
+                // Set end time
+                this.historyManager.workspaceHistory[commandArgs.fsPath][historyIndex].date.end = new Date().toString();
+
+                historyTreeDataProvider.refresh();
+                this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+            }
+        });
     }
 
     async runAllWorkflows(workspaceFolder: WorkspaceFolder) {
         return await this.runCommand({
-            workspaceFolder: workspaceFolder,
+            fsPath: workspaceFolder.uri.fsPath,
             options: ``,
             name: workspaceFolder.name,
             extraHeader: []
@@ -195,7 +211,7 @@ export class Act {
 
     async runWorkflow(workspaceFolder: WorkspaceFolder, workflow: Workflow) {
         return await this.runCommand({
-            workspaceFolder: workspaceFolder,
+            fsPath: workspaceFolder.uri.fsPath,
             options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`,
             name: workflow.name,
             extraHeader: [
@@ -206,7 +222,7 @@ export class Act {
 
     async runJob(workspaceFolder: WorkspaceFolder, workflow: Workflow, job: Job) {
         return await this.runCommand({
-            workspaceFolder: workspaceFolder,
+            fsPath: workspaceFolder.uri.fsPath,
             options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}" ${Option.Job} "${job.id}"`,
             name: `${workflow.name}/${job.name}`,
             extraHeader: [
@@ -218,7 +234,7 @@ export class Act {
 
     async runEvent(workspaceFolder: WorkspaceFolder, event: Event) {
         return await this.runCommand({
-            workspaceFolder: workspaceFolder,
+            fsPath: workspaceFolder.uri.fsPath,
             options: event,
             name: event,
             extraHeader: [
@@ -238,12 +254,34 @@ export class Act {
             return;
         }
 
+        const workspaceFolder = workspace.getWorkspaceFolder(Uri.file(commandArgs.fsPath));
+        if (!workspaceFolder) {
+            window.showErrorMessage(`Failed to locate workspace folder for ${commandArgs.fsPath}`);
+            return;
+        }
+
+        const secrets = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets)).filter(secret => secret.selected && secret.value);
+        const variables = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables)).filter(variable => variable.selected && variable.value);
+        const inputs = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs)).filter(input => input.selected && input.value);
+        const runners = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners)).filter(runner => runner.selected && runner.value);
+        const command = `${Act.base} ` +
+            (variables.length > 0 ? ` ${Option.Var} ${variables.map(variable => `${variable.key}=${variable.value}`).join(` ${Option.Var} `)}` : ``) +
+            (inputs.length > 0 ? ` ${Option.Input} ${inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
+            (runners.length > 0 ? ` ${Option.Platform} ${runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
+            ` ${commandArgs.options}`;
+
+        const historyIndex = this.historyManager.workspaceHistory[commandArgs.fsPath].length;
+        const matchingTasks = this.historyManager.workspaceHistory[commandArgs.fsPath]
+            .filter(history => history.name === commandArgs.name)
+            .sort((a, b) => b.count - a.count);
+        const count = matchingTasks && matchingTasks.length > 0 ? matchingTasks[0].count + 1 : 1;
+
         const taskExecution = await tasks.executeTask({
-            name: commandArgs.name,
-            detail: 'Run workflow',
-            definition: { type: 'GitHub Local Actions' },
+            name: `${commandArgs.name} #${count}`,
+            detail: `${commandArgs.name} #${count}`,
+            definition: { type: 'GitHub Local Actions', commandArgs: commandArgs, historyIndex: historyIndex, count: count },
             source: 'GitHub Local Actions',
-            scope: commandArgs.workspaceFolder || TaskScope.Workspace,
+            scope: workspaceFolder || TaskScope.Workspace,
             isBackground: true,
             presentationOptions: {
                 reveal: TaskRevealKind.Always,
@@ -257,152 +295,7 @@ export class Act {
             problemMatchers: [],
             runOptions: {},
             group: TaskGroup.Build,
-            execution: new CustomExecution(async (resolvedDefinition: TaskDefinition): Promise<Pseudoterminal> => {
-                const secrets = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets)).filter(secret => secret.selected && secret.value);
-                const variables = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables)).filter(variable => variable.selected && variable.value);
-                const inputs = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs)).filter(input => input.selected && input.value);
-                const runners = (await this.settingsManager.getSetting(commandArgs.workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners)).filter(runner => runner.selected && runner.value);
-
-                const variablesOption = variables.length > 0 ? `${Option.Var} ${variables.map(variable => `${variable.key}=${variable.value}`).join(` ${Option.Var} `)}` : ``;
-                const inputsOption = inputs.length > 0 ? `${Option.Input} ${inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``;
-                const runnersOption = runners.length > 0 ? `${Option.Platform} ${runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``;
-                const command = `${Act.base} ${Option.Json} ${variablesOption} ${inputsOption} ${runnersOption} ${commandArgs.options}`;
-
-                const historyIndex = this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length;
-                if (!this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath]) {
-                    this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath] = [];
-                    this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-                }
-
-                this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].push({
-                    index: historyIndex,
-                    name: `${commandArgs.name} #${this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath].length + 1}`,
-                    status: HistoryStatus.Running,
-                    taskExecution: taskExecution,
-                    commandArgs: commandArgs
-                });
-                historyTreeDataProvider.refresh();
-                this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-
-                const writeEmitter = new EventEmitter<string>();
-                const closeEmitter = new EventEmitter<number>();
-
-                writeEmitter.event(data => {
-                    if (!this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].output) {
-                        this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].output = data;
-                    } else {
-                        this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].output += data;
-                    }
-                    this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-                });
-
-                const exec = child_process.spawn(command, { cwd: commandArgs.workspaceFolder.uri.fsPath, shell: env.shell });
-                const setDate = (actDate?: string) => {
-                    const date = actDate ? new Date(actDate).toString() : new Date().toString();
-
-                    if (!this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].date) {
-                        this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].date = {
-                            start: date,
-                            end: date,
-                        }
-                    } else {
-                        this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].date!.end = date;
-                    }
-                }
-                const handleIO = (data: any) => {
-                    const lines: string[] = data.toString().split('\n').filter((line: string) => line != '');
-                    for (const line of lines) {
-                        let jsonLine: any;
-                        try {
-                            jsonLine = JSON.parse(line);
-                        } catch (error) {
-                            jsonLine = {
-                                time: new Date().toString(),
-                                msg: line
-                            }
-                        }
-                        setDate(jsonLine.time);
-
-                        if (jsonLine.jobResult) {
-                            switch (jsonLine.jobResult) {
-                                case 'success':
-                                    this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Success;
-                                    break;
-                                case 'failure':
-                                    this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Failed;
-                                    break;
-                            }
-                        }
-
-                        historyTreeDataProvider.refresh();
-                        this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-                        writeEmitter.fire(`${jsonLine.msg.trimEnd()}\r\n`);
-                    }
-                }
-                exec.stdout.on('data', handleIO);
-                exec.stderr.on('data', handleIO);
-                exec.on('close', (code) => {
-                    setDate();
-
-                    if (this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status === HistoryStatus.Running) {
-                        this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Failed;
-                    }
-
-                    historyTreeDataProvider.refresh();
-                    this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-                    closeEmitter.fire(code || 0);
-                });
-
-                return {
-                    onDidWrite: writeEmitter.event,
-                    onDidClose: closeEmitter.event,
-                    open: async (initialDimensions: TerminalDimensions | undefined): Promise<void> => {
-                        let headerText: string = '';
-                        const addMultipleEntries = (key: string, values: string[]): { key: string, value: string }[] => {
-                            return values.map((value, index) => ({
-                                key: index === 0 ? key : '',
-                                value
-                            }));
-                        };
-
-                        const header: { key: string, value: string }[] = [
-                            { key: 'Name', value: commandArgs.name },
-                            { key: 'Path', value: commandArgs.workspaceFolder.uri.fsPath },
-                            ...commandArgs.extraHeader,
-                            ...(variables.length > 0 ? addMultipleEntries('Variables', variables.map(variable => `${variable.key}=${variable.value}`)) : []),
-                            ...(secrets.length > 0 ? addMultipleEntries('Secrets', secrets.map(secret => `${secret.key}`)) : []),
-                            ...(inputs.length > 0 ? addMultipleEntries('Inputs', inputs.map(input => `${input.key}=${input.value}`)) : []),
-                            ...(runners.length > 0 ? addMultipleEntries('Runners', runners.map(runner => `${runner.key}=${runner.value}`)) : []),
-                            { key: 'Command', value: command.replace(` ${Option.Json}`, ``) }
-                        ];
-
-                        const maxKeyLength = Math.max(...header.map(item => item.key.length));
-                        for (const { key, value } of header) {
-                            const spaces = ' '.repeat(maxKeyLength - key.length + 1);
-                            headerText += key ? `${key}:${spaces}${value}\r\n` : ` ${spaces}${value}\r\n`;
-                        }
-
-                        const maxValueLength = Math.max(...header.map(item => item.value.length));
-                        const borderText = '-'.repeat(maxKeyLength + 2 + maxValueLength);
-
-                        writeEmitter.fire(`${borderText}\r\n${headerText}${borderText}\r\n\r\n`);
-                    },
-
-                    close: () => {
-                        if (this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status === HistoryStatus.Running) {
-                            this.historyManager.workspaceHistory[commandArgs.workspaceFolder.uri.fsPath][historyIndex].status = HistoryStatus.Cancelled;
-                        }
-
-                        historyTreeDataProvider.refresh();
-                        this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-
-                        exec.stdout.destroy();
-                        exec.stdin.destroy();
-                        exec.stderr.destroy();
-                        exec.kill();
-                    }
-                };
-            })
+            execution: new ShellExecution(command, { cwd: commandArgs.fsPath })
         });
         this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
     }

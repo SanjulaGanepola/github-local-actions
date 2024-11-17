@@ -76,6 +76,11 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
             if (workspaceFolders) {
                 if (workspaceFolders.length === 1) {
                     items.push(...await new WorkspaceFolderWorkflowsTreeItem(workspaceFolders[0]).getChildren());
+
+                    const workflows = await act.workflowsManager.getWorkflows(workspaceFolders[0]);
+                    if (workflows.length > 0) {
+                        noWorkflows = false;
+                    }
                 } else if (workspaceFolders.length > 1) {
                     for (const workspaceFolder of workspaceFolders) {
                         items.push(new WorkspaceFolderWorkflowsTreeItem(workspaceFolder));
