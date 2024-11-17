@@ -17,7 +17,7 @@ export class DecorationProvider implements FileDecorationProvider {
                     badge: '✅',
                     color: new ThemeColor('GitHubLocalActions.green')
                 };
-            } else if (!required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning|| status === ExtensionStatus.NotActivated)) {
+            } else if (!required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning || status === ExtensionStatus.NotActivated)) {
                 return {
                     badge: '⚠️',
                     color: new ThemeColor('GitHubLocalActions.yellow')
@@ -38,5 +38,13 @@ export class DecorationProvider implements FileDecorationProvider {
                 };
             }
         }
+
+        // else if (uri.scheme === SecretsTreeItem.contextValue || uri.scheme === VariablesTreeItem.contextValue || uri.scheme === InputsTreeItem.contextValue || uri.scheme === RunnersTreeItem.contextValue) {
+        //     const selected = params.get('selected');
+
+        //     return {
+        //         badge: `${selected}`
+        //     };
+        // }
     }
 }

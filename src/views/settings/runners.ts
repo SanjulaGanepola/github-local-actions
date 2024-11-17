@@ -1,6 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
-import { SettingsManager } from "../../settingsManager";
+import { Setting, SettingsManager } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SettingTreeItem from "./setting";
@@ -8,8 +8,9 @@ import SettingTreeItem from "./setting";
 export default class RunnersTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.runners';
 
-    constructor(public workspaceFolder: WorkspaceFolder) {
+    constructor(public workspaceFolder: WorkspaceFolder, runners: Setting[]) {
         super('Runners', TreeItemCollapsibleState.Collapsed);
+        this.description = `${runners.filter(runner => runner.selected).length}/${runners.length}`;
         this.contextValue = RunnersTreeItem.contextValue;
         this.iconPath = new ThemeIcon('server-environment');
     }

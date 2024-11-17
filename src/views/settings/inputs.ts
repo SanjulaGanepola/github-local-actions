@@ -1,6 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
-import { SettingsManager } from "../../settingsManager";
+import { Setting, SettingsManager } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SettingTreeItem from "./setting";
@@ -8,8 +8,9 @@ import SettingTreeItem from "./setting";
 export default class InputsTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.inputs';
 
-    constructor(public workspaceFolder: WorkspaceFolder) {
+    constructor(public workspaceFolder: WorkspaceFolder, inputs: Setting[]) {
         super('Inputs', TreeItemCollapsibleState.Collapsed);
+        this.description = `${inputs.filter(input => input.selected).length}/${inputs.length}`;
         this.contextValue = InputsTreeItem.contextValue;
         this.iconPath = new ThemeIcon('record-keys');
     }

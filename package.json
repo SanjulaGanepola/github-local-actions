@@ -347,7 +347,7 @@
         {
           "command": "githubLocalActions.refreshComponents",
           "when": "view == components",
-          "group": "navigation@0"
+          "group": "navigation@99"
         },
         {
           "command": "githubLocalActions.runAllWorkflows",
@@ -362,7 +362,7 @@
         {
           "command": "githubLocalActions.refreshWorkflows",
           "when": "view == workflows",
-          "group": "navigation@2"
+          "group": "navigation@99"
         },
         {
           "command": "githubLocalActions.clearAll",
@@ -372,17 +372,17 @@
         {
           "command": "githubLocalActions.refreshHistory",
           "when": "view == history",
-          "group": "navigation@1"
+          "group": "navigation@99"
         },
         {
           "command": "githubLocalActions.refreshSettings",
           "when": "view == settings",
-          "group": "navigation@0"
+          "group": "navigation@99"
         },
         {
           "submenu": "githubLocalActions.helpAndSupport",
           "when": "view =~ /^(components|workflows|history|settings)$/",
-          "group": "navigation@99"
+          "group": "navigation@98"
         }
       ],
       "githubLocalActions.helpAndSupport": [

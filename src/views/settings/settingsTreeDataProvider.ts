@@ -50,6 +50,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
         for await (const [treeItem, state] of event.items) {
             await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.setting.key, value: treeItem.setting.value, selected: state === TreeItemCheckboxState.Checked, password: treeItem.setting.password }, treeItem.storageKey);
         }
+        this.refresh();
     }
 
     async getChildren(element?: GithubLocalActionsTreeItem): Promise<GithubLocalActionsTreeItem[]> {
