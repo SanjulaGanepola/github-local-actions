@@ -265,12 +265,11 @@ export class Act {
         const variables = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false)).filter(variable => variable.selected);
         const inputs = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false)).filter(input => input.selected && input.value);
         const runners = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false)).filter(runner => runner.selected && runner.value);
-        const command = `${Act.base} ` +
+        const command = `${Act.base} ${commandArgs.options}` +
             (secrets.length > 0 ? ` ${Option.Secret} ${secrets.map(secret => (secret.value ? `${secret.key}=${secret.value}` : secret.key)).join(` ${Option.Secret} `)}` : ``) +
             (variables.length > 0 ? ` ${Option.Variable} ${variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
             (inputs.length > 0 ? ` ${Option.Input} ${inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
-            (runners.length > 0 ? ` ${Option.Platform} ${runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
-            ` ${commandArgs.options}`;
+            (runners.length > 0 ? ` ${Option.Platform} ${runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``);
 
         const historyIndex = this.historyManager.workspaceHistory[commandArgs.fsPath].length;
         const matchingTasks = this.historyManager.workspaceHistory[commandArgs.fsPath]
