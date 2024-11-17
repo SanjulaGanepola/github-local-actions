@@ -14,11 +14,11 @@ Run your GitHub Actions locally with the power of the [GitHub Local Actions](htt
 
 ## Components
 
-The `Components` view is where you can manage the components which must be installed and started up before running any GitHub Actions.
+The `Components` view is where you can manage the following components which must be installed and started up before running any GitHub Actions:
 
 1. [nektos/act](https://github.com/nektos/act): Act is a CLI tool responsible for executing your workflows locally. It can be installed via several software package managers or using a pre-built artifact.
 
-    ![nektos/act Installation](./images/act-installation.png)
+    ![nektos/act Installation](./images/components-view.png)
 
 2. [Docker Engine](https://docs.docker.com/engine/): Docker Engine is required for act to function as it uses Docker to handle workflow execution. The process includes:
     
@@ -33,15 +33,25 @@ The `Components` view is where you can manage the components which must be insta
 The `Workflows` view is where you can manage and run workflows locally. You have several options to execute a workflow:
 
 1. **Run All Workflows**: Run all workflows in the workspace.
-1. **Run Workflow**: Run an entire workflow.
-2. **Run Job**: Run a specific job in a workflow.
-3. **Run Event**: Run multiple workflows by triggering a [GitHub event](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows).
+2. **Run Workflow**: Run an entire workflow.
+3. **Run Job**: Run a specific job in a workflow.
+4. **Run Event**: Run multiple workflows by triggering a [GitHub event](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows).
 
-![Workflows View](./images/workflows.png)
+![Workflows View](./images/workflows-view.png)
 
 ## History
 
+The `History` view is where you can manage workflows currently being executed as well as review logs from previous workflow runs.
+
+![History View](./images/history-view.png)
+
 ## Settings
+
+The `Settings` view is where you can set [secrets](https://nektosact.com/usage/index.html#secrets), [variables](https://nektosact.com/usage/index.html#vars), [inputs](https://nektosact.com/usage/index.html#pass-inputs-to-manually-triggered-workflows), and [runners](https://nektosact.com/usage/runners.html) to be used when executing workflows. Checkout the [nektos/act](https://github.com/nektos/act) documentation for more details on how these various settings are handled.
+
+> 🚨 Checkout the [nektos/act](https://github.com/nektos/act) documentation for more details on how these various settings are handled. In particular, refer to how secrets can be provided to workflows interactively, as environment variables, or from a file.
+
+![Settings View](./images/settings-view.png)
 
 ## Bugs and Feature Requests
 
