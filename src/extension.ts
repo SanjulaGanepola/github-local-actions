@@ -23,13 +23,13 @@ export function activate(context: vscode.ExtensionContext) {
 	// Create tree views
 	const decorationProvider = new DecorationProvider();
 	componentsTreeDataProvider = new ComponentsTreeDataProvider(context);
-	const componentsTreeView = window.createTreeView(ComponentsTreeDataProvider.VIEW_ID, { treeDataProvider: componentsTreeDataProvider });
+	const componentsTreeView = window.createTreeView(ComponentsTreeDataProvider.VIEW_ID, { treeDataProvider: componentsTreeDataProvider, showCollapseAll: true });
 	workflowsTreeDataProvider = new WorkflowsTreeDataProvider(context);
-	const workflowsTreeView = window.createTreeView(WorkflowsTreeDataProvider.VIEW_ID, { treeDataProvider: workflowsTreeDataProvider });
+	const workflowsTreeView = window.createTreeView(WorkflowsTreeDataProvider.VIEW_ID, { treeDataProvider: workflowsTreeDataProvider, showCollapseAll: true });
 	historyTreeDataProvider = new HistoryTreeDataProvider(context);
-	const historyTreeView = window.createTreeView(HistoryTreeDataProvider.VIEW_ID, { treeDataProvider: historyTreeDataProvider });
+	const historyTreeView = window.createTreeView(HistoryTreeDataProvider.VIEW_ID, { treeDataProvider: historyTreeDataProvider, showCollapseAll: true });
 	settingsTreeDataProvider = new SettingsTreeDataProvider(context);
-	const settingsTreeView = window.createTreeView(SettingsTreeDataProvider.VIEW_ID, { treeDataProvider: settingsTreeDataProvider });
+	const settingsTreeView = window.createTreeView(SettingsTreeDataProvider.VIEW_ID, { treeDataProvider: settingsTreeDataProvider, showCollapseAll: true });
 	settingsTreeView.onDidChangeCheckboxState(async (event: TreeCheckboxChangeEvent<GithubLocalActionsTreeItem>) => {
 		await settingsTreeDataProvider.onDidChangeCheckboxState(event as TreeCheckboxChangeEvent<SettingTreeItem>);
 	});
@@ -59,7 +59,7 @@ export function activate(context: vscode.ExtensionContext) {
 		commands.registerCommand('githubLocalActions.viewDocumentation', async () => {
 			await env.openExternal(Uri.parse('https://nektosact.com'));
 		}),
-		commands.registerCommand('githubLocalActions.helpAndSupport', async () => {
+		commands.registerCommand('githubLocalActions.reportAnIssue', async () => {
 			await env.openExternal(Uri.parse('https://github.com/SanjulaGanepola/github-local-actions/issues'));
 		}),
 	);

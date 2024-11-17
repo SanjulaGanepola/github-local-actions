@@ -249,15 +249,15 @@
       },
       {
         "category": "GitHub Local Actions",
-        "command": "githubLocalActions.helpAndSupport",
-        "title": "Help and Support"
+        "command": "githubLocalActions.reportAnIssue",
+        "title": "Report an Issue"
       }
     ],
     "submenus": [
       {
-        "id": "githubLocalActions.moreActions",
-        "label": "More Actions...",
-        "icon": "$(ellipsis)"
+        "id": "githubLocalActions.helpAndSupport",
+        "label": "Help and Support",
+        "icon": "$(question)"
       }
     ],
     "menus": {
@@ -339,7 +339,7 @@
           "when": "never"
         },
         {
-          "command": "githubLocalActions.helpAndSupport",
+          "command": "githubLocalActions.reportAnIssue",
           "when": "never"
         }
       ],
@@ -380,18 +380,18 @@
           "group": "navigation@0"
         },
         {
-          "submenu": "githubLocalActions.moreActions",
+          "submenu": "githubLocalActions.helpAndSupport",
           "when": "view =~ /^(components|workflows|history|settings)$/",
           "group": "navigation@99"
         }
       ],
-      "githubLocalActions.moreActions": [
+      "githubLocalActions.helpAndSupport": [
         {
           "command": "githubLocalActions.viewDocumentation",
           "group": "0_more@0"
         },
         {
-          "command": "githubLocalActions.helpAndSupport",
+          "command": "githubLocalActions.reportAnIssue",
           "group": "0_more@1"
         }
       ],
