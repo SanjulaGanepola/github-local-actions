@@ -52,7 +52,7 @@ export class HistoryManager {
     async viewOutput(history: History) {
         await workspace.openTextDocument({ content: history.output }).then(async document => {
             await window.showTextDocument(document);
-        })
+        });
     }
 
     async restart(history: History) {
@@ -64,7 +64,7 @@ export class HistoryManager {
     }
 
     async remove(history: History) {
-        const historyIndex = this.workspaceHistory[history.commandArgs.fsPath].findIndex(workspaceHistory => workspaceHistory.index === history.index)
+        const historyIndex = this.workspaceHistory[history.commandArgs.fsPath].findIndex(workspaceHistory => workspaceHistory.index === history.index);
         this.workspaceHistory[history.commandArgs.fsPath].splice(historyIndex, 1);
         this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
     }

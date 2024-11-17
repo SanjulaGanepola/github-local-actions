@@ -62,7 +62,7 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
                 items.push(new ComponentTreeItem(component));
             }
 
-            await commands.executeCommand('setContext', 'githubLocalActions:noComponents', items.length == 0);
+            await commands.executeCommand('setContext', 'githubLocalActions:noComponents', items.length === 0);
             return items;
         }
     }

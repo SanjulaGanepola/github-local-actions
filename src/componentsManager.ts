@@ -1,4 +1,4 @@
-import * as child_process from "child_process";
+import * as childProcess from "child_process";
 import { env, extensions, QuickPickItemKind, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, ThemeIcon, Uri, window } from "vscode";
 import { act, componentsTreeDataProvider } from "./extension";
 
@@ -214,7 +214,7 @@ export class ComponentsManager {
 
     async getCliInfo(command: string, versionRegex: RegExp, ignoreError: boolean, checksIfRunning: boolean): Promise<{ version?: string, status: CliStatus }> {
         return new Promise<{ version?: string, status: CliStatus }>((resolve, reject) => {
-            child_process.exec(command, (error, stdout, stderr) => {
+            childProcess.exec(command, (error, stdout, stderr) => {
                 const version = stdout?.match(versionRegex);
 
                 if (error) {
@@ -257,11 +257,11 @@ export class ComponentsManager {
             return {
                 status: ExtensionStatus.Activated,
                 version: extension.packageJSON.version
-            }
+            };
         } else {
             return {
                 status: ExtensionStatus.NotActivated
-            }
+            };
         }
     }
 }

@@ -16,7 +16,7 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
         if (history.date.end) {
             endTime = history.date.end;
             totalDuration = Utils.getTimeDuration(history.date.start, endTime);
-        } else if (history.status == HistoryStatus.Running) {
+        } else if (history.status === HistoryStatus.Running) {
             endTime = new Date().toString();
             totalDuration = Utils.getTimeDuration(history.date.start, endTime);
         }
