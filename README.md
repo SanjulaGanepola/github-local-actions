@@ -14,18 +14,13 @@ Run your GitHub Actions locally with the power of the [GitHub Local Actions](htt
 
 ## Components
 
-To run GitHub Actions locally, you will need the following components which can be managed from the `Components` view:
-1. [nektos/act](https://github.com/nektos/act)
-    
-    Act is a CLI tool responsible for executing your workflows locally.
+To run GitHub Actions locally, you will need the components denoted below. These can be installed and started up from the `Components` view.
 
-    <div style="text-align: center; margin: 20px;">
-        <img src="https://github.com/SanjulaGanepola/github-local-actions/blob/main/images/act-installation.png?raw=true" alt="Act Installation" style="box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); border-radius: 8px; max-width: 100%; display: block; margin-bottom: 20px;">
-    </div>
+1. [nektos/act](https://github.com/nektos/act): Act is a CLI tool responsible for executing your workflows locally. It can be installed via several software package managers or using a pre-built artifact.
 
-2. [Docker Engine](https://docs.docker.com/engine/)
-    
-    Docker Engine is required for act to function as it uses Docker to handle workflow execution. The process includes:
+    ![Getting Started](./images/act-installation.png)
+
+2. [Docker Engine](https://docs.docker.com/engine/): Docker Engine is required for act to function as it uses Docker to handle workflow execution. The process includes:
     
     * Pulling or building the images specified in your workflow files
     * Determining the execution path based on your workflow's dependencies
