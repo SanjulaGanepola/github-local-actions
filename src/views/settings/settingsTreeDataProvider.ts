@@ -19,11 +19,11 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                     prompt: `Enter the value for ${settingTreeItem.setting.value}`,
                     placeHolder: `Setting value`,
                     value: settingTreeItem.setting.value,
-                    password: true
+                    password: settingTreeItem.setting.password
                 });
 
                 if (newValue !== undefined) {
-                    await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, { key: settingTreeItem.setting.key, value: newValue, selected: settingTreeItem.setting.selected }, settingTreeItem.storageKey);
+                    await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, { key: settingTreeItem.setting.key, value: newValue, selected: settingTreeItem.setting.selected, password: settingTreeItem.setting.password }, settingTreeItem.storageKey);
                     this.refresh();
                 }
             })
@@ -48,7 +48,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
 
     async onDidChangeCheckboxState(event: TreeCheckboxChangeEvent<SettingTreeItem>) {
         for await (const [treeItem, state] of event.items) {
-            await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.setting.key, value: treeItem.setting.value, selected: state === TreeItemCheckboxState.Checked }, treeItem.storageKey);
+            await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.setting.key, value: treeItem.setting.value, selected: state === TreeItemCheckboxState.Checked, password: treeItem.setting.password }, treeItem.storageKey);
         }
     }
 

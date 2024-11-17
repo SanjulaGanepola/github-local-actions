@@ -17,7 +17,7 @@ export default class SecretsTreeItem extends TreeItem implements GithubLocalActi
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
         const items: GithubLocalActionsTreeItem[] = [];
 
-        const secrets = await act.settingsManager.getSetting(this.workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets);
+        const secrets = await act.settingsManager.getSetting(this.workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true);
         for (const secret of secrets) {
             items.push(SettingTreeItem.getSecretTreeItem(this.workspaceFolder, secret));
         }

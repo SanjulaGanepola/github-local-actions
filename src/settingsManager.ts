@@ -5,6 +5,7 @@ import { StorageKey, StorageManager } from "./storageManager";
 export interface Setting {
     key: string,
     value: string,
+    password: boolean,
     selected: boolean
 }
 
@@ -19,7 +20,7 @@ export class SettingsManager {
         this.storageManager = storageManager;
     }
 
-    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey): Promise<Setting[]> {
+    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey, password: boolean): Promise<Setting[]> {
         const settings: Setting[] = [];
 
         const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
@@ -28,7 +29,7 @@ export class SettingsManager {
                 continue;
             }
 
-            const workflowSettings = this.findInWorkflow(workflow.fileContent, regExp);
+            const workflowSettings = this.findInWorkflow(workflow.fileContent, regExp, password);
             for (const workflowSetting of workflowSettings) {
                 const existingSetting = settings.find(setting => setting.key === workflowSetting.key);
                 if (!existingSetting) {
@@ -45,6 +46,7 @@ export class SettingsManager {
                     settings[index] = {
                         key: setting.key,
                         value: existingSetting.value,
+                        password: existingSetting.password,
                         selected: existingSetting.selected
                     };
                 }
@@ -73,12 +75,12 @@ export class SettingsManager {
         await this.storageManager.update(storageKey, existingSettings);
     }
 
-    private findInWorkflow(content: string, regExp: RegExp) {
+    private findInWorkflow(content: string, regExp: RegExp, password: boolean) {
         const results: Setting[] = [];
 
         const matches = content.matchAll(regExp);
         for (const match of matches) {
-            results.push({ key: match[1], value: '', selected: false });
+            results.push({ key: match[1], value: '', password: password, selected: false });
         }
 
         return results;

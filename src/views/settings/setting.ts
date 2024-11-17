@@ -30,7 +30,7 @@ export default class SettingTreeItem extends TreeItem implements GithubLocalActi
     }
 
     static getRunnerTreeItem(workspaceFolder: WorkspaceFolder, runner: Setting): SettingTreeItem {
-        return new SettingTreeItem(workspaceFolder, runner, StorageKey.Runners, { description: runner.value, contextValue: 'githubLocalActions.runner', iconPath: new ThemeIcon('server') });
+        return new SettingTreeItem(workspaceFolder, runner, StorageKey.Runners, { description: runner.value, contextValue: 'githubLocalActions.runner', iconPath: new ThemeIcon('vm-connect') });
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {

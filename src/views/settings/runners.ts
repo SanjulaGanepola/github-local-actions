@@ -17,7 +17,7 @@ export default class RunnersTreeItem extends TreeItem implements GithubLocalActi
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
         const items: GithubLocalActionsTreeItem[] = [];
 
-        const runners = await act.settingsManager.getSetting(this.workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners);
+        const runners = await act.settingsManager.getSetting(this.workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false);
         for (const runner of runners) {
             items.push(SettingTreeItem.getRunnerTreeItem(this.workspaceFolder, runner));
         }

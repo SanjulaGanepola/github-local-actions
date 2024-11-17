@@ -48,7 +48,7 @@ export enum Option {
     Job = '-j',
     Platform = '-P',
     Secret = '--secret',
-    Var = '--var',
+    Variable = '--var',
     Workflows = '-W'
 }
 
@@ -260,12 +260,13 @@ export class Act {
             return;
         }
 
-        const secrets = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets)).filter(secret => secret.selected && secret.value);
-        const variables = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables)).filter(variable => variable.selected && variable.value);
-        const inputs = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs)).filter(input => input.selected && input.value);
-        const runners = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners)).filter(runner => runner.selected && runner.value);
+        const secrets = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true)).filter(secret => secret.selected);
+        const variables = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false)).filter(variable => variable.selected);
+        const inputs = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false)).filter(input => input.selected && input.value);
+        const runners = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false)).filter(runner => runner.selected && runner.value);
         const command = `${Act.base} ` +
-            (variables.length > 0 ? ` ${Option.Var} ${variables.map(variable => `${variable.key}=${variable.value}`).join(` ${Option.Var} `)}` : ``) +
+            (secrets.length > 0 ? ` ${Option.Secret} ${secrets.map(secret => (secret.value ? `${secret.key}=${secret.value}` : secret.key)).join(` ${Option.Secret} `)}` : ``) +
+            (variables.length > 0 ? ` ${Option.Variable} ${variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
             (inputs.length > 0 ? ` ${Option.Input} ${inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
             (runners.length > 0 ? ` ${Option.Platform} ${runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
             ` ${commandArgs.options}`;
