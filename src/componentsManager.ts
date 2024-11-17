@@ -209,7 +209,7 @@ export class ComponentsManager {
 
     async getUnreadyComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
         const components = await this.getComponents();
-        return components.filter(component => component.required && (component.status === CliStatus.NotInstalled || component.status === ExtensionStatus.NotActivated));
+        return components.filter(component => component.required && [CliStatus.NotInstalled, CliStatus.NotRunning, ExtensionStatus.NotActivated].includes(component.status));
     }
 
     async getCliInfo(command: string, versionRegex: RegExp, ignoreError: boolean, checksIfRunning: boolean): Promise<{ version?: string, status: CliStatus }> {
