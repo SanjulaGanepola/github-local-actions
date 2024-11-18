@@ -3,6 +3,7 @@ import { commands, ExtensionContext, ShellExecution, TaskGroup, TaskPanelKind, T
 import { ComponentsManager } from "./componentsManager";
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
 import { HistoryManager, HistoryStatus } from './historyManager';
+import { SecretManager } from "./secretManager";
 import { SettingsManager } from './settingsManager';
 import { StorageKey, StorageManager } from './storageManager';
 import { Job, Workflow, WorkflowsManager } from "./workflowsManager";
@@ -62,6 +63,7 @@ export interface CommandArgs {
 export class Act {
     private static base: string = 'act';
     storageManager: StorageManager;
+    secretManager: SecretManager;
     componentsManager: ComponentsManager;
     workflowsManager: WorkflowsManager;
     historyManager: HistoryManager;
@@ -71,10 +73,11 @@ export class Act {
 
     constructor(context: ExtensionContext) {
         this.storageManager = new StorageManager(context);
+        this.secretManager = new SecretManager(context);
         this.componentsManager = new ComponentsManager();
         this.workflowsManager = new WorkflowsManager();
         this.historyManager = new HistoryManager(this.storageManager);
-        this.settingsManager = new SettingsManager(this.storageManager);
+        this.settingsManager = new SettingsManager(this.storageManager, this.secretManager);
 
         switch (process.platform) {
             case 'win32':
@@ -272,15 +275,12 @@ export class Act {
         }
 
         // Build command with settings
-        const secrets = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true)).filter(secret => secret.selected);
-        const variables = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false)).filter(variable => variable.selected);
-        const inputs = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false)).filter(input => input.selected && input.value);
-        const runners = (await this.settingsManager.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false)).filter(runner => runner.selected && runner.value);
+        const settings = await this.settingsManager.getSettings(workspaceFolder, true);
         const command = `${Act.base} ${commandArgs.options}` +
-            (secrets.length > 0 ? ` ${Option.Secret} ${secrets.map(secret => (secret.value ? `${secret.key}=${secret.value}` : secret.key)).join(` ${Option.Secret} `)}` : ``) +
-            (variables.length > 0 ? ` ${Option.Variable} ${variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
-            (inputs.length > 0 ? ` ${Option.Input} ${inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
-            (runners.length > 0 ? ` ${Option.Platform} ${runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``);
+            (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => (secret.value ? `${secret.key}=${secret.value}` : secret.key)).join(` ${Option.Secret} `)}` : ``) +
+            (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
+            (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
+            (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``);
 
         // Process task count suffix
         const historyIndex = this.historyManager.workspaceHistory[commandArgs.fsPath].length;

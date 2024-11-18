@@ -1,7 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
-import { Setting, SettingsManager } from "../../settingsManager";
-import { StorageKey } from "../../storageManager";
+import { Setting } from "../../settingsManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SettingTreeItem from "./setting";
 
@@ -18,8 +17,8 @@ export default class RunnersTreeItem extends TreeItem implements GithubLocalActi
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
         const items: GithubLocalActionsTreeItem[] = [];
 
-        const runners = await act.settingsManager.getSetting(this.workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false);
-        for (const runner of runners) {
+        const settings = await act.settingsManager.getSettings(this.workspaceFolder, false);
+        for (const runner of settings.runners) {
             items.push(SettingTreeItem.getRunnerTreeItem(this.workspaceFolder, runner));
         }
 
