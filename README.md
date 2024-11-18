@@ -20,7 +20,7 @@ The `Components` view is where you can manage the following components which mus
 
     ![nektos/act Installation](./images/components-view.png)
 
-2. [Docker Engine](https://docs.docker.com/engine/): Docker Engine is required for act to function as it uses Docker to handle workflow execution. The process includes:
+2. [Docker Engine](https://docs.docker.com/engine): Docker Engine is required for act to function as it uses Docker to handle workflow execution. The process includes:
     
     * Pulling or building the images specified in your workflow files
     * Determining the execution path based on your workflow's dependencies
@@ -47,9 +47,9 @@ The `History` view is where you can manage workflows currently being executed as
 
 ## Settings
 
-The `Settings` view is where you can set [secrets](https://nektosact.com/usage/index.html#secrets), [variables](https://nektosact.com/usage/index.html#vars), [inputs](https://nektosact.com/usage/index.html#pass-inputs-to-manually-triggered-workflows), and [runners](https://nektosact.com/usage/runners.html) to be used when executing workflows. Checkout the [nektos/act](https://github.com/nektos/act) documentation for more details on how these various settings are handled.
+The `Settings` view is where you can set [secrets](https://nektosact.com/usage/index.html#secrets), [variables](https://nektosact.com/usage/index.html#vars), [inputs](https://nektosact.com/usage/index.html#pass-inputs-to-manually-triggered-workflows), and [runners](https://nektosact.com/usage/runners.html) to be used when executing workflows.
 
-> 🚨 Checkout the [nektos/act](https://github.com/nektos/act) documentation for more details on how these various settings are handled. In particular, refer to how secrets can be provided to workflows interactively, as environment variables, or from a file.
+> 🚨 Checkout the [nektos/act](https://nektosact.com) documentation for more details on how these various settings are handled. In particular, refer to how secrets can be provided to workflows interactively, as environment variables, or from a file.
 
 ![Settings View](./images/settings-view.png)
 
