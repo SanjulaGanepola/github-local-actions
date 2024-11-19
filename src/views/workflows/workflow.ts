@@ -17,6 +17,7 @@ export default class WorkflowTreeItem extends TreeItem implements GithubLocalAct
             (workflow.error ? `Error: ${workflow.error}` : ``);
 
         if (workflow.error) {
+            this.description = workflow.error;
             this.resourceUri = Uri.parse(`${WorkflowTreeItem.contextValue}:${workflow.name}?error=${workflow.error}`, true);
         }
     }
