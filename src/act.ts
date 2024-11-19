@@ -1,4 +1,5 @@
 import * as path from "path";
+import sanitize from "sanitize-filename";
 import { commands, ExtensionContext, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
@@ -62,6 +63,7 @@ export interface CommandArgs {
 
 export class Act {
     private static base: string = 'act';
+    context: ExtensionContext;
     storageManager: StorageManager;
     secretManager: SecretManager;
     componentsManager: ComponentsManager;
@@ -72,6 +74,7 @@ export class Act {
     prebuiltExecutables: { [architecture: string]: string };
 
     constructor(context: ExtensionContext) {
+        this.context = context;
         this.storageManager = new StorageManager(context);
         this.secretManager = new SecretManager(context);
         this.componentsManager = new ComponentsManager();
@@ -171,10 +174,11 @@ export class Act {
                     name: `${commandArgs.name}`,
                     status: HistoryStatus.Running,
                     date: {
-                        start: new Date().toString()
+                        start: taskDefinition.start.toString()
                     },
                     taskExecution: e.execution,
-                    commandArgs: commandArgs
+                    commandArgs: commandArgs,
+                    logPath: taskDefinition.logPath
                 });
                 historyTreeDataProvider.refresh();
                 this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
@@ -274,14 +278,6 @@ export class Act {
             this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
         }
 
-        // Build command with settings
-        const settings = await this.settingsManager.getSettings(workspaceFolder, true);
-        const command = `${Act.base} ${commandArgs.options}` +
-            (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => (secret.value ? `${secret.key}=${secret.value}` : secret.key)).join(` ${Option.Secret} `)}` : ``) +
-            (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
-            (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
-            (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``);
-
         // Process task count suffix
         const historyIndex = this.historyManager.workspaceHistory[commandArgs.fsPath].length;
         const matchingTasks = this.historyManager.workspaceHistory[commandArgs.fsPath]
@@ -289,11 +285,42 @@ export class Act {
             .sort((a, b) => b.count - a.count);
         const count = matchingTasks && matchingTasks.length > 0 ? matchingTasks[0].count + 1 : 1;
 
+        // Process log file and path
+        const start = new Date();
+        const year = start.getFullYear();
+        const month = (start.getMonth() + 1).toString().padStart(2, '0');
+        const day = start.getDate().toString().padStart(2, '0');
+        const hours = start.getHours().toString().padStart(2, '0');
+        const minutes = start.getMinutes().toString().padStart(2, '0');
+        const seconds = start.getSeconds().toString().padStart(2, '0');
+        const logFileName = sanitize(`${commandArgs.name} #${count} - ${year}${month}${day}_${hours}${minutes}${seconds}.log`, { replacement: '_' });
+        const logPath = path.join(this.context.globalStorageUri.fsPath, logFileName);
+
+        try {
+            await workspace.fs.createDirectory(this.context.globalStorageUri);
+        } catch (error) { }
+
+        // Build command with settings
+        const settings = await this.settingsManager.getSettings(workspaceFolder, true);
+        const command = `${Act.base} ${commandArgs.options}` +
+            (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => (secret.value ? `${secret.key}=${secret.value}` : secret.key)).join(` ${Option.Secret} `)}` : ``) +
+            (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
+            (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
+            (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
+            `| tee "${logPath}"`;
+
         // Execute task
         await tasks.executeTask({
             name: `${commandArgs.name} #${count}`,
             detail: `${commandArgs.name} #${count}`,
-            definition: { type: 'GitHub Local Actions', commandArgs: commandArgs, historyIndex: historyIndex, count: count },
+            definition: {
+                type: 'GitHub Local Actions',
+                commandArgs: commandArgs,
+                historyIndex: historyIndex,
+                count: count,
+                start: start,
+                logPath: logPath
+            },
             source: 'GitHub Local Actions',
             scope: workspaceFolder || TaskScope.Workspace,
             isBackground: true,

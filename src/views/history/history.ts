@@ -1,3 +1,4 @@
+import * as path from "path";
 import { ThemeColor, ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { History, HistoryStatus } from "../../historyManager";
 import { Utils } from "../../utils";
@@ -38,8 +39,9 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
                 break;
         }
         this.tooltip = `Name: ${history.name} #${history.count}\n` +
-            `Path: ${history.commandArgs.fsPath}\n` +
             `${history.commandArgs.extraHeader.map(header => `${header.key}: ${header.value}`).join('\n')}\n` +
+            `Path: ${history.commandArgs.fsPath}\n` +
+            `Log File: ${path.parse(history.logPath).base}\n` +
             `Status: ${history.status}\n` +
             `Started: ${Utils.getDateString(history.date.start)}\n` +
             `Ended: ${endTime ? Utils.getDateString(endTime) : 'N/A'}\n` +

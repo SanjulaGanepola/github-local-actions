@@ -206,7 +206,6 @@
         "category": "GitHub Local Actions",
         "command": "githubLocalActions.viewOutput",
         "title": "View Output",
-        "enablement": "viewItem =~ /^githubLocalActions.history_(Success|Failed|Cancelled).*/",
         "icon": "$(book)"
       },
       {
@@ -538,6 +537,7 @@
   },
   "dependencies": {
     "child_process": "^1.0.2",
+    "sanitize-filename": "^1.6.3",
     "yaml": "^2.6.0"
   },
   "devDependencies": {

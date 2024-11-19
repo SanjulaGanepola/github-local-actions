@@ -1,4 +1,4 @@
-import { TaskExecution, window, workspace, WorkspaceFolder } from "vscode";
+import { TaskExecution, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { CommandArgs } from "./act";
 import { act, historyTreeDataProvider } from "./extension";
 import { StorageKey, StorageManager } from "./storageManager";
@@ -11,10 +11,10 @@ export interface History {
     date: {
         start: string,
         end?: string,
-    }
-    output?: string,
+    },
     taskExecution?: TaskExecution,
-    commandArgs: CommandArgs
+    commandArgs: CommandArgs,
+    logPath: string
 }
 
 export enum HistoryStatus {
@@ -44,15 +44,25 @@ export class HistoryManager {
     }
 
     async clearAll(workspaceFolder: WorkspaceFolder) {
+        const existingHistory = this.workspaceHistory[workspaceFolder.uri.fsPath];
+        for (const history of existingHistory) {
+            try {
+                await workspace.fs.delete(Uri.file(history.logPath));
+            } catch (error) { }
+        }
+
         this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
         historyTreeDataProvider.refresh();
         this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
     }
 
     async viewOutput(history: History) {
-        await workspace.openTextDocument({ content: history.output }).then(async document => {
+        try {
+            const document = await workspace.openTextDocument(history.logPath)
             await window.showTextDocument(document);
-        });
+        } catch (error) {
+            window.showErrorMessage(`${history.name} #${history.count} log file not found`);
+        }
     }
 
     async restart(history: History) {
@@ -67,5 +77,9 @@ export class HistoryManager {
         const historyIndex = this.workspaceHistory[history.commandArgs.fsPath].findIndex(workspaceHistory => workspaceHistory.index === history.index);
         this.workspaceHistory[history.commandArgs.fsPath].splice(historyIndex, 1);
         this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
+
+        try {
+            await workspace.fs.delete(Uri.file(history.logPath));
+        } catch (error) { }
     }
 }
