@@ -303,7 +303,7 @@ export class Act {
         // Build command with settings
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
         const command = `${Act.base} ${commandArgs.options}` +
-            (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => (secret.value ? `${secret.key}=${secret.value}` : secret.key)).join(` ${Option.Secret} `)}` : ``) +
+            (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
             (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
             (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
             (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
@@ -336,7 +336,18 @@ export class Act {
             problemMatchers: [],
             runOptions: {},
             group: TaskGroup.Build,
-            execution: new ShellExecution(command, { cwd: commandArgs.fsPath })
+            execution: new ShellExecution(
+                command,
+                {
+                    cwd: commandArgs.fsPath,
+                    env: settings.secrets
+                        .filter(secret => secret.value)
+                        .reduce((previousValue, currentValue) => {
+                            previousValue[currentValue.key] = currentValue.value;
+                            return previousValue;
+                        }, {} as Record<string, string>)
+                }
+            )
         });
         this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
     }

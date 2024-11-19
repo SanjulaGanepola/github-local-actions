@@ -31,8 +31,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 const newValue = await window.showInputBox({
                     prompt: `Enter the value for ${settingTreeItem.setting.value}`,
                     placeHolder: `Setting value`,
-                    value: settingTreeItem.setting.visible === Visibility.hide && settingTreeItem.setting.password ? '' : settingTreeItem.setting.value,
-                    password: settingTreeItem.setting.visible === Visibility.hide && settingTreeItem.setting.password
+                    value: settingTreeItem.setting.value
                 });
 
                 if (newValue !== undefined) {
