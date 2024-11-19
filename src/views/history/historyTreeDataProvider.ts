@@ -1,4 +1,4 @@
-import { CancellationToken, commands, EventEmitter, ExtensionContext, extensions, TreeDataProvider, TreeItem, workspace } from "vscode";
+import { CancellationToken, commands, EventEmitter, ExtensionContext, extensions, TreeDataProvider, TreeItem, window, workspace } from "vscode";
 import { act } from "../../extension";
 import { HistoryStatus } from "../../historyManager";
 import { Utils } from "../../utils";
@@ -25,6 +25,14 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
             }),
             commands.registerCommand('githubLocalActions.refreshHistory', async () => {
                 this.refresh();
+            }),
+            commands.registerCommand('githubLocalActions.focusTask', async (historyTreeItem: HistoryTreeItem) => {
+                const terminals = window.terminals;
+                for (const terminal of terminals) {
+                    if (terminal.creationOptions.name === `${historyTreeItem.history.name} #${historyTreeItem.history.count}`) {
+                        terminal.show();
+                    }
+                }
             }),
             commands.registerCommand('githubLocalActions.viewOutput', async (historyTreeItem: HistoryTreeItem) => {
                 await act.historyManager.viewOutput(historyTreeItem.history);

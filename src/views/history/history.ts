@@ -37,11 +37,18 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
                 this.iconPath = new ThemeIcon('circle-slash', new ThemeColor('GitHubLocalActions.yellow'));
                 break;
         }
-        this.tooltip = `Name: ${history.name}\n` +
+        this.tooltip = `Name: ${history.name} #${history.count}\n` +
+            `Path: ${history.commandArgs.fsPath}\n` +
+            `${history.commandArgs.extraHeader.map(header => `${header.key}: ${header.value}`).join('\n')}\n` +
             `Status: ${history.status}\n` +
             `Started: ${Utils.getDateString(history.date.start)}\n` +
             `Ended: ${endTime ? Utils.getDateString(endTime) : 'N/A'}\n` +
             `Total Duration: ${totalDuration ? totalDuration : 'N/A'}`;
+        this.command = {
+            title: 'Focus Task',
+            command: 'githubLocalActions.focusTask',
+            arguments: [this]
+        };
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
