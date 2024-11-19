@@ -302,12 +302,14 @@ export class Act {
 
         // Build command with settings
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
-        const command = `${Act.base} ${commandArgs.options}` +
+        const command =
+            `set -o pipefail; ` +
+            `${Act.base} ${commandArgs.options}` +
             (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
             (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
             (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
             (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
-            ` | tee "${logPath}"`;
+            ` 2>&1 | tee "${logPath}"`;
 
         // Execute task
         await tasks.executeTask({
