@@ -1,5 +1,6 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeCheckboxChangeEvent, TreeDataProvider, TreeItem, TreeItemCheckboxState, window, workspace } from "vscode";
 import { act } from "../../extension";
+import { Visibility } from "../../settingsManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SettingTreeItem from "./setting";
 import WorkspaceFolderSettingsTreeItem from "./workspaceFolderSettings";
@@ -14,16 +15,30 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
             commands.registerCommand('githubLocalActions.refreshSettings', async () => {
                 this.refresh();
             }),
+            commands.registerCommand('githubLocalActions.show', async (settingTreeItem: SettingTreeItem) => {
+                const newSetting = settingTreeItem.setting;
+                newSetting.visible = Visibility.show;
+                await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, newSetting, settingTreeItem.storageKey);
+                this.refresh();
+            }),
+            commands.registerCommand('githubLocalActions.hide', async (settingTreeItem: SettingTreeItem) => {
+                const newSetting = settingTreeItem.setting;
+                newSetting.visible = Visibility.hide;
+                await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, newSetting, settingTreeItem.storageKey);
+                this.refresh();
+            }),
             commands.registerCommand('githubLocalActions.editSetting', async (settingTreeItem: SettingTreeItem) => {
                 const newValue = await window.showInputBox({
                     prompt: `Enter the value for ${settingTreeItem.setting.value}`,
                     placeHolder: `Setting value`,
-                    value: settingTreeItem.setting.value,
-                    password: settingTreeItem.setting.password
+                    value: settingTreeItem.setting.visible === Visibility.hide && settingTreeItem.setting.password ? '' : settingTreeItem.setting.value,
+                    password: settingTreeItem.setting.visible === Visibility.hide && settingTreeItem.setting.password
                 });
 
                 if (newValue !== undefined) {
-                    await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, { key: settingTreeItem.setting.key, value: newValue, selected: settingTreeItem.setting.selected, password: settingTreeItem.setting.password }, settingTreeItem.storageKey);
+                    const newSetting = settingTreeItem.setting;
+                    newSetting.value = newValue;
+                    await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, newSetting, settingTreeItem.storageKey);
                     this.refresh();
                 }
             })
@@ -48,7 +63,9 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
 
     async onDidChangeCheckboxState(event: TreeCheckboxChangeEvent<SettingTreeItem>) {
         for await (const [treeItem, state] of event.items) {
-            await act.settingsManager.editSetting(treeItem.workspaceFolder, { key: treeItem.setting.key, value: treeItem.setting.value, selected: state === TreeItemCheckboxState.Checked, password: treeItem.setting.password }, treeItem.storageKey);
+            const newSetting = treeItem.setting;
+            newSetting.selected = (state === TreeItemCheckboxState.Checked);
+            await act.settingsManager.editSetting(treeItem.workspaceFolder, newSetting, treeItem.storageKey);
         }
         this.refresh();
     }

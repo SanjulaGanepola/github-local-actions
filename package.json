@@ -238,6 +238,18 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.show",
+        "title": "Show",
+        "icon": "$(eye)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.hide",
+        "title": "Hide",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.editSetting",
         "title": "Edit",
         "icon": "$(edit)"
@@ -328,6 +340,14 @@
         },
         {
           "command": "githubLocalActions.refreshSettings",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.show",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.hide",
           "when": "never"
         },
         {
@@ -462,9 +482,19 @@
           "group": "inline@3"
         },
         {
+          "command": "githubLocalActions.show",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.secret(?!s)_hide.*/",
+          "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.hide",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.secret(?!s)_show.*/",
+          "group": "inline@0"
+        },
+        {
           "command": "githubLocalActions.editSetting",
           "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|runner)(?!s).*/",
-          "group": "inline@0"
+          "group": "inline@1"
         }
       ]
     },

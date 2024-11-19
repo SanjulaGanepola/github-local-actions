@@ -7,7 +7,13 @@ export interface Setting {
     key: string,
     value: string,
     password: boolean,
-    selected: boolean
+    selected: boolean,
+    visible: Visibility
+}
+
+export enum Visibility {
+    show = 'show',
+    hide = 'hide'
 }
 
 export class SettingsManager {
@@ -24,20 +30,20 @@ export class SettingsManager {
     }
 
     async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean) {
-        const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true)).filter(secret => !isUserSelected || secret.selected);
-        const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false)).filter(variable => !isUserSelected || variable.selected);
-        const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false)).filter(input => !isUserSelected || (input.selected && input.value));
-        const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false)).filter(runner => !isUserSelected || (runner.selected && runner.value));
+        const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || secret.selected);
+        const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || variable.selected);
+        const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
+        const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
 
         return {
             secrets: secrets,
             variables: variables,
             inputs: inputs,
             runners: runners
-        }
+        };
     }
 
-    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey, password: boolean): Promise<Setting[]> {
+    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey, password: boolean, visible: Visibility): Promise<Setting[]> {
         const settings: Setting[] = [];
 
         const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
@@ -46,7 +52,7 @@ export class SettingsManager {
                 continue;
             }
 
-            const workflowSettings = this.findInWorkflow(workflow.fileContent, regExp, password);
+            const workflowSettings = this.findInWorkflow(workflow.fileContent, regExp, password, visible);
             for (const workflowSetting of workflowSettings) {
                 const existingSetting = settings.find(setting => setting.key === workflowSetting.key);
                 if (!existingSetting) {
@@ -71,7 +77,8 @@ export class SettingsManager {
                         key: setting.key,
                         value: value,
                         password: existingSetting.password,
-                        selected: existingSetting.selected
+                        selected: existingSetting.selected,
+                        visible: existingSetting.visible
                     };
                 }
             }
@@ -102,16 +109,20 @@ export class SettingsManager {
 
         await this.storageManager.update(storageKey, existingSettings);
         if (storageKey === StorageKey.Secrets) {
-            await this.secretManager.store(workspaceFolder, storageKey, newSetting.key, value);
+            if (value === '') {
+                await this.secretManager.delete(workspaceFolder, storageKey, newSetting.key);
+            } else {
+                await this.secretManager.store(workspaceFolder, storageKey, newSetting.key, value);
+            }
         }
     }
 
-    private findInWorkflow(content: string, regExp: RegExp, password: boolean) {
+    private findInWorkflow(content: string, regExp: RegExp, password: boolean, visible: Visibility) {
         const results: Setting[] = [];
 
         const matches = content.matchAll(regExp);
         for (const match of matches) {
-            results.push({ key: match[1], value: '', password: password, selected: false });
+            results.push({ key: match[1], value: '', password: password, selected: false, visible: visible });
         }
 
         return results;
