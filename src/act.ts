@@ -307,7 +307,7 @@ export class Act {
             (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
             (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
             (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
-            `| tee "${logPath}"`;
+            ` | tee "${logPath}"`;
 
         // Execute task
         await tasks.executeTask({
