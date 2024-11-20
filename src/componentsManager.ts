@@ -32,7 +32,7 @@ export class ComponentsManager {
 
         const actCliInfo = await this.getCliInfo('act --version', /act version (.+)/, false, false);
         components.push({
-            name: 'nektos/act CLI',
+            name: 'nektos/act',
             icon: 'terminal',
             version: actCliInfo.version,
             status: actCliInfo.status,
