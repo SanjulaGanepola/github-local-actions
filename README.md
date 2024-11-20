@@ -12,6 +12,8 @@ Run your GitHub Actions locally with the power of the [GitHub Local Actions](htt
 * 📖 **View Workflow Run History**: Track and investigate past workflow logs.
 * ⚙️ **Manage Workflow Settings**: Define secrets, variables, inputs, and runners to be used when executing workflows.
 
+![GitHub Local Actions](./images/github-local-actions.gif)
+
 ## Components
 
 The `Components` view is where you can manage the following components which must be installed and started up before running any GitHub Actions:
