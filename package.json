@@ -18,7 +18,9 @@
     "url": "https://github.com/SanjulaGanepola/github-local-actions/issues"
   },
   "keywords": [
-    "GitHub Actions"
+    "GitHub Actions",
+    "GitHub Actions Workflow",
+    "GitHub Local Actions"
   ],
   "categories": [
     "Other"
