@@ -57,7 +57,7 @@ The `Settings` view is where you can set [secrets](https://nektosact.com/usage/i
 
 Feel free to share any bugs or feature requests in the project's [GitHub Issues](https://github.com/SanjulaGanepola/github-local-actions/issues) page.
 
-> For any bugs or feature requests related to nektos/act specifically, refer to its dedicated [GitHub Issues](https://github.com/nektos/act/issues) page.
+> 🚨 For any bugs or feature requests related to nektos/act specifically, refer to its dedicated [GitHub Issues](https://github.com/nektos/act/issues) page.
 
 ## Contribution
 
