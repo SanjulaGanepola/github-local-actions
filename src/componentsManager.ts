@@ -1,11 +1,14 @@
 import * as childProcess from "child_process";
-import { env, extensions, QuickPickItemKind, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, ThemeIcon, Uri, window } from "vscode";
+import { commands, env, extensions, QuickPickItemKind, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, ThemeIcon, Uri, window } from "vscode";
+import { ConfigurationManager, Platform, Section } from "./configurationManager";
 import { act, componentsTreeDataProvider } from "./extension";
+import ComponentsTreeDataProvider from "./views/components/componentsTreeDataProvider";
 
 export interface Component<T extends CliStatus | ExtensionStatus> {
     name: string,
     icon: string,
     version?: string,
+    path?: string,
     status: T,
     required: boolean,
     information: string,
@@ -121,10 +124,12 @@ export class ComponentsManager {
         });
 
         const dockerCliInfo = await this.getCliInfo('docker version', /Client:\n.+\n\sVersion:\s+(.+)/, true, true);
+        const dockerDesktopPath = ConfigurationManager.get<string>(Section.dockerDesktopPath);
         components.push({
             name: 'Docker Engine',
             icon: 'dashboard',
             version: dockerCliInfo.version,
+            path: dockerDesktopPath,
             status: dockerCliInfo.status,
             required: true,
             information: 'https://docs.docker.com/engine',
@@ -132,15 +137,11 @@ export class ComponentsManager {
                 await env.openExternal(Uri.parse('https://docs.docker.com/engine/install'));
             },
             start: async () => {
-                //TODO: Make the below win32 and darwin paths customizable
-                switch (process.platform) {
-                    case 'win32':
-                        await env.openExternal(Uri.parse('C:/Program Files/Docker/Docker/Docker Desktop.exe'));
-                        break;
-                    case 'darwin':
-                        await env.openExternal(Uri.parse('/Applications/Docker.app'));
-                        break;
-                    case 'linux':
+                const dockerDesktopPath = ConfigurationManager.get<string>(Section.dockerDesktopPath);
+                if (dockerDesktopPath) {
+                    await env.openExternal(Uri.parse(dockerDesktopPath));
+                } else {
+                    if (process.platform === Platform.linux) {
                         await tasks.executeTask({
                             name: 'Docker Engine',
                             detail: 'Start Docker Engine',
@@ -162,15 +163,39 @@ export class ComponentsManager {
                             group: TaskGroup.Build,
                             execution: new ShellExecution('sudo dockerd')
                         });
-                        break;
-                    default:
-                        window.showErrorMessage(`Invalid environment: ${process.platform}`);
+                    } else {
+                        window.showErrorMessage(`Invalid environment: ${process.platform}`, 'Report an Issue').then(async value => {
+                            if (value === 'Report an Issue') {
+                                await commands.executeCommand('githubLocalActions.reportAnIssue');
+                            }
+                        });
                         return;
+                    }
                 }
 
-                window.showInformationMessage('Once Docker Engine is successfully started (this could take a few seconds), refresh the components view.', 'Refresh').then(async value => {
-                    if (value === 'Refresh') {
+                window.withProgress({ location: { viewId: ComponentsTreeDataProvider.VIEW_ID } }, async () => {
+                    // Delay 4 seconds for Docker Desktop to be started
+                    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+                    await delay(4000);
+
+                    // Check again for docker status
+                    const newDockerCliInfo = await this.getCliInfo('docker version', /Client:\n.+\n\sVersion:\s+(.+)/, true, true);
+                    if (dockerCliInfo.status !== newDockerCliInfo.status) {
                         componentsTreeDataProvider.refresh();
+                    } else {
+                        const verificationMessage = process.platform === Platform.linux ?
+                            'If it failed to start, start it manually.' :
+                            'If it failed to start, configure your Docker Desktop path or start it manually.';
+                        const options = process.platform === Platform.linux ?
+                            ['Refresh'] :
+                            ['Refresh', 'Configure Docker Desktop Path'];
+                        window.showInformationMessage(`Once Docker Engine is successfully started, refresh the components view. ${verificationMessage}`, ...options).then(async value => {
+                            if (value === 'Refresh') {
+                                componentsTreeDataProvider.refresh();
+                            } else if (value === 'Configure Docker Desktop Path') {
+                                await commands.executeCommand('workbench.action.openSettings', ConfigurationManager.getSearchTerm(Section.dockerDesktopPath));
+                            }
+                        });
                     }
                 });
             }
