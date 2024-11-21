@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { commands, env, TreeCheckboxChangeEvent, Uri, window, workspace } from 'vscode';
 import { Act } from './act';
+import { ConfigurationManager } from './configurationManager';
 import ComponentsTreeDataProvider from './views/components/componentsTreeDataProvider';
 import { DecorationProvider } from './views/decorationProvider';
 import { GithubLocalActionsTreeItem } from './views/githubLocalActionsTreeItem';
@@ -47,6 +48,14 @@ export function activate(context: vscode.ExtensionContext) {
 	workflowsFileWatcher.onDidDelete(() => {
 		workflowsTreeDataProvider.refresh();
 		settingsTreeDataProvider.refresh();
+	});
+
+	// Initialize configurations
+	ConfigurationManager.initialize();
+	workspace.onDidChangeConfiguration(async event => {
+		if (event.affectsConfiguration(ConfigurationManager.group)) {
+			ConfigurationManager.initialize();
+		}
 	});
 
 	context.subscriptions.push(
