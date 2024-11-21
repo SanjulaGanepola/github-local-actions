@@ -539,6 +539,7 @@
   },
   "dependencies": {
     "child_process": "^1.0.2",
+    "octokit": "^4.0.2",
     "sanitize-filename": "^1.6.3",
     "yaml": "^2.6.0"
   },
