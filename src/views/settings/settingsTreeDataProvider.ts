@@ -69,7 +69,12 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 await window.showTextDocument(document);
             }),
             commands.registerCommand('githubLocalActions.removeSettingFile', async (settingFileTreeItem: SettingFileTreeItem) => {
-
+                await act.settingsManager.removeSettingFile(settingFileTreeItem.workspaceFolder, settingFileTreeItem.settingFile, settingFileTreeItem.storageKey);
+                this.refresh();
+            }),
+            commands.registerCommand('githubLocalActions.deleteSettingFile', async (settingFileTreeItem: SettingFileTreeItem) => {
+                await act.settingsManager.deleteSettingFile(settingFileTreeItem.workspaceFolder, settingFileTreeItem.settingFile, settingFileTreeItem.storageKey);
+                this.refresh();
             }),
             commands.registerCommand('githubLocalActions.show', async (settingTreeItem: SettingTreeItem) => {
                 const newSetting = settingTreeItem.setting;

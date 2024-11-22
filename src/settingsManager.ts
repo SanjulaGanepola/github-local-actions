@@ -1,4 +1,4 @@
-import { WorkspaceFolder } from "vscode";
+import { Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { act } from "./extension";
 import { GitHubManager } from "./githubManager";
 import { SecretManager } from "./secretManager";
@@ -167,6 +167,27 @@ export class SettingsManager {
         }
 
         await this.storageManager.update(storageKey, existingSettingFiles);
+    }
+
+    async removeSettingFile(workspaceFolder: WorkspaceFolder, settingFile: SettingFile, storageKey: StorageKey) {
+        const existingSettingFiles = this.storageManager.get<{ [path: string]: SettingFile[] }>(storageKey) || {};
+        if (existingSettingFiles[workspaceFolder.uri.fsPath]) {
+            const settingFileIndex = existingSettingFiles[workspaceFolder.uri.fsPath].findIndex(settingFile => settingFile.path === settingFile.path);
+            if (settingFileIndex > -1) {
+                existingSettingFiles[workspaceFolder.uri.fsPath].splice(settingFileIndex, 1);
+            }
+        }
+
+        await this.storageManager.update(storageKey, existingSettingFiles);
+    }
+
+    async deleteSettingFile(workspaceFolder: WorkspaceFolder, settingFile: SettingFile, storageKey: StorageKey) {
+        try {
+            await workspace.fs.delete(Uri.file(settingFile.path));
+            await this.removeSettingFile(workspaceFolder, settingFile, storageKey);
+        } catch (error: any) {
+            window.showErrorMessage(`Failed to delete file. Error ${error}`)
+        }
     }
 
     async editSetting(workspaceFolder: WorkspaceFolder, newSetting: Setting, storageKey: StorageKey) {

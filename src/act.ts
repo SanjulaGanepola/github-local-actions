@@ -298,7 +298,7 @@ export class Act {
 
         try {
             await workspace.fs.createDirectory(this.context.globalStorageUri);
-        } catch (error) { }
+        } catch (error: any) { }
 
         // Build command with settings
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);

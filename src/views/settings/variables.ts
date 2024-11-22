@@ -1,6 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
-import { Setting } from "../../settingsManager";
+import { Setting, SettingFile } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SettingTreeItem from "./setting";
@@ -10,9 +10,10 @@ export default class VariablesTreeItem extends TreeItem implements GithubLocalAc
     static contextValue = 'githubLocalActions.variables';
     storageKey = StorageKey.VariableFiles;
 
-    constructor(public workspaceFolder: WorkspaceFolder, variables: Setting[]) {
+    constructor(public workspaceFolder: WorkspaceFolder, variables: Setting[], variableFiles: SettingFile[]) {
         super('Variables', TreeItemCollapsibleState.Collapsed);
-        this.description = `${variables.filter(variable => variable.selected).length}/${variables.length}`;
+        this.description = `${variables.filter(variable => variable.selected).length}/${variables.length}` +
+            (variableFiles.length > 0 ? ` + ${variableFiles.length} variable file(s)` : ``);
         this.contextValue = VariablesTreeItem.contextValue;
         this.iconPath = new ThemeIcon('symbol-key');
     }

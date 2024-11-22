@@ -147,7 +147,7 @@ export class GitHubManager {
     private async getSession(): Promise<AuthenticationSession | undefined> {
         try {
             return await authentication.getSession('github', ['repo'], { createIfNone: true });
-        } catch (error) {
+        } catch (error: any) {
             window.showErrorMessage(`Failed to authenticate to GitHub. Error ${error}`);
             return;
         }

@@ -290,6 +290,12 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.deleteSettingFile",
+        "title": "Delete",
+        "icon": "$(trash)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.editSetting",
         "title": "Edit",
         "icon": "$(edit)"
@@ -412,6 +418,10 @@
         },
         {
           "command": "githubLocalActions.removeSettingFile",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.deleteSettingFile",
           "when": "never"
         },
         {
@@ -584,6 +594,11 @@
           "command": "githubLocalActions.removeSettingFile",
           "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input)File.*/",
           "group": "inline@1"
+        },
+        {
+          "command": "githubLocalActions.deleteSettingFile",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input)File.*/",
+          "group": "inline@2"
         },
         {
           "command": "githubLocalActions.editSetting",

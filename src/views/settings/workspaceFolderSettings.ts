@@ -20,9 +20,9 @@ export default class WorkspaceFolderSettingsTreeItem extends TreeItem implements
 
         const settings = await act.settingsManager.getSettings(this.workspaceFolder, false);
         items.push(...[
-            new SecretsTreeItem(this.workspaceFolder, settings.secrets),
-            new VariablesTreeItem(this.workspaceFolder, settings.variables),
-            new InputsTreeItem(this.workspaceFolder, settings.inputs),
+            new SecretsTreeItem(this.workspaceFolder, settings.secrets, settings.secretFiles),
+            new VariablesTreeItem(this.workspaceFolder, settings.variables, settings.variableFiles),
+            new InputsTreeItem(this.workspaceFolder, settings.inputs, settings.inputFiles),
             new RunnersTreeItem(this.workspaceFolder, settings.runners)
         ]);
 

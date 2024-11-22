@@ -1,6 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
-import { Setting } from "../../settingsManager";
+import { Setting, SettingFile } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SettingTreeItem from "./setting";
@@ -10,9 +10,10 @@ export default class SecretsTreeItem extends TreeItem implements GithubLocalActi
     static contextValue = 'githubLocalActions.secrets';
     storageKey = StorageKey.SecretFiles;
 
-    constructor(public workspaceFolder: WorkspaceFolder, secrets: Setting[]) {
+    constructor(public workspaceFolder: WorkspaceFolder, secrets: Setting[], secretFiles: SettingFile[]) {
         super('Secrets', TreeItemCollapsibleState.Collapsed);
-        this.description = `${secrets.filter(secret => secret.selected).length}/${secrets.length}`;
+        this.description = `${secrets.filter(secret => secret.selected).length}/${secrets.length}` +
+            (secretFiles.length > 0 ? ` + ${secretFiles.length} secret file(s)` : ``);
         this.contextValue = SecretsTreeItem.contextValue;
         this.iconPath = new ThemeIcon('lock');
     }
