@@ -25,6 +25,9 @@
   "categories": [
     "Other"
   ],
+  "extensionDependencies": [
+    "vscode.git"
+  ],
   "engines": {
     "vscode": "^1.93.0"
   },
@@ -251,6 +254,12 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.importFromGithub",
+        "title": "Import from GitHub",
+        "icon": "$(github)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.editSetting",
         "title": "Edit",
         "icon": "$(edit)"
@@ -349,6 +358,10 @@
         },
         {
           "command": "githubLocalActions.hide",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.importFromGithub",
           "when": "never"
         },
         {
@@ -493,6 +506,11 @@
           "group": "inline@0"
         },
         {
+          "command": "githubLocalActions.importFromGithub",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.variables.*/",
+          "group": "inline@0"
+        },
+        {
           "command": "githubLocalActions.editSetting",
           "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|runner)(?!s).*/",
           "group": "inline@1"
@@ -551,6 +569,7 @@
   },
   "dependencies": {
     "child_process": "^1.0.2",
+    "octokit": "^4.0.2",
     "sanitize-filename": "^1.6.3",
     "yaml": "^2.6.0"
   },

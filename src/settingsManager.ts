@@ -1,5 +1,6 @@
 import { WorkspaceFolder } from "vscode";
 import { act } from "./extension";
+import { GitHubManager } from "./githubManager";
 import { SecretManager } from "./secretManager";
 import { StorageKey, StorageManager } from "./storageManager";
 
@@ -19,6 +20,7 @@ export enum Visibility {
 export class SettingsManager {
     storageManager: StorageManager;
     secretManager: SecretManager;
+    githubManager: GitHubManager;
     static secretsRegExp: RegExp = /\${{\s*secrets\.(.*?)\s*}}/g;
     static variablesRegExp: RegExp = /\${{\s*vars\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
     static inputsRegExp: RegExp = /\${{\s*(?:inputs|github\.event\.inputs)\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
@@ -27,6 +29,7 @@ export class SettingsManager {
     constructor(storageManager: StorageManager, secretManager: SecretManager) {
         this.storageManager = storageManager;
         this.secretManager = secretManager;
+        this.githubManager = new GitHubManager();
     }
 
     async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean) {
@@ -34,12 +37,14 @@ export class SettingsManager {
         const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || variable.selected);
         const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
         const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
+        const environments = await this.getEnvironments(workspaceFolder);
 
         return {
             secrets: secrets,
             variables: variables,
             inputs: inputs,
-            runners: runners
+            runners: runners,
+            environments: environments
         };
     }
 
@@ -87,6 +92,37 @@ export class SettingsManager {
         this.storageManager.update(storageKey, existingSettings);
 
         return settings;
+    }
+
+    async getEnvironments(workspaceFolder: WorkspaceFolder): Promise<Setting[]> {
+        const environments: Setting[] = [];
+
+        const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
+        for (const workflow of workflows) {
+            if (!workflow.yaml) {
+                continue;
+            }
+
+            const jobs = workflow.yaml?.jobs;
+            if (jobs) {
+                for (const details of Object.values<any>(jobs)) {
+                    if (details.environment) {
+                        const existingEnvironment = environments.find(environment => environment.key === details.environment);
+                        if (!existingEnvironment) {
+                            environments.push({
+                                key: details.environment,
+                                value: '',
+                                password: false,
+                                selected: false,
+                                visible: Visibility.show
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        return environments;
     }
 
     async editSetting(workspaceFolder: WorkspaceFolder, newSetting: Setting, storageKey: StorageKey) {
