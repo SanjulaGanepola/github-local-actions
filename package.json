@@ -9,7 +9,7 @@
   },
   "publisher": "SanjulaGanepola",
   "license": "Apache-2.0",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": {
     "url": "https://github.com/SanjulaGanepola/github-local-actions"
   },
@@ -516,6 +516,18 @@
           "group": "inline@1"
         }
       ]
+    },
+    "configuration": {
+      "title": "GitHub Local Actions",
+      "properties": {
+        "githubLocalActions.dockerDesktopPath": {
+          "type": "string",
+          "markdownDescription": "The path to your Docker Desktop executable (used for Windows and MacOS). To start Docker Engine from the `Components` view, this application will be launched. Refer to the default path based on OS:\n\n* **Windows**: `C:/Program Files/Docker/Docker/Docker Desktop.exe`\n\n* **MacOS**: `/Applications/Docker.app`",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     },
     "colors": [
       {
