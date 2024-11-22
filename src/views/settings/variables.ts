@@ -1,11 +1,14 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
 import { Setting } from "../../settingsManager";
+import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SettingTreeItem from "./setting";
+import SettingFileTreeItem from "./settingFile";
 
 export default class VariablesTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     static contextValue = 'githubLocalActions.variables';
+    storageKey = StorageKey.VariableFiles;
 
     constructor(public workspaceFolder: WorkspaceFolder, variables: Setting[]) {
         super('Variables', TreeItemCollapsibleState.Collapsed);
@@ -18,10 +21,19 @@ export default class VariablesTreeItem extends TreeItem implements GithubLocalAc
         const items: GithubLocalActionsTreeItem[] = [];
 
         const settings = await act.settingsManager.getSettings(this.workspaceFolder, false);
-        for (const variable of settings.variables) {
-            items.push(SettingTreeItem.getVariableTreeItem(this.workspaceFolder, variable));
-        }
 
-        return items.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString()));
+        const variableTreeItems: GithubLocalActionsTreeItem[] = [];
+        for (const variable of settings.variables) {
+            variableTreeItems.push(SettingTreeItem.getVariableTreeItem(this.workspaceFolder, variable));
+        }
+        items.push(...variableTreeItems.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString())));
+
+        const variableFileTreeItems: GithubLocalActionsTreeItem[] = [];
+        for (const variableFile of settings.variableFiles) {
+            variableFileTreeItems.push(SettingFileTreeItem.getVariableTreeItem(this.workspaceFolder, variableFile));
+        }
+        items.push(...variableFileTreeItems.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString())));
+
+        return items;
     }
 }

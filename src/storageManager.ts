@@ -3,8 +3,11 @@ import { ExtensionContext } from "vscode";
 export enum StorageKey {
     WorkspaceHistory = 'workspaceHistory',
     Secrets = 'secrets',
+    SecretFiles = 'secretFiles',
     Variables = 'variables',
+    VariableFiles = 'variableFiles',
     Inputs = 'inputs',
+    InputFiles = 'inputFiles',
     Runners = 'runners'
 }
 

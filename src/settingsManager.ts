@@ -4,12 +4,29 @@ import { GitHubManager } from "./githubManager";
 import { SecretManager } from "./secretManager";
 import { StorageKey, StorageManager } from "./storageManager";
 
+export interface Settings {
+    secrets: Setting[];
+    secretFiles: SettingFile[];
+    variables: Setting[];
+    variableFiles: SettingFile[];
+    inputs: Setting[];
+    inputFiles: SettingFile[];
+    runners: Setting[];
+    environments: Setting[];
+}
+
 export interface Setting {
     key: string,
     value: string,
     password: boolean,
     selected: boolean,
     visible: Visibility
+}
+
+export interface SettingFile {
+    name: string,
+    path: string,
+    selected: boolean
 }
 
 export enum Visibility {
@@ -32,17 +49,23 @@ export class SettingsManager {
         this.githubManager = new GitHubManager();
     }
 
-    async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean) {
+    async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean): Promise<Settings> {
         const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || secret.selected);
+        const secretFiles = await this.getSettingFiles(workspaceFolder, StorageKey.SecretFiles);
         const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || variable.selected);
+        const variableFiles = await this.getSettingFiles(workspaceFolder, StorageKey.VariableFiles);
         const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
+        const inputFiles = await this.getSettingFiles(workspaceFolder, StorageKey.InputFiles);
         const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
         const environments = await this.getEnvironments(workspaceFolder);
 
         return {
             secrets: secrets,
+            secretFiles: secretFiles,
             variables: variables,
+            variableFiles: variableFiles,
             inputs: inputs,
+            inputFiles: inputFiles,
             runners: runners,
             environments: environments
         };
@@ -94,6 +117,11 @@ export class SettingsManager {
         return settings;
     }
 
+    async getSettingFiles(workspaceFolder: WorkspaceFolder, storageKey: StorageKey): Promise<SettingFile[]> {
+        const existingSettingFiles = this.storageManager.get<{ [path: string]: SettingFile[] }>(storageKey) || {};
+        return existingSettingFiles[workspaceFolder.uri.fsPath] || [];
+    }
+
     async getEnvironments(workspaceFolder: WorkspaceFolder): Promise<Setting[]> {
         const environments: Setting[] = [];
 
@@ -123,6 +151,22 @@ export class SettingsManager {
         }
 
         return environments;
+    }
+
+    async editSettingFile(workspaceFolder: WorkspaceFolder, newSettingFile: SettingFile, storageKey: StorageKey) {
+        const existingSettingFiles = this.storageManager.get<{ [path: string]: SettingFile[] }>(storageKey) || {};
+        if (existingSettingFiles[workspaceFolder.uri.fsPath]) {
+            const index = existingSettingFiles[workspaceFolder.uri.fsPath].findIndex(settingFile => settingFile.path === newSettingFile.path);
+            if (index > -1) {
+                existingSettingFiles[workspaceFolder.uri.fsPath][index] = newSettingFile;
+            } else {
+                existingSettingFiles[workspaceFolder.uri.fsPath].push(newSettingFile);
+            }
+        } else {
+            existingSettingFiles[workspaceFolder.uri.fsPath] = [newSettingFile];
+        }
+
+        await this.storageManager.update(storageKey, existingSettingFiles);
     }
 
     async editSetting(workspaceFolder: WorkspaceFolder, newSetting: Setting, storageKey: StorageKey) {

@@ -74,8 +74,8 @@ export class HistoryManager {
     }
 
     async remove(history: History) {
-        const historyIndex = this.workspaceHistory[history.commandArgs.fsPath].findIndex(workspaceHistory => workspaceHistory.index === history.index);
-        this.workspaceHistory[history.commandArgs.fsPath].splice(historyIndex, 1);
+        const historyIndex = this.workspaceHistory[history.commandArgs.path].findIndex(workspaceHistory => workspaceHistory.index === history.index);
+        this.workspaceHistory[history.commandArgs.path].splice(historyIndex, 1);
         this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
 
         try {
