@@ -1,6 +1,6 @@
 import * as path from "path";
 import sanitize from "sanitize-filename";
-import { commands, ExtensionContext, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, Uri, window, workspace, WorkspaceFolder } from "vscode";
+import { ExtensionContext, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
 import { HistoryManager, HistoryStatus } from './historyManager';
@@ -255,15 +255,15 @@ export class Act {
 
     async runCommand(commandArgs: CommandArgs) {
         // Check if required components are ready
-        const unreadyComponents = await this.componentsManager.getUnreadyComponents();
-        if (unreadyComponents.length > 0) {
-            window.showErrorMessage(`The following required components are not ready: ${unreadyComponents.map(component => component.name).join(', ')}`, 'Fix...').then(async value => {
-                if (value === 'Fix...') {
-                    await commands.executeCommand('components.focus');
-                }
-            });
-            return;
-        }
+        // const unreadyComponents = await this.componentsManager.getUnreadyComponents();
+        // if (unreadyComponents.length > 0) {
+        //     window.showErrorMessage(`The following required components are not ready: ${unreadyComponents.map(component => component.name).join(', ')}`, 'Fix...').then(async value => {
+        //         if (value === 'Fix...') {
+        //             await commands.executeCommand('components.focus');
+        //         }
+        //     });
+        //     return;
+        // }
 
         // Map to workspace folder
         const workspaceFolder = workspace.getWorkspaceFolder(Uri.file(commandArgs.fsPath));
