@@ -51,11 +51,11 @@ export class SettingsManager {
 
     async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean): Promise<Settings> {
         const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || secret.selected);
-        const secretFiles = await this.getSettingFiles(workspaceFolder, StorageKey.SecretFiles);
+        const secretFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.SecretFiles)).filter(secretFile => !isUserSelected || secretFile.selected);
         const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || variable.selected);
-        const variableFiles = await this.getSettingFiles(workspaceFolder, StorageKey.VariableFiles);
+        const variableFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
         const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
-        const inputFiles = await this.getSettingFiles(workspaceFolder, StorageKey.InputFiles);
+        const inputFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.InputFiles)).filter(inputFile => !isUserSelected || inputFile.selected);
         const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
         const environments = await this.getEnvironments(workspaceFolder);
 
@@ -184,10 +184,15 @@ export class SettingsManager {
     async deleteSettingFile(workspaceFolder: WorkspaceFolder, settingFile: SettingFile, storageKey: StorageKey) {
         try {
             await workspace.fs.delete(Uri.file(settingFile.path));
-            await this.removeSettingFile(workspaceFolder, settingFile, storageKey);
         } catch (error: any) {
-            window.showErrorMessage(`Failed to delete file. Error ${error}`)
+            try {
+                await workspace.fs.stat(Uri.file(settingFile.path));
+                window.showErrorMessage(`Failed to delete file. Error ${error}`);
+                return;
+            } catch (error) { }
         }
+
+        await this.removeSettingFile(workspaceFolder, settingFile, storageKey);
     }
 
     async editSetting(workspaceFolder: WorkspaceFolder, newSetting: Setting, storageKey: StorageKey) {
