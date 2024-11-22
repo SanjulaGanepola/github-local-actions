@@ -1,6 +1,7 @@
-import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeCheckboxChangeEvent, TreeDataProvider, TreeItem, TreeItemCheckboxState, window, workspace } from "vscode";
+import { CancellationToken, commands, EventEmitter, ExtensionContext, QuickPickItem, QuickPickItemKind, ThemeIcon, TreeCheckboxChangeEvent, TreeDataProvider, TreeItem, TreeItemCheckboxState, window, workspace } from "vscode";
 import { act } from "../../extension";
 import { Visibility } from "../../settingsManager";
+import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SettingTreeItem from "./setting";
 import WorkspaceFolderSettingsTreeItem from "./workspaceFolderSettings";
@@ -26,6 +27,112 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 newSetting.visible = Visibility.hide;
                 await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, newSetting, settingTreeItem.storageKey);
                 this.refresh();
+            }),
+            commands.registerCommand('githubLocalActions.importFromGithub', async (settingTreeItem: SettingTreeItem) => {
+                const settings = await act.settingsManager.getSettings(settingTreeItem.workspaceFolder, false);
+                const variableNames = settings.variables.map(variable => variable.key);
+                if (variableNames.length > 0) {
+                    const repository = await act.settingsManager.githubManager.getRepository(settingTreeItem.workspaceFolder, 'githubLocalActions.importFromGithub', [settingTreeItem]);
+                    if (repository) {
+                        const variableOptions: QuickPickItem[] = [];
+                        const errors: string[] = [];
+
+                        await window.withProgress({ location: { viewId: SettingsTreeDataProvider.VIEW_ID } }, async () => {
+                            // Get repository variables
+                            const repositoryVariables = await act.settingsManager.githubManager.getVariables(repository.owner, repository.repo);
+                            if (repositoryVariables.error) {
+                                errors.push(repositoryVariables.error);
+                            } else {
+                                const matchingVariables = repositoryVariables.data.filter(variable => variableNames.includes(variable.name));
+                                if (matchingVariables.length > 0) {
+                                    variableOptions.push({
+                                        label: 'Repository Variables',
+                                        kind: QuickPickItemKind.Separator
+                                    });
+
+                                    variableOptions.push(
+                                        ...matchingVariables.map(variable => {
+                                            return {
+                                                label: variable.name,
+                                                description: variable.value,
+                                                iconPath: new ThemeIcon('symbol-variable')
+                                            };
+                                        })
+                                    );
+                                }
+                            }
+
+                            // Get environment variables
+                            const environments = await act.settingsManager.githubManager.getEnvironments(repository.owner, repository.repo);
+                            if (environments.error) {
+                                errors.push(environments.error);
+                            } else {
+                                for (const environment of environments.data) {
+                                    const environmentVariables = await act.settingsManager.githubManager.getVariables(repository.owner, repository.repo, environment.name);
+                                    if (environmentVariables.error) {
+                                        errors.push(environmentVariables.error);
+                                    } else {
+                                        const matchingVariables = environmentVariables.data.filter(variable => variableNames.includes(variable.name));
+                                        if (matchingVariables.length > 0) {
+                                            variableOptions.push({
+                                                label: environment.name,
+                                                kind: QuickPickItemKind.Separator
+                                            });
+
+                                            variableOptions.push(
+                                                ...matchingVariables.map(variable => {
+                                                    return {
+                                                        label: variable.name,
+                                                        description: variable.value,
+                                                        iconPath: new ThemeIcon('symbol-variable')
+                                                    };
+                                                })
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        if (errors.length > 0) {
+                            window.showErrorMessage(`Error(s) encountered retrieving variables from GitHub. Errors: ${[...new Set(errors)].join(' ')}`);
+                        }
+
+                        if (variableOptions.length > 0) {
+                            const selectedVariables = await window.showQuickPick(variableOptions, {
+                                title: 'Select the variables to import from GitHub',
+                                placeHolder: 'Variables',
+                                matchOnDescription: true,
+                                canPickMany: true
+                            });
+
+                            if (selectedVariables) {
+                                const seen = new Set();
+                                const hasDuplicates = selectedVariables.some(variable => {
+                                    return seen.size === seen.add(variable.label).size;
+                                });
+
+                                if (hasDuplicates) {
+                                    window.showErrorMessage('Duplicate variables selected');
+                                } else {
+                                    for await (const variable of selectedVariables) {
+                                        const newSetting = settings.variables.find(existingVariable => existingVariable.key === variable.label);
+                                        if (newSetting && variable.description) {
+                                            newSetting.value = variable.description;
+                                            await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, newSetting, StorageKey.Variables);
+                                        }
+                                    }
+
+                                    this.refresh();
+                                }
+                            }
+                        } else if (errors.length === 0) {
+                            window.showErrorMessage('No matching variables defined in Github');
+                        }
+                    }
+                } else {
+                    window.showErrorMessage('No variables found in workflow(s)');
+                }
             }),
             commands.registerCommand('githubLocalActions.editSetting', async (settingTreeItem: SettingTreeItem) => {
                 const newValue = await window.showInputBox({

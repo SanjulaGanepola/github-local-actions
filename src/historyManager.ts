@@ -58,7 +58,7 @@ export class HistoryManager {
 
     async viewOutput(history: History) {
         try {
-            const document = await workspace.openTextDocument(history.logPath)
+            const document = await workspace.openTextDocument(history.logPath);
             await window.showTextDocument(document);
         } catch (error) {
             window.showErrorMessage(`${history.name} #${history.count} log file not found`);
