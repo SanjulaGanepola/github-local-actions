@@ -41,7 +41,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                             existingSettingFileNames.push(settingFileName);
                         } else {
                             const newSettingFile: SettingFile = {
-                                name: path.parse(uri.fsPath).name,
+                                name: path.parse(uri.fsPath).base,
                                 path: uri.fsPath,
                                 selected: false
                             };

@@ -15,6 +15,8 @@ export default class SettingFileTreeItem extends TreeItem implements GithubLocal
         this.contextValue = treeItem.contextValue;
         this.iconPath = treeItem.iconPath;
         this.checkboxState = settingFile.selected ? TreeItemCheckboxState.Checked : TreeItemCheckboxState.Unchecked;
+        this.tooltip = `Name: ${settingFile.name}\n` +
+            `Path: ${settingFile.path}\n`;
     }
 
     static getSecretTreeItem(workspaceFolder: WorkspaceFolder, secretFile: SettingFile): SettingFileTreeItem {
