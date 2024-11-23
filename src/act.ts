@@ -55,7 +55,11 @@ export enum Option {
     VariableFile = '--var-file',
     Input = '--input',
     InputFile = '--input-file',
-    PayloadFile = '--eventpath'
+    PayloadFile = '--eventpath',
+
+
+    ActionCachePath = '--action-cache-path',
+    ActionOfflineMode = '--action-offline-mode'
 }
 
 export interface CommandArgs {
