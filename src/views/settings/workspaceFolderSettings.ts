@@ -2,6 +2,7 @@ import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "
 import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import InputsTreeItem from "./inputs";
+import PayloadsTreeItem from "./payloads";
 import RunnersTreeItem from "./runners";
 import SecretsTreeItem from "./secrets";
 import VariablesTreeItem from "./variables";
@@ -23,7 +24,8 @@ export default class WorkspaceFolderSettingsTreeItem extends TreeItem implements
             new SecretsTreeItem(this.workspaceFolder, settings.secrets, settings.secretFiles),
             new VariablesTreeItem(this.workspaceFolder, settings.variables, settings.variableFiles),
             new InputsTreeItem(this.workspaceFolder, settings.inputs, settings.inputFiles),
-            new RunnersTreeItem(this.workspaceFolder, settings.runners)
+            new RunnersTreeItem(this.workspaceFolder, settings.runners),
+            new PayloadsTreeItem(this.workspaceFolder, settings.payloadFiles)
         ]);
 
         return items;

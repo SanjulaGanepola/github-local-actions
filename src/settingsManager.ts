@@ -13,6 +13,7 @@ export interface Settings {
     inputs: Setting[];
     inputFiles: SettingFile[];
     runners: Setting[];
+    payloadFiles: SettingFile[];
     environments: Setting[];
 }
 
@@ -38,7 +39,8 @@ export enum Visibility {
 export enum SettingFileName {
     secretFile = '.secrets',
     variableFile = '.env',
-    inputFile = '.input'
+    inputFile = '.input',
+    payloadFile = 'payload.json'
 }
 
 export class SettingsManager {
@@ -64,6 +66,7 @@ export class SettingsManager {
         const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
         const inputFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.InputFiles)).filter(inputFile => !isUserSelected || inputFile.selected);
         const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
+        const payloadFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.PayloadFiles)).filter(payloadFile => !isUserSelected || payloadFile.selected);
         const environments = await this.getEnvironments(workspaceFolder);
 
         return {
@@ -74,6 +77,7 @@ export class SettingsManager {
             inputs: inputs,
             inputFiles: inputFiles,
             runners: runners,
+            payloadFiles: payloadFiles,
             environments: environments
         };
     }

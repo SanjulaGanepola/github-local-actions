@@ -4,6 +4,7 @@ import { SettingFileName, Visibility } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import InputsTreeItem from "./inputs";
+import PayloadsTreeItem from "./payloads";
 import SecretsTreeItem from "./secrets";
 import SettingTreeItem from "./setting";
 import SettingFileTreeItem from "./settingFile";
@@ -95,6 +96,32 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
 
                 if (inputFilesUris) {
                     await act.settingsManager.locateSettingFile(inputsTreeItem.workspaceFolder, inputsTreeItem.storageKey, inputFilesUris);
+                    this.refresh();
+                }
+            }),
+            commands.registerCommand('githubLocalActions.createPayloadFile', async (payloadsTreeItem: PayloadsTreeItem) => {
+                const payloadFileName = await window.showInputBox({
+                    prompt: `Enter the name for the payload file`,
+                    placeHolder: `Payload File Name`,
+                    value: SettingFileName.payloadFile
+                });
+
+                if (payloadFileName) {
+                    await act.settingsManager.createSettingFile(payloadsTreeItem.workspaceFolder, payloadsTreeItem.storageKey, payloadFileName);
+                    this.refresh();
+                }
+            }),
+            commands.registerCommand('githubLocalActions.locatePayloadFiles', async (payloadsTreeItem: PayloadsTreeItem) => {
+                const payloadFilesUris = await window.showOpenDialog({
+                    title: 'Locate Payload Files',
+                    canSelectFiles: true,
+                    canSelectFolders: false,
+                    canSelectMany: true,
+                    defaultUri: payloadsTreeItem.workspaceFolder.uri
+                });
+
+                if (payloadFilesUris) {
+                    await act.settingsManager.locateSettingFile(payloadsTreeItem.workspaceFolder, payloadsTreeItem.storageKey, payloadFilesUris);
                     this.refresh();
                 }
             }),
