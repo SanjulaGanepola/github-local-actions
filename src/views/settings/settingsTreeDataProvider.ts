@@ -234,9 +234,24 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 newSetting.selected = (state === TreeItemCheckboxState.Checked);
                 await act.settingsManager.editSetting(treeItem.workspaceFolder, newSetting, treeItem.storageKey);
             } else {
+                const isSelected = (state === TreeItemCheckboxState.Checked);
+
+                // Update check box state for current setting file tree item
                 const newSettingFile = treeItem.settingFile;
-                newSettingFile.selected = (state === TreeItemCheckboxState.Checked);
+                newSettingFile.selected = isSelected;
                 await act.settingsManager.editSettingFile(treeItem.workspaceFolder, newSettingFile, treeItem.storageKey);
+
+                // Update check box state for other setting file tree items
+                if (isSelected) {
+                    const settingFiles = await act.settingsManager.getSettingFiles(treeItem.workspaceFolder, treeItem.storageKey);
+                    for (const settingFile of settingFiles) {
+                        if (settingFile.selected && settingFile.path !== treeItem.settingFile.path) {
+                            const newSettingFile = settingFile;
+                            newSettingFile.selected = false;
+                            await act.settingsManager.editSettingFile(treeItem.workspaceFolder, newSettingFile, treeItem.storageKey);
+                        }
+                    }
+                }
             }
         }
         this.refresh();
