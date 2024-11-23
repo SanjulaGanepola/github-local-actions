@@ -14,7 +14,7 @@ export default class SecretsTreeItem extends TreeItem implements GithubLocalActi
         super('Secrets', TreeItemCollapsibleState.Collapsed);
         const selectedSecretFiles = secretFiles.filter(secretFile => secretFile.selected);
         this.description = `${secrets.filter(secret => secret.selected).length}/${secrets.length}` +
-            (selectedSecretFiles.length > 0 ? ` + ${selectedSecretFiles.length} secret file(s)` : ``);
+            (selectedSecretFiles.length > 0 ? ` + ${selectedSecretFiles[0].name}` : ``);
         this.contextValue = SecretsTreeItem.contextValue;
         this.iconPath = new ThemeIcon('lock');
     }

@@ -14,7 +14,7 @@ export default class VariablesTreeItem extends TreeItem implements GithubLocalAc
         super('Variables', TreeItemCollapsibleState.Collapsed);
         const selectedVariableFiles = variableFiles.filter(variableFile => variableFile.selected);
         this.description = `${variables.filter(variable => variable.selected).length}/${variables.length}` +
-            (selectedVariableFiles.length > 0 ? ` + ${selectedVariableFiles.length} variable file(s)` : ``);
+            (selectedVariableFiles.length > 0 ? ` + ${selectedVariableFiles[0].name} variable file(s)` : ``);
         this.contextValue = VariablesTreeItem.contextValue;
         this.iconPath = new ThemeIcon('symbol-key');
     }

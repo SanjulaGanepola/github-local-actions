@@ -1,7 +1,6 @@
-import * as path from "path";
 import { CancellationToken, commands, EventEmitter, ExtensionContext, QuickPickItem, QuickPickItemKind, ThemeIcon, TreeCheckboxChangeEvent, TreeDataProvider, TreeItem, TreeItemCheckboxState, window, workspace } from "vscode";
 import { act } from "../../extension";
-import { SettingFile, Visibility } from "../../settingsManager";
+import { SettingFileName, Visibility } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import InputsTreeItem from "./inputs";
@@ -21,48 +20,83 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
             commands.registerCommand('githubLocalActions.refreshSettings', async () => {
                 this.refresh();
             }),
-            commands.registerCommand('githubLocalActions.addSettingFiles', async (treeItem: SecretsTreeItem | VariablesTreeItem | InputsTreeItem, title: string) => {
-                const settingFilesUris = await window.showOpenDialog({
-                    title: title,
-                    canSelectFiles: true,
-                    canSelectFolders: false,
-                    canSelectMany: true,
-                    defaultUri: treeItem.workspaceFolder.uri
+            commands.registerCommand('githubLocalActions.createSecretFile', async (secretsTreeItem: SecretsTreeItem) => {
+                const secretFileName = await window.showInputBox({
+                    prompt: `Enter the name for the secret file`,
+                    placeHolder: `Secret File Name`,
+                    value: SettingFileName.secretFile
                 });
 
-                if (settingFilesUris) {
-                    const settingFilesPaths = (await act.settingsManager.getSettingFiles(treeItem.workspaceFolder, treeItem.storageKey)).map(settingFile => settingFile.path);
-                    const existingSettingFileNames: string[] = [];
-
-                    for await (const uri of settingFilesUris) {
-                        const settingFileName = path.parse(uri.fsPath).name;
-
-                        if (settingFilesPaths.includes(uri.fsPath)) {
-                            existingSettingFileNames.push(settingFileName);
-                        } else {
-                            const newSettingFile: SettingFile = {
-                                name: path.parse(uri.fsPath).base,
-                                path: uri.fsPath,
-                                selected: false
-                            };
-                            await act.settingsManager.editSettingFile(treeItem.workspaceFolder, newSettingFile, treeItem.storageKey);
-                        }
-                    }
-
-                    if (existingSettingFileNames.length > 0) {
-                        window.showErrorMessage(`The following file(s) have already been added: ${existingSettingFileNames.join(', ')}`);
-                    }
+                if (secretFileName) {
+                    await act.settingsManager.createSettingFile(secretsTreeItem.workspaceFolder, secretsTreeItem.storageKey, secretFileName);
                     this.refresh();
                 }
             }),
-            commands.registerCommand('githubLocalActions.addSecretFiles', async (secretsTreeItem: SecretsTreeItem) => {
-                await commands.executeCommand('githubLocalActions.addSettingFiles', secretsTreeItem, 'Add Secret File');
+            commands.registerCommand('githubLocalActions.locateSecretFiles', async (secretsTreeItem: SecretsTreeItem) => {
+                const secretFilesUris = await window.showOpenDialog({
+                    title: 'Locate Secret Files',
+                    canSelectFiles: true,
+                    canSelectFolders: false,
+                    canSelectMany: true,
+                    defaultUri: secretsTreeItem.workspaceFolder.uri
+                });
+
+                if (secretFilesUris) {
+                    await act.settingsManager.locateSettingFile(secretsTreeItem.workspaceFolder, secretsTreeItem.storageKey, secretFilesUris);
+                    this.refresh();
+                }
             }),
-            commands.registerCommand('githubLocalActions.addVariableFiles', async (variablesTreeItem: VariablesTreeItem) => {
-                await commands.executeCommand('githubLocalActions.addSettingFiles', variablesTreeItem, 'Add Variable File');
+            commands.registerCommand('githubLocalActions.createVariableFile', async (variablesTreeItem: VariablesTreeItem) => {
+                const variableFileName = await window.showInputBox({
+                    prompt: `Enter the name for the variable file`,
+                    placeHolder: `Variable File Name`,
+                    value: SettingFileName.variableFile
+                });
+
+                if (variableFileName) {
+                    await act.settingsManager.createSettingFile(variablesTreeItem.workspaceFolder, variablesTreeItem.storageKey, variableFileName);
+                    this.refresh();
+                }
             }),
-            commands.registerCommand('githubLocalActions.addInputFiles', async (inputsTreeItem: InputsTreeItem) => {
-                await commands.executeCommand('githubLocalActions.addSettingFiles', inputsTreeItem, 'Add Input File');
+            commands.registerCommand('githubLocalActions.locateVariableFiles', async (variablesTreeItem: VariablesTreeItem) => {
+                const variableFilesUris = await window.showOpenDialog({
+                    title: 'Locate Variable Files',
+                    canSelectFiles: true,
+                    canSelectFolders: false,
+                    canSelectMany: true,
+                    defaultUri: variablesTreeItem.workspaceFolder.uri
+                });
+
+                if (variableFilesUris) {
+                    await act.settingsManager.locateSettingFile(variablesTreeItem.workspaceFolder, variablesTreeItem.storageKey, variableFilesUris);
+                    this.refresh();
+                }
+            }),
+            commands.registerCommand('githubLocalActions.createInputFile', async (inputsTreeItem: InputsTreeItem) => {
+                const inputFileName = await window.showInputBox({
+                    prompt: `Enter the name for the input file`,
+                    placeHolder: `Input File Name`,
+                    value: SettingFileName.inputFile
+                });
+
+                if (inputFileName) {
+                    await act.settingsManager.createSettingFile(inputsTreeItem.workspaceFolder, inputsTreeItem.storageKey, inputFileName);
+                    this.refresh();
+                }
+            }),
+            commands.registerCommand('githubLocalActions.locateInputFiles', async (inputsTreeItem: InputsTreeItem) => {
+                const inputFilesUris = await window.showOpenDialog({
+                    title: 'Locate Variable Files',
+                    canSelectFiles: true,
+                    canSelectFolders: false,
+                    canSelectMany: true,
+                    defaultUri: inputsTreeItem.workspaceFolder.uri
+                });
+
+                if (inputFilesUris) {
+                    await act.settingsManager.locateSettingFile(inputsTreeItem.workspaceFolder, inputsTreeItem.storageKey, inputFilesUris);
+                    this.refresh();
+                }
             }),
             commands.registerCommand('githubLocalActions.openSettingFile', async (settingFileTreeItem: SettingFileTreeItem) => {
                 const document = await workspace.openTextDocument(settingFileTreeItem.settingFile.path);

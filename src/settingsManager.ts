@@ -1,3 +1,4 @@
+import * as path from "path";
 import { Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { act } from "./extension";
 import { GitHubManager } from "./githubManager";
@@ -32,6 +33,12 @@ export interface SettingFile {
 export enum Visibility {
     show = 'show',
     hide = 'hide'
+}
+
+export enum SettingFileName {
+    secretFile = '.secrets',
+    variableFile = '.env',
+    inputFile = '.input'
 }
 
 export class SettingsManager {
@@ -151,6 +158,48 @@ export class SettingsManager {
         }
 
         return environments;
+    }
+
+    async createSettingFile(workspaceFolder: WorkspaceFolder, storageKey: StorageKey, settingFileName: string) {
+        const settingFileUri = Uri.file(path.join(workspaceFolder.uri.fsPath, settingFileName));
+
+        try {
+            await workspace.fs.stat(settingFileUri);
+            window.showErrorMessage(`A file or folder named ${settingFileName} already exists at ${workspaceFolder.uri.fsPath}. Please choose another name.`);
+        } catch (error: any) {
+            try {
+                await workspace.fs.writeFile(settingFileUri, new TextEncoder().encode(''));
+                await this.locateSettingFile(workspaceFolder, storageKey, [settingFileUri]);
+                const document = await workspace.openTextDocument(settingFileUri);
+                await window.showTextDocument(document);
+            } catch (error: any) {
+                window.showErrorMessage(`Failed to create ${settingFileName}. Error: ${error}`)
+            }
+        }
+    }
+
+    async locateSettingFile(workspaceFolder: WorkspaceFolder, storageKey: StorageKey, settingFilesUris: Uri[]) {
+        const settingFilesPaths = (await act.settingsManager.getSettingFiles(workspaceFolder, storageKey)).map(settingFile => settingFile.path);
+        const existingSettingFileNames: string[] = [];
+
+        for await (const uri of settingFilesUris) {
+            const settingFileName = path.parse(uri.fsPath).name;
+
+            if (settingFilesPaths.includes(uri.fsPath)) {
+                existingSettingFileNames.push(settingFileName);
+            } else {
+                const newSettingFile: SettingFile = {
+                    name: path.parse(uri.fsPath).base,
+                    path: uri.fsPath,
+                    selected: false
+                };
+                await act.settingsManager.editSettingFile(workspaceFolder, newSettingFile, storageKey);
+            }
+        }
+
+        if (existingSettingFileNames.length > 0) {
+            window.showErrorMessage(`The following file(s) have already been added: ${existingSettingFileNames.join(', ')}`);
+        }
     }
 
     async editSettingFile(workspaceFolder: WorkspaceFolder, newSettingFile: SettingFile, storageKey: StorageKey) {

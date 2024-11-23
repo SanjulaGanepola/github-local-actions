@@ -14,7 +14,7 @@ export default class InputsTreeItem extends TreeItem implements GithubLocalActio
         super('Inputs', TreeItemCollapsibleState.Collapsed);
         const selectedInputFiles = inputFiles.filter(inputFile => inputFile.selected);
         this.description = `${inputs.filter(input => input.selected).length}/${inputs.length}` +
-            (selectedInputFiles.length > 0 ? ` + ${selectedInputFiles.length} input file(s)` : ``);
+            (selectedInputFiles.length > 0 ? ` + ${selectedInputFiles[0].name}` : ``);
         this.contextValue = InputsTreeItem.contextValue;
         this.iconPath = new ThemeIcon('record-keys');
     }
