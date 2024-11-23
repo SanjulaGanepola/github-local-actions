@@ -177,7 +177,7 @@ export class SettingsManager {
                 const document = await workspace.openTextDocument(settingFileUri);
                 await window.showTextDocument(document);
             } catch (error: any) {
-                window.showErrorMessage(`Failed to create ${settingFileName}. Error: ${error}`)
+                window.showErrorMessage(`Failed to create ${settingFileName}. Error: ${error}`);
             }
         }
     }
@@ -242,7 +242,7 @@ export class SettingsManager {
                 await workspace.fs.stat(Uri.file(settingFile.path));
                 window.showErrorMessage(`Failed to delete file. Error ${error}`);
                 return;
-            } catch (error) { }
+            } catch (error: any) { }
         }
 
         await this.removeSettingFile(workspaceFolder, settingFile, storageKey);

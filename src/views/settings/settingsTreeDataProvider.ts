@@ -1,4 +1,4 @@
-import { CancellationToken, commands, EventEmitter, ExtensionContext, QuickPickItem, QuickPickItemKind, ThemeIcon, TreeCheckboxChangeEvent, TreeDataProvider, TreeItem, TreeItemCheckboxState, window, workspace } from "vscode";
+import { CancellationToken, commands, EventEmitter, ExtensionContext, QuickPickItem, QuickPickItemKind, ThemeIcon, TreeCheckboxChangeEvent, TreeDataProvider, TreeItem, TreeItemCheckboxState, Uri, window, workspace } from "vscode";
 import { act } from "../../extension";
 import { SettingFileName, Visibility } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
@@ -126,8 +126,17 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 }
             }),
             commands.registerCommand('githubLocalActions.openSettingFile', async (settingFileTreeItem: SettingFileTreeItem) => {
-                const document = await workspace.openTextDocument(settingFileTreeItem.settingFile.path);
-                await window.showTextDocument(document);
+                try {
+                    const document = await workspace.openTextDocument(settingFileTreeItem.settingFile.path);
+                    await window.showTextDocument(document);
+                } catch (error: any) {
+                    try {
+                        await workspace.fs.stat(Uri.file(settingFileTreeItem.settingFile.path));
+                        window.showErrorMessage(`Failed to open file. Error: ${error}`);
+                    } catch (error: any) {
+                        window.showErrorMessage(`File ${settingFileTreeItem.settingFile.name} not found.`);
+                    }
+                }
             }),
             commands.registerCommand('githubLocalActions.removeSettingFile', async (settingFileTreeItem: SettingFileTreeItem) => {
                 await act.settingsManager.removeSettingFile(settingFileTreeItem.workspaceFolder, settingFileTreeItem.settingFile, settingFileTreeItem.storageKey);
