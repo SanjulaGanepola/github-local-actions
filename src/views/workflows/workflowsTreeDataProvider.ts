@@ -1,3 +1,4 @@
+import * as path from "path";
 import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataProvider, TreeItem, window, workspace } from "vscode";
 import { Event } from "../../act";
 import { act } from "../../extension";
@@ -37,8 +38,17 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 this.refresh();
             }),
             commands.registerCommand('githubLocalActions.openWorkflow', async (workflowTreeItem: WorkflowTreeItem) => {
-                const document = await workspace.openTextDocument(workflowTreeItem.workflow.uri);
-                await window.showTextDocument(document);
+                try {
+                    const document = await workspace.openTextDocument(workflowTreeItem.workflow.uri);
+                    await window.showTextDocument(document);
+                } catch (error: any) {
+                    try {
+                        await workspace.fs.stat(workflowTreeItem.workflow.uri);
+                        window.showErrorMessage(`Failed to open workflow. Error: ${error}`);
+                    } catch (error: any) {
+                        window.showErrorMessage(`Workflow ${path.parse(workflowTreeItem.workflow.uri.fsPath).base} not found.`);
+                    }
+                }
             }),
             commands.registerCommand('githubLocalActions.runWorkflow', async (workflowTreeItem: WorkflowTreeItem) => {
                 await act.runWorkflow(workflowTreeItem.workspaceFolder, workflowTreeItem.workflow);
