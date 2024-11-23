@@ -8,6 +8,7 @@ export enum StorageKey {
     VariableFiles = 'variableFiles',
     Inputs = 'inputs',
     InputFiles = 'inputFiles',
+    PayloadFiles = 'PayloadFiles',
     Runners = 'runners'
 }
 

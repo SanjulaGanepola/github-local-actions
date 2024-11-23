@@ -278,6 +278,12 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.importFromGithub",
+        "title": "Import from GitHub",
+        "icon": "$(github)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.createInputFile",
         "title": "Create Input File",
         "icon": "$(add)"
@@ -290,9 +296,15 @@
       },
       {
         "category": "GitHub Local Actions",
-        "command": "githubLocalActions.importFromGithub",
-        "title": "Import from GitHub",
-        "icon": "$(github)"
+        "command": "githubLocalActions.createPayloadFile",
+        "title": "Create Payload File",
+        "icon": "$(add)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.locatePayloadFiles",
+        "title": "Locate Payload Files",
+        "icon": "$(search)"
       },
       {
         "category": "GitHub Local Actions",
@@ -431,6 +443,10 @@
           "when": "never"
         },
         {
+          "command": "githubLocalActions.importFromGithub",
+          "when": "never"
+        },
+        {
           "command": "githubLocalActions.createInputFile",
           "when": "never"
         },
@@ -439,7 +455,11 @@
           "when": "never"
         },
         {
-          "command": "githubLocalActions.importFromGithub",
+          "command": "githubLocalActions.createPayloadFile",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.locatePayloadFiles",
           "when": "never"
         },
         {
@@ -616,6 +636,11 @@
           "group": "inline@1"
         },
         {
+          "command": "githubLocalActions.importFromGithub",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.variables.*/",
+          "group": "inline@2"
+        },
+        {
           "command": "githubLocalActions.createInputFile",
           "when": "view == settings && viewItem =~ /^githubLocalActions.inputs.*/",
           "group": "inline@0"
@@ -626,23 +651,28 @@
           "group": "inline@1"
         },
         {
-          "command": "githubLocalActions.importFromGithub",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.variables.*/",
-          "group": "inline@2"
+          "command": "githubLocalActions.createPayloadFile",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.payloads.*/",
+          "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.locatePayloadFiles",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.payloads.*/",
+          "group": "inline@1"
         },
         {
           "command": "githubLocalActions.openSettingFile",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input)File.*/",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|payload)File.*/",
           "group": "inline@0"
         },
         {
           "command": "githubLocalActions.removeSettingFile",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input)File.*/",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|payload)File.*/",
           "group": "inline@1"
         },
         {
           "command": "githubLocalActions.deleteSettingFile",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input)File.*/",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|payload)File.*/",
           "group": "inline@2"
         },
         {

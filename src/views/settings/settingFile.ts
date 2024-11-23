@@ -55,6 +55,18 @@ export default class SettingFileTreeItem extends TreeItem implements GithubLocal
         );
     }
 
+    static getPayloadTreeItem(workspaceFolder: WorkspaceFolder, payloadFile: SettingFile): SettingFileTreeItem {
+        return new SettingFileTreeItem(
+            workspaceFolder,
+            payloadFile,
+            StorageKey.PayloadFiles,
+            {
+                contextValue: 'githubLocalActions.payloadFile',
+                iconPath: new ThemeIcon('file')
+            }
+        );
+    }
+
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
         return [];
     }

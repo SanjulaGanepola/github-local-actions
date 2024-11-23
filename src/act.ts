@@ -46,15 +46,16 @@ export enum Event {
 }
 
 export enum Option {
-    Workflows = '-W',
-    Job = '-j',
-    Platform = '-P',
+    Workflows = '--workflows',
+    Job = '--job',
+    Platform = '--platform',
     Secret = '--secret',
     SecretFile = '--secret-file',
     Variable = '--var',
     VariableFile = '--var-file',
     Input = '--input',
-    InputFile = '--input-file'
+    InputFile = '--input-file',
+    PayloadFile = '--eventpath'
 }
 
 export interface CommandArgs {
@@ -315,6 +316,7 @@ export class Act {
             (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
             (settings.inputFiles.length > 0 ? ` ${Option.InputFile} "${settings.inputFiles[0].path}"` : ` ${Option.InputFile} ""`) +
             (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
+            (settings.payloadFiles.length > 0 ? ` ${Option.PayloadFile} "${settings.payloadFiles[0].path}"` : ` ${Option.PayloadFile} ""`) +
             ` 2>&1 | tee "${logPath}"`;
 
         // Execute task
