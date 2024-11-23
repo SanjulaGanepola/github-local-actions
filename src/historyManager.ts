@@ -48,7 +48,7 @@ export class HistoryManager {
         for (const history of existingHistory) {
             try {
                 await workspace.fs.delete(Uri.file(history.logPath));
-            } catch (error) { }
+            } catch (error: any) { }
         }
 
         this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
@@ -60,7 +60,7 @@ export class HistoryManager {
         try {
             const document = await workspace.openTextDocument(history.logPath);
             await window.showTextDocument(document);
-        } catch (error) {
+        } catch (error: any) {
             window.showErrorMessage(`${history.name} #${history.count} log file not found`);
         }
     }
@@ -74,12 +74,14 @@ export class HistoryManager {
     }
 
     async remove(history: History) {
-        const historyIndex = this.workspaceHistory[history.commandArgs.fsPath].findIndex(workspaceHistory => workspaceHistory.index === history.index);
-        this.workspaceHistory[history.commandArgs.fsPath].splice(historyIndex, 1);
-        this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
+        const historyIndex = this.workspaceHistory[history.commandArgs.path].findIndex(workspaceHistory => workspaceHistory.index === history.index);
+        if (historyIndex > -1) {
+            this.workspaceHistory[history.commandArgs.path].splice(historyIndex, 1);
+            this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
 
-        try {
-            await workspace.fs.delete(Uri.file(history.logPath));
-        } catch (error) { }
+            try {
+                await workspace.fs.delete(Uri.file(history.logPath));
+            } catch (error: any) { }
+        }
     }
 }

@@ -40,7 +40,7 @@ export default class HistoryTreeItem extends TreeItem implements GithubLocalActi
         }
         this.tooltip = `Name: ${history.name} #${history.count}\n` +
             `${history.commandArgs.extraHeader.map(header => `${header.key}: ${header.value}`).join('\n')}\n` +
-            `Path: ${history.commandArgs.fsPath}\n` +
+            `Path: ${history.commandArgs.path}\n` +
             `Log File: ${path.parse(history.logPath).base}\n` +
             `Status: ${history.status}\n` +
             `Started: ${Utils.getDateString(history.date.start)}\n` +

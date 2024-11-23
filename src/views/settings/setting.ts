@@ -36,7 +36,8 @@ export default class SettingTreeItem extends TreeItem implements GithubLocalActi
     static getVariableTreeItem(workspaceFolder: WorkspaceFolder, variable: Setting): SettingTreeItem {
         return new SettingTreeItem(
             workspaceFolder,
-            variable, StorageKey.Variables,
+            variable,
+            StorageKey.Variables,
             {
                 contextValue: 'githubLocalActions.variable',
                 iconPath: new ThemeIcon('symbol-variable')
@@ -47,7 +48,8 @@ export default class SettingTreeItem extends TreeItem implements GithubLocalActi
     static getInputTreeItem(workspaceFolder: WorkspaceFolder, input: Setting): SettingTreeItem {
         return new SettingTreeItem(
             workspaceFolder,
-            input, StorageKey.Inputs,
+            input,
+            StorageKey.Inputs,
             {
                 contextValue: 'githubLocalActions.input',
                 iconPath: new ThemeIcon('symbol-parameter')
@@ -58,7 +60,8 @@ export default class SettingTreeItem extends TreeItem implements GithubLocalActi
     static getRunnerTreeItem(workspaceFolder: WorkspaceFolder, runner: Setting): SettingTreeItem {
         return new SettingTreeItem(
             workspaceFolder,
-            runner, StorageKey.Runners,
+            runner,
+            StorageKey.Runners,
             {
                 contextValue: 'githubLocalActions.runner',
                 iconPath: new ThemeIcon('vm-connect')

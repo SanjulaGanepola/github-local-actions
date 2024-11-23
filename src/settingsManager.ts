@@ -1,8 +1,20 @@
-import { WorkspaceFolder } from "vscode";
+import * as path from "path";
+import { Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { act } from "./extension";
 import { GitHubManager } from "./githubManager";
 import { SecretManager } from "./secretManager";
 import { StorageKey, StorageManager } from "./storageManager";
+
+export interface Settings {
+    secrets: Setting[];
+    secretFiles: SettingFile[];
+    variables: Setting[];
+    variableFiles: SettingFile[];
+    inputs: Setting[];
+    inputFiles: SettingFile[];
+    runners: Setting[];
+    environments: Setting[];
+}
 
 export interface Setting {
     key: string,
@@ -12,9 +24,21 @@ export interface Setting {
     visible: Visibility
 }
 
+export interface SettingFile {
+    name: string,
+    path: string,
+    selected: boolean
+}
+
 export enum Visibility {
     show = 'show',
     hide = 'hide'
+}
+
+export enum SettingFileName {
+    secretFile = '.secrets',
+    variableFile = '.env',
+    inputFile = '.input'
 }
 
 export class SettingsManager {
@@ -32,17 +56,23 @@ export class SettingsManager {
         this.githubManager = new GitHubManager();
     }
 
-    async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean) {
+    async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean): Promise<Settings> {
         const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || secret.selected);
+        const secretFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.SecretFiles)).filter(secretFile => !isUserSelected || secretFile.selected);
         const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || variable.selected);
+        const variableFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
         const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
+        const inputFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.InputFiles)).filter(inputFile => !isUserSelected || inputFile.selected);
         const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
         const environments = await this.getEnvironments(workspaceFolder);
 
         return {
             secrets: secrets,
+            secretFiles: secretFiles,
             variables: variables,
+            variableFiles: variableFiles,
             inputs: inputs,
+            inputFiles: inputFiles,
             runners: runners,
             environments: environments
         };
@@ -94,6 +124,11 @@ export class SettingsManager {
         return settings;
     }
 
+    async getSettingFiles(workspaceFolder: WorkspaceFolder, storageKey: StorageKey): Promise<SettingFile[]> {
+        const existingSettingFiles = this.storageManager.get<{ [path: string]: SettingFile[] }>(storageKey) || {};
+        return existingSettingFiles[workspaceFolder.uri.fsPath] || [];
+    }
+
     async getEnvironments(workspaceFolder: WorkspaceFolder): Promise<Setting[]> {
         const environments: Setting[] = [];
 
@@ -123,6 +158,90 @@ export class SettingsManager {
         }
 
         return environments;
+    }
+
+    async createSettingFile(workspaceFolder: WorkspaceFolder, storageKey: StorageKey, settingFileName: string) {
+        const settingFileUri = Uri.file(path.join(workspaceFolder.uri.fsPath, settingFileName));
+
+        try {
+            await workspace.fs.stat(settingFileUri);
+            window.showErrorMessage(`A file or folder named ${settingFileName} already exists at ${workspaceFolder.uri.fsPath}. Please choose another name.`);
+        } catch (error: any) {
+            try {
+                await workspace.fs.writeFile(settingFileUri, new TextEncoder().encode(''));
+                await this.locateSettingFile(workspaceFolder, storageKey, [settingFileUri]);
+                const document = await workspace.openTextDocument(settingFileUri);
+                await window.showTextDocument(document);
+            } catch (error: any) {
+                window.showErrorMessage(`Failed to create ${settingFileName}. Error: ${error}`)
+            }
+        }
+    }
+
+    async locateSettingFile(workspaceFolder: WorkspaceFolder, storageKey: StorageKey, settingFilesUris: Uri[]) {
+        const settingFilesPaths = (await act.settingsManager.getSettingFiles(workspaceFolder, storageKey)).map(settingFile => settingFile.path);
+        const existingSettingFileNames: string[] = [];
+
+        for await (const uri of settingFilesUris) {
+            const settingFileName = path.parse(uri.fsPath).name;
+
+            if (settingFilesPaths.includes(uri.fsPath)) {
+                existingSettingFileNames.push(settingFileName);
+            } else {
+                const newSettingFile: SettingFile = {
+                    name: path.parse(uri.fsPath).base,
+                    path: uri.fsPath,
+                    selected: false
+                };
+                await act.settingsManager.editSettingFile(workspaceFolder, newSettingFile, storageKey);
+            }
+        }
+
+        if (existingSettingFileNames.length > 0) {
+            window.showErrorMessage(`The following file(s) have already been added: ${existingSettingFileNames.join(', ')}`);
+        }
+    }
+
+    async editSettingFile(workspaceFolder: WorkspaceFolder, newSettingFile: SettingFile, storageKey: StorageKey) {
+        const existingSettingFiles = this.storageManager.get<{ [path: string]: SettingFile[] }>(storageKey) || {};
+        if (existingSettingFiles[workspaceFolder.uri.fsPath]) {
+            const index = existingSettingFiles[workspaceFolder.uri.fsPath].findIndex(settingFile => settingFile.path === newSettingFile.path);
+            if (index > -1) {
+                existingSettingFiles[workspaceFolder.uri.fsPath][index] = newSettingFile;
+            } else {
+                existingSettingFiles[workspaceFolder.uri.fsPath].push(newSettingFile);
+            }
+        } else {
+            existingSettingFiles[workspaceFolder.uri.fsPath] = [newSettingFile];
+        }
+
+        await this.storageManager.update(storageKey, existingSettingFiles);
+    }
+
+    async removeSettingFile(workspaceFolder: WorkspaceFolder, settingFile: SettingFile, storageKey: StorageKey) {
+        const existingSettingFiles = this.storageManager.get<{ [path: string]: SettingFile[] }>(storageKey) || {};
+        if (existingSettingFiles[workspaceFolder.uri.fsPath]) {
+            const settingFileIndex = existingSettingFiles[workspaceFolder.uri.fsPath].findIndex(settingFile => settingFile.path === settingFile.path);
+            if (settingFileIndex > -1) {
+                existingSettingFiles[workspaceFolder.uri.fsPath].splice(settingFileIndex, 1);
+            }
+        }
+
+        await this.storageManager.update(storageKey, existingSettingFiles);
+    }
+
+    async deleteSettingFile(workspaceFolder: WorkspaceFolder, settingFile: SettingFile, storageKey: StorageKey) {
+        try {
+            await workspace.fs.delete(Uri.file(settingFile.path));
+        } catch (error: any) {
+            try {
+                await workspace.fs.stat(Uri.file(settingFile.path));
+                window.showErrorMessage(`Failed to delete file. Error ${error}`);
+                return;
+            } catch (error) { }
+        }
+
+        await this.removeSettingFile(workspaceFolder, settingFile, storageKey);
     }
 
     async editSetting(workspaceFolder: WorkspaceFolder, newSetting: Setting, storageKey: StorageKey) {

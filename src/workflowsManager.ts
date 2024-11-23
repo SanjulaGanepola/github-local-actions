@@ -34,7 +34,7 @@ export class WorkflowsManager {
           fileContent: fileContent,
           yaml: yaml.parse(fileContent)
         });
-      } catch (error) {
+      } catch (error: any) {
         workflows.push({
           name: (yamlContent ? yamlContent.name : undefined) || path.parse(workflowFileUri.fsPath).name,
           uri: workflowFileUri,

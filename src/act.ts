@@ -46,16 +46,19 @@ export enum Event {
 }
 
 export enum Option {
-    Input = '--input',
+    Workflows = '-W',
     Job = '-j',
     Platform = '-P',
     Secret = '--secret',
+    SecretFile = '--secret-file',
     Variable = '--var',
-    Workflows = '-W'
+    VariableFile = '--var-file',
+    Input = '--input',
+    InputFile = '--input-file'
 }
 
 export interface CommandArgs {
-    fsPath: string,
+    path: string,
     options: string,
     name: string,
     extraHeader: { key: string, value: string }[]
@@ -168,7 +171,7 @@ export class Act {
                 const historyIndex = taskDefinition.historyIndex;
 
                 // Add new entry to workspace history
-                this.historyManager.workspaceHistory[commandArgs.fsPath].push({
+                this.historyManager.workspaceHistory[commandArgs.path].push({
                     index: historyIndex,
                     count: taskDefinition.count,
                     name: `${commandArgs.name}`,
@@ -191,18 +194,18 @@ export class Act {
                 const historyIndex = taskDefinition.historyIndex;
 
                 // Set end status
-                if (this.historyManager.workspaceHistory[commandArgs.fsPath][historyIndex].status === HistoryStatus.Running) {
+                if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status === HistoryStatus.Running) {
                     if (e.exitCode === 0) {
-                        this.historyManager.workspaceHistory[commandArgs.fsPath][historyIndex].status = HistoryStatus.Success;
+                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Success;
                     } else if (!e.exitCode) {
-                        this.historyManager.workspaceHistory[commandArgs.fsPath][historyIndex].status = HistoryStatus.Cancelled;
+                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Cancelled;
                     } else {
-                        this.historyManager.workspaceHistory[commandArgs.fsPath][historyIndex].status = HistoryStatus.Failed;
+                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Failed;
                     }
                 }
 
                 // Set end time
-                this.historyManager.workspaceHistory[commandArgs.fsPath][historyIndex].date.end = new Date().toString();
+                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].date.end = new Date().toString();
 
                 historyTreeDataProvider.refresh();
                 this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
@@ -212,7 +215,7 @@ export class Act {
 
     async runAllWorkflows(workspaceFolder: WorkspaceFolder) {
         return await this.runCommand({
-            fsPath: workspaceFolder.uri.fsPath,
+            path: workspaceFolder.uri.fsPath,
             options: ``,
             name: workspaceFolder.name,
             extraHeader: []
@@ -221,7 +224,7 @@ export class Act {
 
     async runWorkflow(workspaceFolder: WorkspaceFolder, workflow: Workflow) {
         return await this.runCommand({
-            fsPath: workspaceFolder.uri.fsPath,
+            path: workspaceFolder.uri.fsPath,
             options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`,
             name: workflow.name,
             extraHeader: [
@@ -232,7 +235,7 @@ export class Act {
 
     async runJob(workspaceFolder: WorkspaceFolder, workflow: Workflow, job: Job) {
         return await this.runCommand({
-            fsPath: workspaceFolder.uri.fsPath,
+            path: workspaceFolder.uri.fsPath,
             options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}" ${Option.Job} "${job.id}"`,
             name: `${workflow.name}/${job.name}`,
             extraHeader: [
@@ -244,7 +247,7 @@ export class Act {
 
     async runEvent(workspaceFolder: WorkspaceFolder, event: Event) {
         return await this.runCommand({
-            fsPath: workspaceFolder.uri.fsPath,
+            path: workspaceFolder.uri.fsPath,
             options: event,
             name: event,
             extraHeader: [
@@ -266,21 +269,21 @@ export class Act {
         // }
 
         // Map to workspace folder
-        const workspaceFolder = workspace.getWorkspaceFolder(Uri.file(commandArgs.fsPath));
+        const workspaceFolder = workspace.getWorkspaceFolder(Uri.file(commandArgs.path));
         if (!workspaceFolder) {
-            window.showErrorMessage(`Failed to locate workspace folder for ${commandArgs.fsPath}`);
+            window.showErrorMessage(`Failed to locate workspace folder for ${commandArgs.path}`);
             return;
         }
 
         // Initialize history for workspace
-        if (!this.historyManager.workspaceHistory[commandArgs.fsPath]) {
-            this.historyManager.workspaceHistory[commandArgs.fsPath] = [];
+        if (!this.historyManager.workspaceHistory[commandArgs.path]) {
+            this.historyManager.workspaceHistory[commandArgs.path] = [];
             this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
         }
 
         // Process task count suffix
-        const historyIndex = this.historyManager.workspaceHistory[commandArgs.fsPath].length;
-        const matchingTasks = this.historyManager.workspaceHistory[commandArgs.fsPath]
+        const historyIndex = this.historyManager.workspaceHistory[commandArgs.path].length;
+        const matchingTasks = this.historyManager.workspaceHistory[commandArgs.path]
             .filter(history => history.name === commandArgs.name)
             .sort((a, b) => b.count - a.count);
         const count = matchingTasks && matchingTasks.length > 0 ? matchingTasks[0].count + 1 : 1;
@@ -298,7 +301,7 @@ export class Act {
 
         try {
             await workspace.fs.createDirectory(this.context.globalStorageUri);
-        } catch (error) { }
+        } catch (error: any) { }
 
         // Build command with settings
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
@@ -306,8 +309,11 @@ export class Act {
             `set -o pipefail; ` +
             `${Act.base} ${commandArgs.options}` +
             (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
+            (settings.secretFiles.length > 0 ? ` ${Option.SecretFile} "${settings.secretFiles[0].path}"` : ` ${Option.SecretFile} ""`) +
             (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
+            (settings.variableFiles.length > 0 ? ` ${Option.VariableFile} "${settings.variableFiles[0].path}"` : ` ${Option.VariableFile} ""`) +
             (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
+            (settings.inputFiles.length > 0 ? ` ${Option.InputFile} "${settings.inputFiles[0].path}"` : ` ${Option.InputFile} ""`) +
             (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
             ` 2>&1 | tee "${logPath}"`;
 
@@ -341,7 +347,7 @@ export class Act {
             execution: new ShellExecution(
                 command,
                 {
-                    cwd: commandArgs.fsPath,
+                    cwd: commandArgs.path,
                     env: settings.secrets
                         .filter(secret => secret.value)
                         .reduce((previousValue, currentValue) => {
