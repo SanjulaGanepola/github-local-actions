@@ -119,6 +119,7 @@ export class Act {
                 this.installationCommands = {
                     'Homebrew': 'brew install act',
                     'Nix': 'nix run nixpkgs#act',
+                    'Arch': 'pacman -Syu act',
                     'AUR': 'yay -Syu act',
                     'COPR': 'dnf copr enable goncalossilva/act && dnf install act-cli',
                     'GitHub CLI': 'gh extension install https://github.com/nektos/gh-act'
