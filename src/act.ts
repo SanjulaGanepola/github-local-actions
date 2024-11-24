@@ -369,7 +369,9 @@ export class Act {
             await tasks.executeTask({
                 name: 'nektos/act',
                 detail: 'Install nektos/act',
-                definition: { type: 'nektos/act installation' },
+                definition: {
+                    type: 'nektos/act installation'
+                },
                 source: 'GitHub Local Actions',
                 scope: TaskScope.Workspace,
                 isBackground: true,
