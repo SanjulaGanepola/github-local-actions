@@ -14,6 +14,7 @@ export interface Component<T extends CliStatus | ExtensionStatus> {
     information: string,
     installation: () => Promise<void>,
     start?: () => Promise<void>,
+    fixPermissions?: () => Promise<void>,
     message?: string
 }
 
@@ -21,7 +22,8 @@ export enum CliStatus {
     Installed = 'Installed',
     NotInstalled = 'Not Installed',
     Running = 'Running',
-    NotRunning = 'Not Running'
+    NotRunning = 'Not Running',
+    InvalidPermissions = 'Invalid Permissions'
 }
 
 export enum ExtensionStatus {
@@ -145,7 +147,9 @@ export class ComponentsManager {
                         await tasks.executeTask({
                             name: 'Docker Engine',
                             detail: 'Start Docker Engine',
-                            definition: { type: 'GitHub Local Actions' },
+                            definition: {
+                                type: 'Start Docker Engine'
+                            },
                             source: 'GitHub Local Actions',
                             scope: TaskScope.Workspace,
                             isBackground: true,
@@ -161,7 +165,7 @@ export class ComponentsManager {
                             problemMatchers: [],
                             runOptions: {},
                             group: TaskGroup.Build,
-                            execution: new ShellExecution('sudo dockerd')
+                            execution: new ShellExecution('systemctl start docker')
                         });
                     } else {
                         window.showErrorMessage(`Invalid environment: ${process.platform}`, 'Report an Issue').then(async value => {
@@ -198,6 +202,53 @@ export class ComponentsManager {
                         });
                     }
                 });
+            },
+            fixPermissions: async () => {
+                if (process.platform === Platform.linux) {
+                    window.showInformationMessage('By default, the Docker daemon binds to a Unix socket owned by the root user. To manage Docker as a non-root user, a Unix group called "docker" should be created with your user added to it.', 'Proceed', 'Learn More').then(async value => {
+                        if (value === 'Proceed') {
+                            await tasks.executeTask({
+                                name: 'Docker Engine',
+                                detail: 'Fix Docker Engine Permissions',
+                                definition: {
+                                    type: 'Fix Docker Engine Permissions'
+                                },
+                                source: 'GitHub Local Actions',
+                                scope: TaskScope.Workspace,
+                                isBackground: true,
+                                presentationOptions: {
+                                    reveal: TaskRevealKind.Always,
+                                    focus: false,
+                                    clear: true,
+                                    close: false,
+                                    echo: true,
+                                    panel: TaskPanelKind.Shared,
+                                    showReuseMessage: false
+                                },
+                                problemMatchers: [],
+                                runOptions: {},
+                                group: TaskGroup.Build,
+                                execution: new ShellExecution('sudo groupadd docker; sudo usermod -aG docker $USER; newgrp docker')
+                            });
+
+                            window.withProgress({ location: { viewId: ComponentsTreeDataProvider.VIEW_ID } }, async () => {
+                                // Delay 4 seconds for Docker to be started
+                                const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+                                await delay(4000);
+
+                                // Check again for docker status
+                                const newDockerCliInfo = await this.getCliInfo('docker version', /Client:\n.+\n\sVersion:\s+(.+)/, true, true);
+                                if (dockerCliInfo.status !== newDockerCliInfo.status) {
+                                    componentsTreeDataProvider.refresh();
+                                }
+                            });
+                        } else if (value === 'Learn More') {
+                            await env.openExternal(Uri.parse('https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user'));
+                        }
+                    });
+                } else {
+                    window.showErrorMessage(`Permissions cannot be automatically fixed for ${process.platform} environment.`);
+                }
             }
         });
 
@@ -234,7 +285,7 @@ export class ComponentsManager {
 
     async getUnreadyComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
         const components = await this.getComponents();
-        return components.filter(component => component.required && [CliStatus.NotInstalled, CliStatus.NotRunning, ExtensionStatus.NotActivated].includes(component.status));
+        return components.filter(component => component.required && [CliStatus.NotInstalled, CliStatus.NotRunning, CliStatus.InvalidPermissions, ExtensionStatus.NotActivated].includes(component.status));
     }
 
     async getCliInfo(command: string, versionRegex: RegExp, ignoreError: boolean, checksIfRunning: boolean): Promise<{ version?: string, status: CliStatus }> {
@@ -246,7 +297,9 @@ export class ComponentsManager {
                     if (ignoreError && version) {
                         resolve({
                             version: version[1],
-                            status: CliStatus.NotRunning
+                            status: (process.platform === Platform.linux && error.message.toLowerCase().includes('permission denied')) ?
+                                CliStatus.InvalidPermissions :
+                                CliStatus.NotRunning
                         });
                     } else {
                         resolve({

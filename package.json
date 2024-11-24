@@ -158,6 +158,12 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.fixPermissions",
+        "title": "Fix Permissions",
+        "icon": "$(unlock)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.runAllWorkflows",
         "title": "Run All Workflows",
         "enablement": "!githubLocalActions:noWorkflows && workspaceFolderCount > 0",
@@ -367,6 +373,10 @@
           "when": "never"
         },
         {
+          "command": "githubLocalActions.fixPermissions",
+          "when": "never"
+        },
+        {
           "command": "githubLocalActions.runAllWorkflows",
           "when": "never"
         },
@@ -553,6 +563,11 @@
         {
           "command": "githubLocalActions.startComponent",
           "when": "view == components && viewItem =~ /^githubLocalActions.component_Not Running.*/",
+          "group": "inline@1"
+        },
+        {
+          "command": "githubLocalActions.fixPermissions",
+          "when": "view == components && viewItem =~ /^githubLocalActions.component_Invalid Permissions.*/",
           "group": "inline@1"
         },
         {
