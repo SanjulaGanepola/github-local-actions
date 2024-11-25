@@ -17,12 +17,12 @@ export class DecorationProvider implements FileDecorationProvider {
                     badge: '✅',
                     color: new ThemeColor('GitHubLocalActions.green')
                 };
-            } else if (!required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning || status === ExtensionStatus.NotActivated)) {
+            } else if (!required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning || status === CliStatus.InvalidPermissions || status === ExtensionStatus.NotActivated)) {
                 return {
                     badge: '⚠️',
                     color: new ThemeColor('GitHubLocalActions.yellow')
                 };
-            } else if (required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning || status === ExtensionStatus.NotActivated)) {
+            } else if (required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning || status === CliStatus.InvalidPermissions || status === ExtensionStatus.NotActivated)) {
                 return {
                     badge: '❌',
                     color: new ThemeColor('GitHubLocalActions.red')
