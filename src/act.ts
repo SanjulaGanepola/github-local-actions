@@ -321,9 +321,9 @@ export class Act {
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
         var execution: ShellExecution | ProcessExecution;
         if (process.platform === 'win32') {
-            // TODO logPath not supported
+            // TODO logPath and spaces not supported
             let args = actCommand.split(" ");
-            args.push(...commandArgs.options.split(" "));
+            args.push(...commandArgs.options.split(" ").map(v => v.startsWith('"') && v.endsWith('"') ? v.substring(1, v.length - 1) : v));
             if (settings.secrets.length > 0) {
                 args.push(...settings.secrets.flatMap(secret => [Option.Secret, secret.key]));
             }
