@@ -54,7 +54,8 @@ export function activate(context: vscode.ExtensionContext) {
 	ConfigurationManager.initialize();
 	workspace.onDidChangeConfiguration(async event => {
 		if (event.affectsConfiguration(ConfigurationManager.group)) {
-			ConfigurationManager.initialize();
+			await ConfigurationManager.initialize();
+			componentsTreeDataProvider.refresh();
 		}
 	});
 
