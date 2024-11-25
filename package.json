@@ -686,7 +686,7 @@
       "title": "GitHub Local Actions",
       "properties": {
         "githubLocalActions.actCommand": {
-          "markdownDescription": "The base `nektos/act` command to be called. By default, this will be `act` (requires the binary to be on your `PATH`). If the binary is not on your `PATH`, the command can be fully qualified. If `act` is installed as a GitHub CLI extension, this command should be set to `gh act`.",
+          "markdownDescription": "The base `nektos/act` command to be called. By default, this will be `act` (requires the binary to be on your `PATH`). If the binary is not on your `PATH`, the command should be fully qualified. If `act` is installed as a GitHub CLI extension, this command should be set to `gh act`.",
           "type": "string",
           "default": "act"
         },

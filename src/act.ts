@@ -68,7 +68,7 @@ export interface CommandArgs {
 
 export class Act {
     static command: string = 'act';
-    static githubCliCommand: string = 'act';
+    static githubCliCommand: string = 'gh act';
     context: ExtensionContext;
     storageManager: StorageManager;
     secretManager: SecretManager;
@@ -216,6 +216,10 @@ export class Act {
         });
     }
 
+    static getActCommand() {
+        return ConfigurationManager.get<string>(Section.actCommand) || Act.command;
+    }
+
     async runAllWorkflows(workspaceFolder: WorkspaceFolder) {
         return await this.runCommand({
             path: workspaceFolder.uri.fsPath,
@@ -307,7 +311,7 @@ export class Act {
         } catch (error: any) { }
 
         // Build command with settings
-        const actCommand = ConfigurationManager.get<string>(Section.actCommand) || Act.command;
+        const actCommand = Act.getActCommand();
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
         const command =
             `set -o pipefail; ` +
@@ -391,9 +395,9 @@ export class Act {
             });
 
             if (command.includes('gh-act')) {
-                ConfigurationManager.set(Section.actCommand, Act.command);
-            } else {
                 ConfigurationManager.set(Section.actCommand, Act.githubCliCommand);
+            } else {
+                ConfigurationManager.set(Section.actCommand, Act.command);
             }
         }
     }
