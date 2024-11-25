@@ -32,10 +32,13 @@ export enum ExtensionStatus {
 }
 
 export class ComponentsManager {
+    static actVersionRegExp: RegExp = /act version (.+)/;
+    static dockerVersionRegExp: RegExp = /Client:\n(.+\n)?\sVersion:\s+(.+)/;
+
     async getComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
         const components: Component<CliStatus | ExtensionStatus>[] = [];
 
-        const actCliInfo = await this.getCliInfo('act --version', /act version (.+)/, false, false);
+        const actCliInfo = await this.getCliInfo('act --version', ComponentsManager.actVersionRegExp, false, false);
         components.push({
             name: 'nektos/act',
             icon: 'terminal',
@@ -125,7 +128,7 @@ export class ComponentsManager {
             }
         });
 
-        const dockerCliInfo = await this.getCliInfo('docker version', /Client:\n.+\n\sVersion:\s+(.+)/, true, true);
+        const dockerCliInfo = await this.getCliInfo('docker version', ComponentsManager.dockerVersionRegExp, true, true);
         const dockerDesktopPath = ConfigurationManager.get<string>(Section.dockerDesktopPath);
         components.push({
             name: 'Docker Engine',
@@ -183,7 +186,7 @@ export class ComponentsManager {
                     await delay(4000);
 
                     // Check again for docker status
-                    const newDockerCliInfo = await this.getCliInfo('docker version', /Client:\n(.+\n)?\sVersion:\s+(.+)/, true, true);
+                    const newDockerCliInfo = await this.getCliInfo('docker version', ComponentsManager.dockerVersionRegExp, true, true);
                     if (dockerCliInfo.status !== newDockerCliInfo.status) {
                         componentsTreeDataProvider.refresh();
                     } else {
@@ -237,7 +240,7 @@ export class ComponentsManager {
                                 await delay(4000);
 
                                 // Check again for docker status
-                                const newDockerCliInfo = await this.getCliInfo('docker version', /Client:\n.+\n\sVersion:\s+(.+)/, true, true);
+                                const newDockerCliInfo = await this.getCliInfo('docker version', ComponentsManager.dockerVersionRegExp, true, true);
                                 if (dockerCliInfo.status !== newDockerCliInfo.status) {
                                     componentsTreeDataProvider.refresh();
                                 }
