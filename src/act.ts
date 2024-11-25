@@ -2,6 +2,7 @@ import * as path from "path";
 import sanitize from "sanitize-filename";
 import { ExtensionContext, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
+import { ConfigurationManager, Section } from "./configurationManager";
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
 import { HistoryManager, HistoryStatus } from './historyManager';
 import { SecretManager } from "./secretManager";
@@ -66,7 +67,8 @@ export interface CommandArgs {
 }
 
 export class Act {
-    private static base: string = 'act';
+    static command: string = 'act';
+    static githubCliCommand: string = 'gh act';
     context: ExtensionContext;
     storageManager: StorageManager;
     secretManager: SecretManager;
@@ -92,7 +94,7 @@ export class Act {
                     'Chocolatey': 'choco install act-cli',
                     'Winget': 'winget install nektos.act',
                     'Scoop': 'scoop install act',
-                    'GitHub CLI': 'gh extension install https://github.com/nektos/gh-act'
+                    'GitHub CLI': 'gh auth status || gh auth login && gh extension install https://github.com/nektos/gh-act'
                 };
 
                 this.prebuiltExecutables = {
@@ -107,7 +109,7 @@ export class Act {
                     'Homebrew': 'brew install act',
                     'Nix': 'nix run nixpkgs#act',
                     'MacPorts': 'sudo port install act',
-                    'GitHub CLI': 'gh extension install https://github.com/nektos/gh-act'
+                    'GitHub CLI': 'gh auth status || gh auth login && gh extension install https://github.com/nektos/gh-act'
                 };
 
                 this.prebuiltExecutables = {
@@ -121,7 +123,7 @@ export class Act {
                     'Nix': 'nix run nixpkgs#act',
                     'AUR': 'yay -Syu act',
                     'COPR': 'dnf copr enable goncalossilva/act && dnf install act-cli',
-                    'GitHub CLI': 'gh extension install https://github.com/nektos/gh-act'
+                    'GitHub CLI': 'gh auth status || gh auth login && gh extension install https://github.com/nektos/gh-act'
                 };
 
                 this.prebuiltExecutables = {
@@ -158,9 +160,15 @@ export class Act {
         });
 
         // Refresh components view after installation
-        tasks.onDidEndTask(e => {
+        tasks.onDidEndTask(async e => {
             const taskDefinition = e.execution.task.definition;
             if (taskDefinition.type === 'nektos/act installation') {
+                if (taskDefinition.ghCliInstall) {
+                    await ConfigurationManager.set(Section.actCommand, Act.githubCliCommand);
+                } else {
+                    await ConfigurationManager.set(Section.actCommand, Act.command);
+                }
+
                 componentsTreeDataProvider.refresh();
             }
         });
@@ -212,6 +220,10 @@ export class Act {
                 this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
             }
         });
+    }
+
+    static getActCommand() {
+        return ConfigurationManager.get<string>(Section.actCommand) || Act.command;
     }
 
     async runAllWorkflows(workspaceFolder: WorkspaceFolder) {
@@ -305,10 +317,11 @@ export class Act {
         } catch (error: any) { }
 
         // Build command with settings
+        const actCommand = Act.getActCommand();
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
         const command =
             `set -o pipefail; ` +
-            `${Act.base} ${commandArgs.options}` +
+            `${actCommand} ${commandArgs.options}` +
             (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
             (settings.secretFiles.length > 0 ? ` ${Option.SecretFile} "${settings.secretFiles[0].path}"` : ` ${Option.SecretFile} ""`) +
             (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
@@ -368,7 +381,7 @@ export class Act {
             await tasks.executeTask({
                 name: 'nektos/act',
                 detail: 'Install nektos/act',
-                definition: { type: 'nektos/act installation' },
+                definition: { type: 'nektos/act installation', ghCliInstall: command.includes('gh-act') },
                 source: 'GitHub Local Actions',
                 scope: TaskScope.Workspace,
                 isBackground: true,

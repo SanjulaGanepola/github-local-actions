@@ -1,4 +1,5 @@
 import { ConfigurationTarget, workspace } from 'vscode';
+import { Act } from './act';
 
 export enum Platform {
     windows = 'win32',
@@ -7,6 +8,7 @@ export enum Platform {
 }
 
 export enum Section {
+    actCommand = 'actCommand',
     dockerDesktopPath = 'dockerDesktopPath'
 }
 
@@ -14,7 +16,7 @@ export namespace ConfigurationManager {
     export const group: string = 'githubLocalActions';
     export const searchPrefix: string = '@ext:sanjulaganepola.github-local-actions';
 
-    export function initialize(): void {
+    export async function initialize(): Promise<void> {
         let dockerDesktopPath = ConfigurationManager.get<string>(Section.dockerDesktopPath);
         if (!dockerDesktopPath) {
             switch (process.platform) {
@@ -28,7 +30,12 @@ export namespace ConfigurationManager {
                     return;
             }
 
-            ConfigurationManager.set(Section.dockerDesktopPath, dockerDesktopPath);
+            await ConfigurationManager.set(Section.dockerDesktopPath, dockerDesktopPath);
+        }
+
+        let actCommand = ConfigurationManager.get<string>(Section.actCommand);
+        if (!actCommand) {
+            await ConfigurationManager.set(Section.actCommand, Act.command);
         }
     }
 
