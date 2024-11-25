@@ -2,6 +2,7 @@ import * as path from "path";
 import sanitize from "sanitize-filename";
 import { ExtensionContext, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
+import { ConfigurationManager, Section } from "./configurationManager";
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
 import { HistoryManager, HistoryStatus } from './historyManager';
 import { SecretManager } from "./secretManager";
@@ -66,7 +67,8 @@ export interface CommandArgs {
 }
 
 export class Act {
-    private static base: string = 'act';
+    static command: string = 'act';
+    static githubCliCommand: string = 'act';
     context: ExtensionContext;
     storageManager: StorageManager;
     secretManager: SecretManager;
@@ -305,10 +307,11 @@ export class Act {
         } catch (error: any) { }
 
         // Build command with settings
+        const actCommand = ConfigurationManager.get<string>(Section.actCommand) || Act.command;
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
         const command =
             `set -o pipefail; ` +
-            `${Act.base} ${commandArgs.options}` +
+            `${actCommand} ${commandArgs.options}` +
             (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
             (settings.secretFiles.length > 0 ? ` ${Option.SecretFile} "${settings.secretFiles[0].path}"` : ` ${Option.SecretFile} ""`) +
             (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
@@ -386,6 +389,12 @@ export class Act {
                 group: TaskGroup.Build,
                 execution: new ShellExecution(command)
             });
+
+            if (command.includes('gh-act')) {
+                ConfigurationManager.set(Section.actCommand, Act.command);
+            } else {
+                ConfigurationManager.set(Section.actCommand, Act.githubCliCommand);
+            }
         }
     }
 }

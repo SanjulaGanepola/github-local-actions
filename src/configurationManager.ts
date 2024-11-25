@@ -1,4 +1,5 @@
 import { ConfigurationTarget, workspace } from 'vscode';
+import { Act } from './act';
 
 export enum Platform {
     windows = 'win32',
@@ -7,6 +8,7 @@ export enum Platform {
 }
 
 export enum Section {
+    actCommand = 'actCommand',
     dockerDesktopPath = 'dockerDesktopPath'
 }
 
@@ -29,6 +31,11 @@ export namespace ConfigurationManager {
             }
 
             ConfigurationManager.set(Section.dockerDesktopPath, dockerDesktopPath);
+        }
+
+        let actCommand = ConfigurationManager.get<string>(Section.actCommand);
+        if (!actCommand) {
+            ConfigurationManager.set(Section.actCommand, Act.command);
         }
     }
 
