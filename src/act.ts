@@ -1,6 +1,6 @@
 import * as path from "path";
 import sanitize from "sanitize-filename";
-import { ExtensionContext, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, Uri, window, workspace, WorkspaceFolder } from "vscode";
+import { ExtensionContext, ProcessExecution, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
 import { ConfigurationManager, Section } from "./configurationManager";
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
@@ -319,18 +319,82 @@ export class Act {
         // Build command with settings
         const actCommand = Act.getActCommand();
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
-        const command =
-            `set -o pipefail; ` +
-            `${actCommand} ${commandArgs.options}` +
-            (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
-            (settings.secretFiles.length > 0 ? ` ${Option.SecretFile} "${settings.secretFiles[0].path}"` : ` ${Option.SecretFile} ""`) +
-            (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
-            (settings.variableFiles.length > 0 ? ` ${Option.VariableFile} "${settings.variableFiles[0].path}"` : ` ${Option.VariableFile} ""`) +
-            (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
-            (settings.inputFiles.length > 0 ? ` ${Option.InputFile} "${settings.inputFiles[0].path}"` : ` ${Option.InputFile} ""`) +
-            (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
-            (settings.payloadFiles.length > 0 ? ` ${Option.PayloadFile} "${settings.payloadFiles[0].path}"` : ` ${Option.PayloadFile} ""`) +
-            ` 2>&1 | tee "${logPath}"`;
+        var execution: ShellExecution | ProcessExecution;
+        if (process.platform === 'win32') {
+            // TODO logPath not supported
+            let args = actCommand.split(" ");
+            args.push(...commandArgs.options.split(" "));
+            if (settings.secrets.length > 0) {
+                args.push(...settings.secrets.flatMap(secret => [Option.Secret, secret.key]));
+            }
+            if (settings.secretFiles.length > 0) {
+                args.push(Option.SecretFile, settings.secretFiles[0].path);
+            } else {
+                args.push(Option.SecretFile, "");
+            }
+            if (settings.variables.length > 0) {
+                args.push(...settings.variables.flatMap(variable => [Option.Variable, (variable.value ? `${variable.key}=${variable.value}` : variable.key)]));
+            }
+            if (settings.variableFiles.length > 0) {
+                args.push(Option.VariableFile, settings.variableFiles[0].path);
+            } else {
+                args.push(Option.VariableFile, "");
+            }
+            if (settings.inputs.length > 0) {
+                args.push(...settings.inputs.flatMap(input => [Option.Input, `${input.key}=${input.value}`]));
+            }
+            if (settings.inputFiles.length > 0) {
+                args.push(Option.InputFile, settings.inputFiles[0].path);
+            } else {
+                args.push(Option.InputFile, "");
+            }
+            if (settings.runners.length > 0) {
+                args.push(...settings.runners.flatMap(runner => [Option.Platform, `${runner.key}=${runner.value}`]));
+            }
+            if (settings.payloadFiles.length > 0) {
+                args.push(Option.PayloadFile, settings.payloadFiles[0].path);
+            } else {
+                args.push(Option.PayloadFile, "");
+            }
+            execution = new ProcessExecution(
+                "act",
+                args,
+                {
+                    cwd: commandArgs.path,
+                    env: settings.secrets
+                        .filter(secret => secret.value)
+                        .reduce((previousValue, currentValue) => {
+                            previousValue[currentValue.key] = currentValue.value;
+                            return previousValue;
+                        }, {} as Record<string, string>)
+                }
+            );
+        } else {
+            const command =
+                `set -o pipefail; ` +
+                `${actCommand} ${commandArgs.options}` +
+                (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
+                (settings.secretFiles.length > 0 ? ` ${Option.SecretFile} "${settings.secretFiles[0].path}"` : ` ${Option.SecretFile} ""`) +
+                (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
+                (settings.variableFiles.length > 0 ? ` ${Option.VariableFile} "${settings.variableFiles[0].path}"` : ` ${Option.VariableFile} ""`) +
+                (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
+                (settings.inputFiles.length > 0 ? ` ${Option.InputFile} "${settings.inputFiles[0].path}"` : ` ${Option.InputFile} ""`) +
+                (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
+                (settings.payloadFiles.length > 0 ? ` ${Option.PayloadFile} "${settings.payloadFiles[0].path}"` : ` ${Option.PayloadFile} ""`) +
+                ` 2>&1 | tee "${logPath}"`;
+            execution = new ShellExecution(
+                command,
+                {
+                    cwd: commandArgs.path,
+                    env: settings.secrets
+                        .filter(secret => secret.value)
+                        .reduce((previousValue, currentValue) => {
+                            previousValue[currentValue.key] = currentValue.value;
+                            return previousValue;
+                        }, {} as Record<string, string>)
+                }
+            );
+        }
 
         // Execute task
         await tasks.executeTask({
@@ -359,18 +423,7 @@ export class Act {
             problemMatchers: [],
             runOptions: {},
             group: TaskGroup.Build,
-            execution: new ShellExecution(
-                command,
-                {
-                    cwd: commandArgs.path,
-                    env: settings.secrets
-                        .filter(secret => secret.value)
-                        .reduce((previousValue, currentValue) => {
-                            previousValue[currentValue.key] = currentValue.value;
-                            return previousValue;
-                        }, {} as Record<string, string>)
-                }
-            )
+            execution: execution
         });
         this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
     }
