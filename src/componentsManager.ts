@@ -183,7 +183,7 @@ export class ComponentsManager {
                     await delay(4000);
 
                     // Check again for docker status
-                    const newDockerCliInfo = await this.getCliInfo('docker version', /Client:\n.+\n\sVersion:\s+(.+)/, true, true);
+                    const newDockerCliInfo = await this.getCliInfo('docker version', /Client:\n(.+\n)?\sVersion:\s+(.+)/, true, true);
                     if (dockerCliInfo.status !== newDockerCliInfo.status) {
                         componentsTreeDataProvider.refresh();
                     } else {
