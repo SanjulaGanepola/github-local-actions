@@ -59,9 +59,9 @@ export class SettingsManager {
     }
 
     async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean): Promise<Settings> {
-        const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || secret.selected);
+        const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || (secret.selected && secret.value));
         const secretFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.SecretFiles)).filter(secretFile => !isUserSelected || secretFile.selected);
-        const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || variable.selected);
+        const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || (variable.selected && variable.value));
         const variableFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
         const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
         const inputFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.InputFiles)).filter(inputFile => !isUserSelected || inputFile.selected);

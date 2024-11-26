@@ -287,7 +287,7 @@ export class Act {
             `${actCommand} ${commandArgs.options}` +
             (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
             (settings.secretFiles.length > 0 ? ` ${Option.SecretFile} "${settings.secretFiles[0].path}"` : ` ${Option.SecretFile} ""`) +
-            (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => (variable.value ? `${variable.key}=${variable.value}` : variable.key)).join(` ${Option.Variable} `)}` : ``) +
+            (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => `${variable.key}=${variable.value}`).join(` ${Option.Variable} `)}` : ``) +
             (settings.variableFiles.length > 0 ? ` ${Option.VariableFile} "${settings.variableFiles[0].path}"` : ` ${Option.VariableFile} ""`) +
             (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
             (settings.inputFiles.length > 0 ? ` ${Option.InputFile} "${settings.inputFiles[0].path}"` : ` ${Option.InputFile} ""`) +
