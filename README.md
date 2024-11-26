@@ -5,14 +5,14 @@
 [![Version](https://img.shields.io/visual-studio-marketplace/v/SanjulaGanepola.github-local-actions)](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/SanjulaGanepola.github-local-actions)](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions)
 
-Run your GitHub Actions locally with the power of the [GitHub Local Actions](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions) VSCode extension! Say goodbye to the hassle of committing and pushing changes every time you need to test a workflow. This extension lets you quickly and efficiently run your workflows locally, leveraging the [nektos/act](https://github.com/nektos/act) CLI tool. Enjoy a seamless experience with an interface designed to feel as familiar as the official [GitHub Actions](https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-github-actions) extension.
+Run your GitHub Actions locally with the power of the [GitHub Local Actions](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions) VS Code extension! Say goodbye to the hassle of committing and pushing changes every time you need to test a workflow. This extension lets you quickly and efficiently run your workflows locally, leveraging the [nektos/act](https://github.com/nektos/act) CLI tool. Enjoy a seamless experience with an interface designed to feel as familiar as the official [GitHub Actions](https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-github-actions) extension.
 
 * 🚀 **Run Workflows/Jobs**: Run entire workflows or specific jobs locally without leaving your editor.
 * ⚡ **Trigger Events**: Trigger standard [GitHub events](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows) to run multiple workflows.
 * 📖 **View Workflow Run History**: Track and investigate past workflow logs.
 * ⚙️ **Manage Workflow Settings**: Define secrets, variables, inputs, and runners to be used when executing workflows.
 
-![GitHub Local Actions](./images/github-local-actions.gif)
+![GitHub Local Actions](https://raw.githubusercontent.com/SanjulaGanepola/github-local-actions/main/images/github-local-actions.gif)
 
 ## Components
 
@@ -20,7 +20,7 @@ The `Components` view is where you can manage the following components which mus
 
 1. [nektos/act](https://github.com/nektos/act): Act is a CLI tool responsible for executing your workflows locally. It can be installed via several software package managers or using a pre-built artifact.
 
-    ![nektos/act Installation](./images/components-view.png)
+    ![nektos/act Installation](https://raw.githubusercontent.com/SanjulaGanepola/github-local-actions/main/images/components-view.png)
 
 2. [Docker Engine](https://docs.docker.com/engine): Docker Engine is required for act to function as it uses Docker to handle workflow execution. The process includes:
     
@@ -39,13 +39,13 @@ The `Workflows` view is where you can manage and run workflows locally. You have
 3. **Run Job**: Run a specific job in a workflow.
 4. **Run Event**: Run multiple workflows by triggering a [GitHub event](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows).
 
-![Workflows View](./images/workflows-view.png)
+![Workflows View](https://raw.githubusercontent.com/SanjulaGanepola/github-local-actions/main/images/workflows-view.png)
 
 ## History
 
 The `History` view is where you can manage workflows currently being executed as well as review logs from previous workflow runs.
 
-![History View](./images/history-view.png)
+![History View](https://raw.githubusercontent.com/SanjulaGanepola/github-local-actions/main/images/history-view.png)
 
 ## Settings
 
@@ -53,7 +53,7 @@ The `Settings` view is where you can set [secrets](https://nektosact.com/usage/i
 
 > 🚨 Checkout the [nektos/act](https://nektosact.com) documentation for more details on how these various settings are handled. In particular, refer to how secrets can be provided to workflows interactively, as environment variables, or from a file.
 
-![Settings View](./images/settings-view.png)
+![Settings View](https://raw.githubusercontent.com/SanjulaGanepola/github-local-actions/main/images/settings-view.png)
 
 ## Bugs and Feature Requests
 
