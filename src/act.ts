@@ -1,6 +1,8 @@
+import * as childProcess from "child_process";
+import * as fs from "fs/promises";
 import * as path from "path";
 import sanitize from "sanitize-filename";
-import { ExtensionContext, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, Uri, window, workspace, WorkspaceFolder } from "vscode";
+import { CustomExecution, EventEmitter, ExtensionContext, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
 import { ConfigurationManager, Section } from "./configurationManager";
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
@@ -56,7 +58,8 @@ export enum Option {
     VariableFile = '--var-file',
     Input = '--input',
     InputFile = '--input-file',
-    PayloadFile = '--eventpath'
+    PayloadFile = '--eventpath',
+    Json = '--json'
 }
 
 export interface CommandArgs {
@@ -78,6 +81,8 @@ export class Act {
     settingsManager: SettingsManager;
     installationCommands: { [packageManager: string]: string };
     prebuiltExecutables: { [architecture: string]: string };
+    refreshInterval: NodeJS.Timeout | undefined;
+    runningTaskCount: number;
 
     constructor(context: ExtensionContext) {
         this.context = context;
@@ -87,6 +92,7 @@ export class Act {
         this.workflowsManager = new WorkflowsManager();
         this.historyManager = new HistoryManager(this.storageManager);
         this.settingsManager = new SettingsManager(this.storageManager, this.secretManager);
+        this.runningTaskCount = 0;
 
         switch (process.platform) {
             case 'win32':
@@ -140,21 +146,26 @@ export class Act {
         }
 
         // Setup automatic history view refreshing
-        let refreshInterval: NodeJS.Timeout | undefined;
         tasks.onDidStartTask(e => {
             const taskDefinition = e.execution.task.definition;
-            if (taskDefinition.type === 'GitHub Local Actions' && !refreshInterval) {
-                refreshInterval = setInterval(() => {
-                    historyTreeDataProvider.refresh();
-                }, 1000);
+            if (taskDefinition.type === 'GitHub Local Actions') {
+                this.runningTaskCount++;
+
+                if (!this.refreshInterval && this.runningTaskCount >= 0) {
+                    this.refreshInterval = setInterval(() => {
+                        historyTreeDataProvider.refresh();
+                    }, 1000);
+                }
             }
         });
         tasks.onDidEndTask(e => {
             const taskDefinition = e.execution.task.definition;
             if (taskDefinition.type === 'GitHub Local Actions') {
-                if (refreshInterval) {
-                    clearInterval(refreshInterval);
-                    refreshInterval = undefined;
+                this.runningTaskCount--;
+
+                if (this.refreshInterval && this.runningTaskCount == 0) {
+                    clearInterval(this.refreshInterval);
+                    this.refreshInterval = undefined;
                 }
             }
         });
@@ -163,6 +174,7 @@ export class Act {
         tasks.onDidEndTask(async e => {
             const taskDefinition = e.execution.task.definition;
             if (taskDefinition.type === 'nektos/act installation') {
+                // Update base act command based on installation method
                 if (taskDefinition.ghCliInstall) {
                     await ConfigurationManager.set(Section.actCommand, Act.githubCliCommand);
                 } else {
@@ -170,54 +182,6 @@ export class Act {
                 }
 
                 componentsTreeDataProvider.refresh();
-            }
-        });
-
-        tasks.onDidStartTaskProcess(e => {
-            const taskDefinition = e.execution.task.definition;
-            if (taskDefinition.type === 'GitHub Local Actions') {
-                const commandArgs: CommandArgs = taskDefinition.commandArgs;
-                const historyIndex = taskDefinition.historyIndex;
-
-                // Add new entry to workspace history
-                this.historyManager.workspaceHistory[commandArgs.path].push({
-                    index: historyIndex,
-                    count: taskDefinition.count,
-                    name: `${commandArgs.name}`,
-                    status: HistoryStatus.Running,
-                    date: {
-                        start: taskDefinition.start.toString()
-                    },
-                    taskExecution: e.execution,
-                    commandArgs: commandArgs,
-                    logPath: taskDefinition.logPath
-                });
-                historyTreeDataProvider.refresh();
-                this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-            }
-        });
-        tasks.onDidEndTaskProcess(e => {
-            const taskDefinition = e.execution.task.definition;
-            if (taskDefinition.type === 'GitHub Local Actions') {
-                const commandArgs: CommandArgs = taskDefinition.commandArgs;
-                const historyIndex = taskDefinition.historyIndex;
-
-                // Set end status
-                if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status === HistoryStatus.Running) {
-                    if (e.exitCode === 0) {
-                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Success;
-                    } else if (!e.exitCode) {
-                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Cancelled;
-                    } else {
-                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Failed;
-                    }
-                }
-
-                // Set end time
-                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].date.end = new Date().toString();
-
-                historyTreeDataProvider.refresh();
-                this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
             }
         });
     }
@@ -320,7 +284,6 @@ export class Act {
         const actCommand = Act.getActCommand();
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
         const command =
-            `set -o pipefail; ` +
             `${actCommand} ${commandArgs.options}` +
             (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
             (settings.secretFiles.length > 0 ? ` ${Option.SecretFile} "${settings.secretFiles[0].path}"` : ` ${Option.SecretFile} ""`) +
@@ -329,11 +292,10 @@ export class Act {
             (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
             (settings.inputFiles.length > 0 ? ` ${Option.InputFile} "${settings.inputFiles[0].path}"` : ` ${Option.InputFile} ""`) +
             (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
-            (settings.payloadFiles.length > 0 ? ` ${Option.PayloadFile} "${settings.payloadFiles[0].path}"` : ` ${Option.PayloadFile} ""`) +
-            ` 2>&1 | tee "${logPath}"`;
+            (settings.payloadFiles.length > 0 ? ` ${Option.PayloadFile} "${settings.payloadFiles[0].path}"` : ` ${Option.PayloadFile} ""`);
 
         // Execute task
-        await tasks.executeTask({
+        const taskExecution = await tasks.executeTask({
             name: `${commandArgs.name} #${count}`,
             detail: `${commandArgs.name} #${count}`,
             definition: {
@@ -359,18 +321,113 @@ export class Act {
             problemMatchers: [],
             runOptions: {},
             group: TaskGroup.Build,
-            execution: new ShellExecution(
-                command,
-                {
-                    cwd: commandArgs.path,
-                    env: settings.secrets
-                        .filter(secret => secret.value)
-                        .reduce((previousValue, currentValue) => {
-                            previousValue[currentValue.key] = currentValue.value;
-                            return previousValue;
-                        }, {} as Record<string, string>)
+            execution: new CustomExecution(async (resolvedDefinition: TaskDefinition): Promise<Pseudoterminal> => {
+                // Add new entry to workspace history
+                this.historyManager.workspaceHistory[commandArgs.path].push({
+                    index: historyIndex,
+                    count: count,
+                    name: `${commandArgs.name}`,
+                    status: HistoryStatus.Running,
+                    date: {
+                        start: start.toString()
+                    },
+                    taskExecution: taskExecution,
+                    commandArgs: commandArgs,
+                    logPath: logPath
+                });
+                historyTreeDataProvider.refresh();
+                this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+
+                const writeEmitter = new EventEmitter<string>();
+                const closeEmitter = new EventEmitter<number>();
+
+                writeEmitter.event(async data => {
+                    try {
+                        // Create log file if it does not exist
+                        try {
+                            await fs.access(logPath);
+                        } catch (error: any) {
+                            await fs.writeFile(logPath, '');
+                        }
+
+                        // Append data to log file
+                        await fs.appendFile(logPath, data);
+                    } catch (error) { }
+                });
+
+                const handleIO = (data: any) => {
+                    const lines: string[] = data.toString().split('\n').filter((line: string) => line != '');
+                    for (const line of lines) {
+                        writeEmitter.fire(`${line.trimEnd()}\r\n`);
+                    }
                 }
-            )
+
+                const exec = childProcess.spawn(
+                    command,
+                    {
+                        cwd: commandArgs.path,
+                        shell: true,
+                        env: settings.secrets
+                            .filter(secret => secret.value)
+                            .reduce((previousValue, currentValue) => {
+                                previousValue[currentValue.key] = currentValue.value;
+                                return previousValue;
+                            }, {} as Record<string, string>)
+                    }
+                );
+                exec.stdout.on('data', handleIO);
+                exec.stderr.on('data', handleIO);
+                exec.on('exit', (code, signal) => {
+                    // Set execution status and end time in workspace history
+                    if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status === HistoryStatus.Running) {
+                        if (code === 0) {
+                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Success;
+                        } else if (!code) {
+                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Cancelled;
+                        } else {
+                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Failed;
+                        }
+                    }
+                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].date.end = new Date().toString();
+                    historyTreeDataProvider.refresh();
+                    this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+
+                    if (signal === 'SIGINT') {
+                        writeEmitter.fire(`\r\nTask interrupted.\r\n`);
+                        closeEmitter.fire(code || 0);
+                    } else {
+                        writeEmitter.fire(`\r\nTask exited with exit code ${code}.\r\n`);
+                        closeEmitter.fire(code || 0);
+                    }
+                });
+                exec.on('close', (code) => {
+                    closeEmitter.fire(code || 0);
+                });
+
+                return {
+                    onDidWrite: writeEmitter.event,
+                    onDidClose: closeEmitter.event,
+                    open: async (initialDimensions: TerminalDimensions | undefined): Promise<void> => {
+                        writeEmitter.fire(`${command}\r\n\r\n`);
+                    },
+                    handleInput: (data: string) => {
+                        if (data === '\x03') {
+                            exec.kill('SIGINT');
+                            exec.stdout.destroy();
+                            exec.stdin.destroy();
+                            exec.stderr.destroy();
+                        } else {
+                            exec.stdin.write(data === '\r' ? '\r\n' : data)
+                        }
+                    },
+                    close: () => {
+                        exec.kill('SIGINT');
+                        exec.stdout.destroy();
+                        exec.stdin.destroy();
+                        exec.stderr.destroy();
+                    },
+                };
+            })
         });
         this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
     }
