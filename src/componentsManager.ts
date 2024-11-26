@@ -34,7 +34,7 @@ export enum ExtensionStatus {
 
 export class ComponentsManager {
     static actVersionRegExp: RegExp = /act version (.+)/;
-    static dockerVersionRegExp: RegExp = /Client:\n(.+\n)?\sVersion:\s+(.+)/;
+    static dockerVersionRegExp: RegExp = /Docker Engine Version:\s(.+)/;
 
     async getComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
         const components: Component<CliStatus | ExtensionStatus>[] = [];
@@ -129,7 +129,7 @@ export class ComponentsManager {
             }
         });
 
-        const dockerCliInfo = await this.getCliInfo('docker version', ComponentsManager.dockerVersionRegExp, true, true);
+        const dockerCliInfo = await this.getCliInfo(`docker version --format "Docker Engine Version: {{.Client.Version}}"`, ComponentsManager.dockerVersionRegExp, true, true);
         const dockerDesktopPath = ConfigurationManager.get<string>(Section.dockerDesktopPath);
         components.push({
             name: 'Docker Engine',
@@ -187,7 +187,7 @@ export class ComponentsManager {
                     await delay(4000);
 
                     // Check again for docker status
-                    const newDockerCliInfo = await this.getCliInfo('docker version', ComponentsManager.dockerVersionRegExp, true, true);
+                    const newDockerCliInfo = await this.getCliInfo(`docker version --format "Docker Engine Version: {{.Client.Version}}"`, ComponentsManager.dockerVersionRegExp, true, true);
                     if (dockerCliInfo.status !== newDockerCliInfo.status) {
                         componentsTreeDataProvider.refresh();
                     } else {
@@ -241,7 +241,7 @@ export class ComponentsManager {
                                 await delay(4000);
 
                                 // Check again for docker status
-                                const newDockerCliInfo = await this.getCliInfo('docker version', ComponentsManager.dockerVersionRegExp, true, true);
+                                const newDockerCliInfo = await this.getCliInfo(`docker version --format "Docker Engine Version: {{.Client.Version}}"`, ComponentsManager.dockerVersionRegExp, true, true);
                                 if (dockerCliInfo.status !== newDockerCliInfo.status) {
                                     componentsTreeDataProvider.refresh();
                                 }
