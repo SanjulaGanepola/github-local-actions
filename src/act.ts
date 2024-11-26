@@ -394,7 +394,7 @@ export class Act {
 
                     if (signal === 'SIGINT') {
                         writeEmitter.fire(`\r\nTask interrupted.\r\n`);
-                        closeEmitter.fire(code || 0);
+                        closeEmitter.fire(code || 1);
                     } else {
                         writeEmitter.fire(`\r\nTask exited with exit code ${code}.\r\n`);
                         closeEmitter.fire(code || 0);
