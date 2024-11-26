@@ -1,5 +1,6 @@
 import * as childProcess from "child_process";
 import { commands, env, extensions, QuickPickItemKind, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, ThemeIcon, Uri, window } from "vscode";
+import { Act } from "./act";
 import { ConfigurationManager, Platform, Section } from "./configurationManager";
 import { act, componentsTreeDataProvider } from "./extension";
 import ComponentsTreeDataProvider from "./views/components/componentsTreeDataProvider";
@@ -38,7 +39,7 @@ export class ComponentsManager {
     async getComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
         const components: Component<CliStatus | ExtensionStatus>[] = [];
 
-        const actCliInfo = await this.getCliInfo('act --version', ComponentsManager.actVersionRegExp, false, false);
+        const actCliInfo = await this.getCliInfo(`${Act.getActCommand()} --version`, ComponentsManager.actVersionRegExp, false, false);
         components.push({
             name: 'nektos/act',
             icon: 'terminal',

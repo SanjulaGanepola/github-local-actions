@@ -1,4 +1,4 @@
-import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
+import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
 import { Setting, SettingFile } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
@@ -17,6 +17,8 @@ export default class InputsTreeItem extends TreeItem implements GithubLocalActio
             (selectedInputFiles.length > 0 ? ` + ${selectedInputFiles[0].name}` : ``);
         this.contextValue = InputsTreeItem.contextValue;
         this.iconPath = new ThemeIcon('record-keys');
+        const hasAllValues = inputs.filter(input => input.selected && input.value === '').length === 0;
+        this.resourceUri = Uri.parse(`${InputsTreeItem.contextValue}:Inputs?hasAllValues=${hasAllValues}`, true);
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
