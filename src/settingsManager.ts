@@ -38,7 +38,8 @@ export enum Visibility {
 
 export enum SettingFileName {
     secretFile = '.secrets',
-    variableFile = '.env',
+    envFile = '.env',
+    variableFile = '.vars',
     inputFile = '.input',
     payloadFile = 'payload.json'
 }
