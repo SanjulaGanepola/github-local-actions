@@ -244,6 +244,8 @@ export class ComponentsManager {
                                 const newDockerCliInfo = await this.getCliInfo(`docker version --format "Docker Engine Version: {{.Client.Version}}"`, ComponentsManager.dockerVersionRegExp, true, true);
                                 if (dockerCliInfo.status !== newDockerCliInfo.status) {
                                     componentsTreeDataProvider.refresh();
+                                } else {
+                                    window.showInformationMessage('You may need to restart your PC for these changes to take affect.');
                                 }
                             });
                         } else if (value === 'Learn More') {
