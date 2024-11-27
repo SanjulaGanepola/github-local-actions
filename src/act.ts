@@ -100,7 +100,7 @@ export class Act {
                     'Chocolatey': 'choco install act-cli',
                     'Winget': 'winget install nektos.act',
                     'Scoop': 'scoop install act',
-                    'GitHub CLI': 'gh auth status || gh auth login && gh extension install https://github.com/nektos/gh-act'
+                    'GitHub CLI': '(gh auth status || gh auth login) && gh extension install https://github.com/nektos/gh-act'
                 };
 
                 this.prebuiltExecutables = {
@@ -115,7 +115,7 @@ export class Act {
                     'Homebrew': 'brew install act',
                     'Nix': 'nix run nixpkgs#act',
                     'MacPorts': 'sudo port install act',
-                    'GitHub CLI': 'gh auth status || gh auth login && gh extension install https://github.com/nektos/gh-act'
+                    'GitHub CLI': '(gh auth status || gh auth login) && gh extension install https://github.com/nektos/gh-act'
                 };
 
                 this.prebuiltExecutables = {
@@ -129,7 +129,7 @@ export class Act {
                     'Nix': 'nix run nixpkgs#act',
                     'AUR': 'yay -Syu act',
                     'COPR': 'dnf copr enable goncalossilva/act && dnf install act-cli',
-                    'GitHub CLI': 'gh auth status || gh auth login && gh extension install https://github.com/nektos/gh-act'
+                    'GitHub CLI': '(gh auth status || gh auth login) && gh extension install https://github.com/nektos/gh-act'
                 };
 
                 this.prebuiltExecutables = {
