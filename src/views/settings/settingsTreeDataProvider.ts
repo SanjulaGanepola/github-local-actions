@@ -29,7 +29,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 });
 
                 if (secretFileName) {
-                    await act.settingsManager.createSettingFile(secretsTreeItem.workspaceFolder, secretsTreeItem.storageKey, secretFileName);
+                    await act.settingsManager.createSettingFile(secretsTreeItem.workspaceFolder, secretsTreeItem.storageKey, secretFileName, '');
                     this.refresh();
                 }
             }),
@@ -55,7 +55,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 });
 
                 if (variableFileName) {
-                    await act.settingsManager.createSettingFile(variablesTreeItem.workspaceFolder, variablesTreeItem.storageKey, variableFileName);
+                    await act.settingsManager.createSettingFile(variablesTreeItem.workspaceFolder, variablesTreeItem.storageKey, variableFileName, '');
                     this.refresh();
                 }
             }),
@@ -81,7 +81,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 });
 
                 if (inputFileName) {
-                    await act.settingsManager.createSettingFile(inputsTreeItem.workspaceFolder, inputsTreeItem.storageKey, inputFileName);
+                    await act.settingsManager.createSettingFile(inputsTreeItem.workspaceFolder, inputsTreeItem.storageKey, inputFileName, '');
                     this.refresh();
                 }
             }),
@@ -107,7 +107,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 });
 
                 if (payloadFileName) {
-                    await act.settingsManager.createSettingFile(payloadsTreeItem.workspaceFolder, payloadsTreeItem.storageKey, payloadFileName);
+                    await act.settingsManager.createSettingFile(payloadsTreeItem.workspaceFolder, payloadsTreeItem.storageKey, payloadFileName, '{}');
                     this.refresh();
                 }
             }),

@@ -2,9 +2,9 @@ import * as childProcess from "child_process";
 import * as fs from "fs/promises";
 import * as path from "path";
 import sanitize from "sanitize-filename";
-import { CustomExecution, EventEmitter, ExtensionContext, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, Uri, window, workspace, WorkspaceFolder } from "vscode";
+import { CustomExecution, env, EventEmitter, ExtensionContext, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
-import { ConfigurationManager, Section } from "./configurationManager";
+import { ConfigurationManager, Platform, Section } from "./configurationManager";
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
 import { HistoryManager, HistoryStatus } from './historyManager';
 import { SecretManager } from "./secretManager";
@@ -171,9 +171,9 @@ export class Act {
         });
 
         // Refresh components view after installation
-        tasks.onDidEndTask(async e => {
+        tasks.onDidEndTaskProcess(async e => {
             const taskDefinition = e.execution.task.definition;
-            if (taskDefinition.type === 'nektos/act installation') {
+            if (taskDefinition.type === 'nektos/act installation' && e.exitCode === 0) {
                 // Update base act command based on installation method
                 if (taskDefinition.ghCliInstall) {
                     await ConfigurationManager.set(Section.actCommand, Act.githubCliCommand);
@@ -188,6 +188,19 @@ export class Act {
 
     static getActCommand() {
         return ConfigurationManager.get<string>(Section.actCommand) || Act.command;
+    }
+
+    private getShell() {
+        switch (process.platform) {
+            case Platform.windows:
+                return 'cmd';
+            case Platform.mac:
+                return 'zsh';
+            case Platform.linux:
+                return 'bash';
+            default:
+                return env.shell;
+        }
     }
 
     async runAllWorkflows(workspaceFolder: WorkspaceFolder) {
@@ -366,13 +379,16 @@ export class Act {
                     command,
                     {
                         cwd: commandArgs.path,
-                        shell: true,
-                        env: settings.secrets
-                            .filter(secret => secret.value)
-                            .reduce((previousValue, currentValue) => {
-                                previousValue[currentValue.key] = currentValue.value;
-                                return previousValue;
-                            }, {} as Record<string, string>)
+                        shell: this.getShell(),
+                        env: {
+                            ...process.env,
+                            ...settings.secrets
+                                .filter(secret => secret.value)
+                                .reduce((previousValue, currentValue) => {
+                                    previousValue[currentValue.key] = currentValue.value;
+                                    return previousValue;
+                                }, {} as Record<string, string>)
+                        }
                     }
                 );
                 exec.stdout.on('data', handleIO);
@@ -454,7 +470,7 @@ export class Act {
                 problemMatchers: [],
                 runOptions: {},
                 group: TaskGroup.Build,
-                execution: new ShellExecution(command)
+                execution: new ShellExecution(command, { executable: this.getShell() })
             });
         }
     }
