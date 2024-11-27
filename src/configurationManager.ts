@@ -35,7 +35,7 @@ export namespace ConfigurationManager {
 
         let actCommand = ConfigurationManager.get<string>(Section.actCommand);
         if (!actCommand) {
-            await ConfigurationManager.set(Section.actCommand, Act.command);
+            await ConfigurationManager.set(Section.actCommand, Act.defaultActCommand);
         }
     }
 
