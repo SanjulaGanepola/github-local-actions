@@ -190,19 +190,6 @@ export class Act {
         return ConfigurationManager.get<string>(Section.actCommand) || Act.command;
     }
 
-    private getShell() {
-        switch (process.platform) {
-            case Platform.windows:
-                return 'cmd';
-            case Platform.mac:
-                return 'zsh';
-            case Platform.linux:
-                return 'bash';
-            default:
-                return env.shell;
-        }
-    }
-
     async runAllWorkflows(workspaceFolder: WorkspaceFolder) {
         return await this.runCommand({
             path: workspaceFolder.uri.fsPath,
@@ -375,11 +362,24 @@ export class Act {
                     }
                 }
 
+                let shell = env.shell;
+                switch (process.platform) {
+                    case Platform.windows:
+                        shell = 'cmd';
+                        break;
+                    case Platform.mac:
+                        shell = 'zsh';
+                        break;
+                    case Platform.linux:
+                        shell = 'bash';
+                        break;
+                }
+
                 const exec = childProcess.spawn(
                     command,
                     {
                         cwd: commandArgs.path,
-                        shell: this.getShell(),
+                        shell: shell,
                         env: {
                             ...process.env,
                             ...settings.secrets
@@ -470,7 +470,7 @@ export class Act {
                 problemMatchers: [],
                 runOptions: {},
                 group: TaskGroup.Build,
-                execution: new ShellExecution(command, { executable: this.getShell() })
+                execution: new ShellExecution(command)
             });
         }
     }
