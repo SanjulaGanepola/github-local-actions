@@ -164,7 +164,7 @@ export class SettingsManager {
         return environments;
     }
 
-    async createSettingFile(workspaceFolder: WorkspaceFolder, storageKey: StorageKey, settingFileName: string) {
+    async createSettingFile(workspaceFolder: WorkspaceFolder, storageKey: StorageKey, settingFileName: string, content: string) {
         const settingFileUri = Uri.file(path.join(workspaceFolder.uri.fsPath, settingFileName));
 
         try {
@@ -172,7 +172,7 @@ export class SettingsManager {
             window.showErrorMessage(`A file or folder named ${settingFileName} already exists at ${workspaceFolder.uri.fsPath}. Please choose another name.`);
         } catch (error: any) {
             try {
-                await workspace.fs.writeFile(settingFileUri, new TextEncoder().encode(''));
+                await workspace.fs.writeFile(settingFileUri, new TextEncoder().encode(content));
                 await this.locateSettingFile(workspaceFolder, storageKey, [settingFileUri]);
                 const document = await workspace.openTextDocument(settingFileUri);
                 await window.showTextDocument(document);
