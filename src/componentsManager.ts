@@ -104,7 +104,7 @@ export class ComponentsManager {
 
                         if (selectedPrebuiltExecutable) {
                             await env.openExternal(Uri.parse(selectedPrebuiltExecutable.link));
-                            window.showInformationMessage('Unpack and run the executable in the terminal specifying the full path or add it to one of the paths in your PATH environment variable. Once nektos/act is successfully installed, refresh the components view.', 'Refresh').then(async value => {
+                            window.showInformationMessage('Unpack the executable and move it to your desired location. Once nektos/act is successfully installed, add it to your shell\'s PATH and then refresh the components view.', 'Refresh').then(async value => {
                                 if (value === 'Refresh') {
                                     componentsTreeDataProvider.refresh();
                                 }
@@ -112,7 +112,7 @@ export class ComponentsManager {
                         }
                     } else if (selectedInstallationMethod.link) {
                         await env.openExternal(Uri.parse(selectedInstallationMethod.link));
-                        window.showInformationMessage('Once nektos/act is successfully installed, refresh the components view.', 'Refresh').then(async value => {
+                        window.showInformationMessage('Once nektos/act is successfully installed, add it to your shell\'s PATH and then refresh the components view.', 'Refresh').then(async value => {
                             if (value === 'Refresh') {
                                 componentsTreeDataProvider.refresh();
                             }
@@ -162,7 +162,7 @@ export class ComponentsManager {
                             problemMatchers: [],
                             runOptions: {},
                             group: TaskGroup.Build,
-                            execution: new ShellExecution('sudo dockerd')
+                            execution: new ShellExecution('sudo dockerd', { executable: env.shell })
                         });
                     } else {
                         window.showErrorMessage(`Invalid environment: ${process.platform}`, 'Report an Issue').then(async value => {

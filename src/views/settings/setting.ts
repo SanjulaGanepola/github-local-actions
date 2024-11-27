@@ -1,7 +1,14 @@
-import { ThemeIcon, TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
+import { ThemeIcon, TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState, Uri, WorkspaceFolder } from "vscode";
 import { Setting, Visibility } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
+
+export enum SettingContextValue {
+    secret = 'githubLocalActions.secret',
+    variable = 'githubLocalActions.variable',
+    input = 'githubLocalActions.input',
+    runner = 'githubLocalActions.runner'
+}
 
 export default class SettingTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
     setting: Setting;
@@ -19,6 +26,7 @@ export default class SettingTreeItem extends TreeItem implements GithubLocalActi
         this.contextValue = `${treeItem.contextValue}_${setting.password ? setting.visible : ''}`;
         this.iconPath = treeItem.iconPath;
         this.checkboxState = setting.selected ? TreeItemCheckboxState.Checked : TreeItemCheckboxState.Unchecked;
+        this.resourceUri = Uri.parse(`${treeItem.contextValue}:${setting.key}?isSelected=${setting.selected}&hasValue=${setting.value !== ''}`, true);
     }
 
     static getSecretTreeItem(workspaceFolder: WorkspaceFolder, secret: Setting): SettingTreeItem {
@@ -27,7 +35,7 @@ export default class SettingTreeItem extends TreeItem implements GithubLocalActi
             secret,
             StorageKey.Secrets,
             {
-                contextValue: 'githubLocalActions.secret',
+                contextValue: SettingContextValue.secret,
                 iconPath: new ThemeIcon('key')
             }
         );
@@ -39,7 +47,7 @@ export default class SettingTreeItem extends TreeItem implements GithubLocalActi
             variable,
             StorageKey.Variables,
             {
-                contextValue: 'githubLocalActions.variable',
+                contextValue: SettingContextValue.variable,
                 iconPath: new ThemeIcon('symbol-variable')
             }
         );
@@ -51,7 +59,7 @@ export default class SettingTreeItem extends TreeItem implements GithubLocalActi
             input,
             StorageKey.Inputs,
             {
-                contextValue: 'githubLocalActions.input',
+                contextValue: SettingContextValue.input,
                 iconPath: new ThemeIcon('symbol-parameter')
             }
         );
@@ -63,7 +71,7 @@ export default class SettingTreeItem extends TreeItem implements GithubLocalActi
             runner,
             StorageKey.Runners,
             {
-                contextValue: 'githubLocalActions.runner',
+                contextValue: SettingContextValue.runner,
                 iconPath: new ThemeIcon('vm-connect')
             }
         );
