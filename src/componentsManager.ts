@@ -115,6 +115,8 @@ export class ComponentsManager {
                                 }
                             });
                         }
+
+                        act.updateActCommand(Act.defaultActCommand);
                     } else if (selectedInstallationMethod.link) {
                         await env.openExternal(Uri.parse(selectedInstallationMethod.link));
                         window.showInformationMessage('Once nektos/act is successfully installed, add it to your shell\'s PATH and then refresh the components view.', 'Refresh').then(async value => {
@@ -122,6 +124,8 @@ export class ComponentsManager {
                                 componentsTreeDataProvider.refresh();
                             }
                         });
+
+                        act.updateActCommand(Act.defaultActCommand);
                     } else {
                         await act.install(selectedInstallationMethod.label);
                     }
@@ -232,7 +236,7 @@ export class ComponentsManager {
                                 problemMatchers: [],
                                 runOptions: {},
                                 group: TaskGroup.Build,
-                                execution: new ShellExecution('sudo groupadd docker; sudo usermod -aG docker $USER; newgrp docker')
+                                execution: new ShellExecution('sudo groupadd docker; sudo usermod -aG docker $USER')
                             });
 
                             window.withProgress({ location: { viewId: ComponentsTreeDataProvider.VIEW_ID } }, async () => {

@@ -2,7 +2,7 @@ import * as childProcess from "child_process";
 import * as fs from "fs/promises";
 import * as path from "path";
 import sanitize from "sanitize-filename";
-import { CustomExecution, env, EventEmitter, ExtensionContext, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, Uri, window, workspace, WorkspaceFolder } from "vscode";
+import { commands, CustomExecution, env, EventEmitter, ExtensionContext, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { ComponentsManager } from "./componentsManager";
 import { ConfigurationManager, Platform, Section } from "./configurationManager";
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
@@ -70,8 +70,8 @@ export interface CommandArgs {
 }
 
 export class Act {
-    static command: string = 'act';
-    static githubCliCommand: string = 'gh act';
+    static defaultActCommand: string = 'act';
+    static githubCliActCommand: string = 'gh act';
     context: ExtensionContext;
     storageManager: StorageManager;
     secretManager: SecretManager;
@@ -175,20 +175,29 @@ export class Act {
         tasks.onDidEndTaskProcess(async e => {
             const taskDefinition = e.execution.task.definition;
             if (taskDefinition.type === 'nektos/act installation' && e.exitCode === 0) {
-                // Update base act command based on installation method
-                if (taskDefinition.ghCliInstall) {
-                    await ConfigurationManager.set(Section.actCommand, Act.githubCliCommand);
-                } else {
-                    await ConfigurationManager.set(Section.actCommand, Act.command);
-                }
-
+                this.updateActCommand(taskDefinition.ghCliInstall ? Act.githubCliActCommand : Act.defaultActCommand);
                 componentsTreeDataProvider.refresh();
             }
         });
     }
 
     static getActCommand() {
-        return ConfigurationManager.get<string>(Section.actCommand) || Act.command;
+        return ConfigurationManager.get<string>(Section.actCommand) || Act.defaultActCommand;
+    }
+
+    updateActCommand(newActCommand: string) {
+        const actCommand = ConfigurationManager.get(Section.actCommand);
+
+        if (newActCommand !== actCommand) {
+            window.showInformationMessage(`The act command is currently set to "${actCommand}". Once the installation is complete, it is recommended to update this to "${newActCommand}" for this selected installation method.`, 'Proceed', 'Manually Edit').then(async value => {
+                if (value === 'Proceed') {
+                    await ConfigurationManager.set(Section.actCommand, newActCommand);
+                    componentsTreeDataProvider.refresh();
+                } else if (value === 'Manually Edit') {
+                    await commands.executeCommand('workbench.action.openSettings', ConfigurationManager.getSearchTerm(Section.actCommand));
+                }
+            });
+        }
     }
 
     async runAllWorkflows(workspaceFolder: WorkspaceFolder) {
