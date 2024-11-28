@@ -1,5 +1,3 @@
-import * as os from "os";
-import * as path from "path";
 import { ConfigurationTarget, workspace } from 'vscode';
 import { Act } from './act';
 
@@ -11,8 +9,7 @@ export enum Platform {
 
 export enum Section {
     actCommand = 'actCommand',
-    dockerDesktopPath = 'dockerDesktopPath',
-    actionCachePath = 'actionCachePath'
+    dockerDesktopPath = 'dockerDesktopPath'
 }
 
 export namespace ConfigurationManager {
@@ -40,13 +37,6 @@ export namespace ConfigurationManager {
         if (!actCommand) {
             await ConfigurationManager.set(Section.actCommand, Act.defaultActCommand);
         }
-
-        let actionCachePath = ConfigurationManager.get<string>(Section.actionCachePath);
-        if (!actionCachePath) {
-            actionCachePath = getCacheDirectory(['act']);
-
-            ConfigurationManager.set(Section.actionCachePath, actionCachePath);
-        }
     }
 
     export function getSearchTerm(section: Section): string {
@@ -59,11 +49,5 @@ export namespace ConfigurationManager {
 
     export async function set(section: Section, value: any): Promise<void> {
         return await workspace.getConfiguration(ConfigurationManager.group).update(section, value, ConfigurationTarget.Global);
-    }
-
-    function getCacheDirectory(paths: string[]) {
-        const userHomeDir = os.homedir();
-        const cacheHomeDir = process.env.XDG_CACHE_HOME || path.join(userHomeDir, '.cache');
-        return path.join(cacheHomeDir, ...paths);
     }
 }

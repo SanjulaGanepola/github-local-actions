@@ -49,20 +49,67 @@ export enum Event {
 }
 
 export enum Option {
-    Workflows = '--workflows',
-    Job = '--job',
-    Platform = '--platform',
-    Secret = '--secret',
-    SecretFile = '--secret-file',
-    Variable = '--var',
-    VariableFile = '--var-file',
-    Input = '--input',
-    InputFile = '--input-file',
-    PayloadFile = '--eventpath',
-
-
-    ActionCachePath = '--action-cache-path',
-    ActionOfflineMode = '--action-offline-mode'
+    ActionCachePath = "--action-cache-path",
+    ActionOfflineMode = "--action-offline-mode",
+    Actor = "--actor",
+    ArtifactServerAddr = "--artifact-server-addr",
+    ArtifactServerPath = "--artifact-server-path",
+    ArtifactServerPort = "--artifact-server-port",
+    Bind = "--bind",
+    BugReport = "--bug-report",
+    CacheServerAddr = "--cache-server-addr",
+    CacheServerPath = "--cache-server-path",
+    CacheServerPort = "--cache-server-port",
+    ContainerArchitecture = "--container-architecture",
+    ContainerCapAdd = "--container-cap-add",
+    ContainerCapDrop = "--container-cap-drop",
+    ContainerDaemonSocket = "--container-daemon-socket",
+    ContainerOptions = "--container-options",
+    DefaultBranch = "--defaultbranch",
+    DetectEvent = "--detect-event",
+    Directory = "--directory",
+    DryRun = "--dryrun",
+    Env = "--env",
+    EnvFile = "--env-file",
+    EventPath = "--eventpath",
+    GithubInstance = "--github-instance",
+    Graph = "--graph",
+    Help = "--help",
+    Input = "--input",
+    InputFile = "--input-file",
+    InsecureSecrets = "--insecure-secrets",
+    Job = "--job",
+    Json = "--json",
+    List = "--list",
+    LocalRepository = "--local-repository",
+    LogPrefixJobId = "--log-prefix-job-id",
+    ManPage = "--man-page",
+    Matrix = "--matrix",
+    Network = "--network",
+    NoCacheServer = "--no-cache-server",
+    NoRecurse = "--no-recurse",
+    NoSkipCheckout = "--no-skip-checkout",
+    Platform = "--platform",
+    Privileged = "--privileged",
+    Pull = "--pull",
+    Quiet = "--quiet",
+    Rebuild = "--rebuild",
+    RemoteName = "--remote-name",
+    ReplaceGheActionTokenWithGithubCom = "--replace-ghe-action-token-with-github-com",
+    ReplaceGheActionWithGithubCom = "--replace-ghe-action-with-github-com",
+    Reuse = "--reuse",
+    Rm = "--rm",
+    Secret = "--secret",
+    SecretFile = "--secret-file",
+    UseGitignore = "--use-gitignore",
+    UseNewActionCache = "--use-new-action-cache",
+    Userns = "--userns",
+    Var = "--var",
+    VarFile = "--var-file",
+    Verbose = "--verbose",
+    Version = "--version",
+    Watch = "--watch",
+    Workflows = "--workflows",
 }
 
 export interface CommandArgs {
@@ -300,12 +347,13 @@ export class Act {
             `${actCommand} ${commandArgs.options}` +
             (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
             (settings.secretFiles.length > 0 ? ` ${Option.SecretFile} "${settings.secretFiles[0].path}"` : ` ${Option.SecretFile} ""`) +
-            (settings.variables.length > 0 ? ` ${Option.Variable} ${settings.variables.map(variable => `${variable.key}=${variable.value}`).join(` ${Option.Variable} `)}` : ``) +
-            (settings.variableFiles.length > 0 ? ` ${Option.VariableFile} "${settings.variableFiles[0].path}"` : ` ${Option.VariableFile} ""`) +
+            (settings.variables.length > 0 ? ` ${Option.Var} ${settings.variables.map(variable => `${variable.key}=${variable.value}`).join(` ${Option.Var} `)}` : ``) +
+            (settings.variableFiles.length > 0 ? ` ${Option.VarFile} "${settings.variableFiles[0].path}"` : ` ${Option.VarFile} ""`) +
             (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
             (settings.inputFiles.length > 0 ? ` ${Option.InputFile} "${settings.inputFiles[0].path}"` : ` ${Option.InputFile} ""`) +
             (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
-            (settings.payloadFiles.length > 0 ? ` ${Option.PayloadFile} "${settings.payloadFiles[0].path}"` : ` ${Option.PayloadFile} ""`);
+            (settings.payloadFiles.length > 0 ? ` ${Option.EventPath} "${settings.payloadFiles[0].path}"` : ` ${Option.EventPath} ""`) +
+            (settings.options.map(option => option.path ? ` --${option.name} ${option.path}` : ` --${option.name}`).join(''));
 
         // Execute task
         const taskExecution = await tasks.executeTask({
