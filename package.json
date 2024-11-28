@@ -9,7 +9,7 @@
   },
   "publisher": "SanjulaGanepola",
   "license": "Apache-2.0",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "repository": {
     "url": "https://github.com/SanjulaGanepola/github-local-actions"
   },
@@ -155,6 +155,12 @@
         "command": "githubLocalActions.startComponent",
         "title": "Start",
         "icon": "$(debug-start)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.fixPermissions",
+        "title": "Fix Permissions",
+        "icon": "$(unlock)"
       },
       {
         "category": "GitHub Local Actions",
@@ -367,6 +373,10 @@
           "when": "never"
         },
         {
+          "command": "githubLocalActions.fixPermissions",
+          "when": "never"
+        },
+        {
           "command": "githubLocalActions.runAllWorkflows",
           "when": "never"
         },
@@ -556,6 +566,11 @@
           "group": "inline@1"
         },
         {
+          "command": "githubLocalActions.fixPermissions",
+          "when": "view == components && viewItem =~ /^githubLocalActions.component_Invalid Permissions.*/",
+          "group": "inline@1"
+        },
+        {
           "command": "githubLocalActions.runAllWorkflows",
           "when": "view == workflows && viewItem =~ /^githubLocalActions.workspaceFolderWorkflows.*/ && workspaceFolderCount > 1",
           "group": "inline@0"
@@ -685,7 +700,12 @@
     "configuration": {
       "title": "GitHub Local Actions",
       "properties": {
-        "githubLocalActions.dockerEngine.dockerDesktopPath": {
+        "githubLocalActions.actCommand": {
+          "markdownDescription": "The base `nektos/act` command to be called. By default, this will be `act` (requires the binary to be on your `PATH`). If the binary is not on your `PATH`, the command should be fully qualified. If `act` is installed as a GitHub CLI extension, this command should be set to `gh act`.",
+          "type": "string",
+          "default": "act"
+        },
+        "githubLocalActions.dockerDesktopPath": {
           "markdownDescription": "The path to your Docker Desktop executable (used for Windows and MacOS). To start Docker Engine from the `Components` view, this application will be launched. Refer to the default path based on OS:\n\n* **Windows**: `C:/Program Files/Docker/Docker/Docker Desktop.exe`\n\n* **MacOS**: `/Applications/Docker.app`",
           "type": "string",
           "default": ""

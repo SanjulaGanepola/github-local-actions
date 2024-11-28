@@ -1,4 +1,4 @@
-import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
+import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
 import { Setting } from "../../settingsManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
@@ -12,6 +12,8 @@ export default class RunnersTreeItem extends TreeItem implements GithubLocalActi
         this.description = `${runners.filter(runner => runner.selected).length}/${runners.length}`;
         this.contextValue = RunnersTreeItem.contextValue;
         this.iconPath = new ThemeIcon('server-environment');
+        const hasAllValues = runners.filter(runner => runner.selected && runner.value === '').length === 0;
+        this.resourceUri = Uri.parse(`${RunnersTreeItem.contextValue}:Runners?hasAllValues=${hasAllValues}`, true);
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {

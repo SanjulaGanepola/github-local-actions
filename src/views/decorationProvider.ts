@@ -1,6 +1,11 @@
 import { CancellationToken, Event, FileDecoration, FileDecorationProvider, ProviderResult, ThemeColor, Uri } from "vscode";
 import { CliStatus, ExtensionStatus } from "../componentsManager";
 import ComponentTreeItem from "./components/component";
+import InputsTreeItem from "./settings/inputs";
+import RunnersTreeItem from "./settings/runners";
+import SecretsTreeItem from "./settings/secrets";
+import { SettingContextValue } from "./settings/setting";
+import VariablesTreeItem from "./settings/variables";
 import WorkflowTreeItem from "./workflows/workflow";
 
 export class DecorationProvider implements FileDecorationProvider {
@@ -17,12 +22,12 @@ export class DecorationProvider implements FileDecorationProvider {
                     badge: '✅',
                     color: new ThemeColor('GitHubLocalActions.green')
                 };
-            } else if (!required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning || status === ExtensionStatus.NotActivated)) {
+            } else if (!required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning || status === CliStatus.InvalidPermissions || status === ExtensionStatus.NotActivated)) {
                 return {
                     badge: '⚠️',
                     color: new ThemeColor('GitHubLocalActions.yellow')
                 };
-            } else if (required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning || status === ExtensionStatus.NotActivated)) {
+            } else if (required && (status === CliStatus.NotInstalled || status === CliStatus.NotRunning || status === CliStatus.InvalidPermissions || status === ExtensionStatus.NotActivated)) {
                 return {
                     badge: '❌',
                     color: new ThemeColor('GitHubLocalActions.red')
@@ -37,14 +42,24 @@ export class DecorationProvider implements FileDecorationProvider {
                     color: new ThemeColor('GitHubLocalActions.red')
                 };
             }
+        } else if ([SecretsTreeItem.contextValue, VariablesTreeItem.contextValue, InputsTreeItem.contextValue, RunnersTreeItem.contextValue].includes(uri.scheme)) {
+            const hasAllValues = params.get('hasAllValues') === 'true';
+
+            if (!hasAllValues) {
+                return {
+                    color: new ThemeColor('GitHubLocalActions.red')
+                };
+            }
+        } else if (Object.values(SettingContextValue).includes(uri.scheme as any)) {
+            const isSelected = params.get('isSelected') === 'true';
+            const hasValue = params.get('hasValue') === 'true';
+
+            if (isSelected && !hasValue) {
+                return {
+                    badge: '?',
+                    color: new ThemeColor('GitHubLocalActions.red')
+                };
+            }
         }
-
-        // else if (uri.scheme === SecretsTreeItem.contextValue || uri.scheme === VariablesTreeItem.contextValue || uri.scheme === InputsTreeItem.contextValue || uri.scheme === RunnersTreeItem.contextValue) {
-        //     const selected = params.get('selected');
-
-        //     return {
-        //         badge: `${selected}`
-        //     };
-        // }
     }
 }

@@ -38,7 +38,8 @@ export enum Visibility {
 
 export enum SettingFileName {
     secretFile = '.secrets',
-    variableFile = '.env',
+    envFile = '.env',
+    variableFile = '.vars',
     inputFile = '.input',
     payloadFile = 'payload.json'
 }
@@ -59,9 +60,9 @@ export class SettingsManager {
     }
 
     async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean): Promise<Settings> {
-        const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || secret.selected);
+        const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || (secret.selected && secret.value));
         const secretFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.SecretFiles)).filter(secretFile => !isUserSelected || secretFile.selected);
-        const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || variable.selected);
+        const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || (variable.selected && variable.value));
         const variableFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
         const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
         const inputFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.InputFiles)).filter(inputFile => !isUserSelected || inputFile.selected);
@@ -164,7 +165,7 @@ export class SettingsManager {
         return environments;
     }
 
-    async createSettingFile(workspaceFolder: WorkspaceFolder, storageKey: StorageKey, settingFileName: string) {
+    async createSettingFile(workspaceFolder: WorkspaceFolder, storageKey: StorageKey, settingFileName: string, content: string) {
         const settingFileUri = Uri.file(path.join(workspaceFolder.uri.fsPath, settingFileName));
 
         try {
@@ -172,7 +173,7 @@ export class SettingsManager {
             window.showErrorMessage(`A file or folder named ${settingFileName} already exists at ${workspaceFolder.uri.fsPath}. Please choose another name.`);
         } catch (error: any) {
             try {
-                await workspace.fs.writeFile(settingFileUri, new TextEncoder().encode(''));
+                await workspace.fs.writeFile(settingFileUri, new TextEncoder().encode(content));
                 await this.locateSettingFile(workspaceFolder, storageKey, [settingFileUri]);
                 const document = await workspace.openTextDocument(settingFileUri);
                 await window.showTextDocument(document);

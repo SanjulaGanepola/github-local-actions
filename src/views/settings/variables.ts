@@ -1,4 +1,4 @@
-import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
+import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
 import { Setting, SettingFile } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
@@ -17,6 +17,8 @@ export default class VariablesTreeItem extends TreeItem implements GithubLocalAc
             (selectedVariableFiles.length > 0 ? ` + ${selectedVariableFiles[0].name}` : ``);
         this.contextValue = VariablesTreeItem.contextValue;
         this.iconPath = new ThemeIcon('symbol-key');
+        const hasAllValues = variables.filter(variable => variable.selected && variable.value === '').length === 0;
+        this.resourceUri = Uri.parse(`${VariablesTreeItem.contextValue}:Variables?hasAllValues=${hasAllValues}`, true);
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {

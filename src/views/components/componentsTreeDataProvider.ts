@@ -27,9 +27,15 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
                 const start = componentTreeItem.component.start;
                 if (start) {
                     await start();
+                    this.refresh();
                 }
-
-                this.refresh();
+            }),
+            commands.registerCommand('githubLocalActions.fixPermissions', async (componentTreeItem: ComponentTreeItem) => {
+                const fixPermissions = componentTreeItem.component.fixPermissions;
+                if (fixPermissions) {
+                    await fixPermissions();
+                    this.refresh();
+                }
             })
         );
     }
