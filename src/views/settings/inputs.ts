@@ -1,6 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
-import { Setting, SettingFile } from "../../settingsManager";
+import { CustomSetting, Setting } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SettingTreeItem from "./setting";
@@ -10,7 +10,7 @@ export default class InputsTreeItem extends TreeItem implements GithubLocalActio
     static contextValue = 'githubLocalActions.inputs';
     storageKey = StorageKey.InputFiles;
 
-    constructor(public workspaceFolder: WorkspaceFolder, inputs: Setting[], inputFiles: SettingFile[]) {
+    constructor(public workspaceFolder: WorkspaceFolder, inputs: Setting[], inputFiles: CustomSetting[]) {
         super('Inputs', TreeItemCollapsibleState.Collapsed);
         const selectedInputFiles = inputFiles.filter(inputFile => inputFile.selected);
         this.description = `${inputs.filter(input => input.selected).length}/${inputs.length}` +

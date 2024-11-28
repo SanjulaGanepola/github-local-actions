@@ -314,13 +314,25 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.addOption",
+        "title": "Add Option",
+        "icon": "$(add)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.editOption",
+        "title": "Edit",
+        "icon": "$(edit)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.openSettingFile",
         "title": "Open",
         "icon": "$(go-to-file)"
       },
       {
         "category": "GitHub Local Actions",
-        "command": "githubLocalActions.removeSettingFile",
+        "command": "githubLocalActions.removeCustomSetting",
         "title": "Remove",
         "icon": "$(close)"
       },
@@ -473,11 +485,19 @@
           "when": "never"
         },
         {
+          "command": "githubLocalActions.addOption",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.editOption",
+          "when": "never"
+        },
+        {
           "command": "githubLocalActions.openSettingFile",
           "when": "never"
         },
         {
-          "command": "githubLocalActions.removeSettingFile",
+          "command": "githubLocalActions.removeCustomSetting",
           "when": "never"
         },
         {
@@ -676,13 +696,23 @@
           "group": "inline@1"
         },
         {
+          "command": "githubLocalActions.addOption",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.options.*/",
+          "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.editOption",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.option(?!s)_editable.*/",
+          "group": "inline@0"
+        },
+        {
           "command": "githubLocalActions.openSettingFile",
           "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|payload)File.*/",
           "group": "inline@0"
         },
         {
-          "command": "githubLocalActions.removeSettingFile",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|payload)File.*/",
+          "command": "githubLocalActions.removeCustomSetting",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.((secret|variable|input|payload|)File|option(?!s)).*/",
           "group": "inline@1"
         },
         {
@@ -706,11 +736,9 @@
           "default": "act"
         },
         "githubLocalActions.dockerDesktopPath": {
-          "type": "string",
           "markdownDescription": "The path to your Docker Desktop executable (used for Windows and MacOS). To start Docker Engine from the `Components` view, this application will be launched. Refer to the default path based on OS:\n\n* **Windows**: `C:/Program Files/Docker/Docker/Docker Desktop.exe`\n\n* **MacOS**: `/Applications/Docker.app`",
-          "items": {
-            "type": "string"
-          }
+          "type": "string",
+          "default": ""
         }
       }
     },

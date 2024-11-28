@@ -1,6 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
 import { act } from "../../extension";
-import { SettingFile } from "../../settingsManager";
+import { CustomSetting } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import SettingFileTreeItem from "./settingFile";
@@ -9,7 +9,7 @@ export default class PayloadsTreeItem extends TreeItem implements GithubLocalAct
     static contextValue = 'githubLocalActions.payloads';
     storageKey = StorageKey.PayloadFiles;
 
-    constructor(public workspaceFolder: WorkspaceFolder, payloadFiles: SettingFile[]) {
+    constructor(public workspaceFolder: WorkspaceFolder, payloadFiles: CustomSetting[]) {
         super('Payloads', TreeItemCollapsibleState.Collapsed);
         const selectedPayloadFiles = payloadFiles.filter(payloadFile => payloadFile.selected);
         this.description = selectedPayloadFiles.length > 0 ? `${selectedPayloadFiles[0].name}` : ``;

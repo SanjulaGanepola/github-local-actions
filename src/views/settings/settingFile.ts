@@ -1,13 +1,13 @@
 import { ThemeIcon, TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
-import { SettingFile } from "../../settingsManager";
+import { CustomSetting } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 
 export default class SettingFileTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
-    settingFile: SettingFile;
+    settingFile: CustomSetting;
     storageKey: StorageKey;
 
-    constructor(public workspaceFolder: WorkspaceFolder, settingFile: SettingFile, storageKey: StorageKey, treeItem: { contextValue: string, iconPath: ThemeIcon }) {
+    constructor(public workspaceFolder: WorkspaceFolder, settingFile: CustomSetting, storageKey: StorageKey, treeItem: { contextValue: string, iconPath: ThemeIcon }) {
         super(settingFile.name, TreeItemCollapsibleState.None);
         this.settingFile = settingFile;
         this.storageKey = storageKey;
@@ -16,10 +16,10 @@ export default class SettingFileTreeItem extends TreeItem implements GithubLocal
         this.iconPath = treeItem.iconPath;
         this.checkboxState = settingFile.selected ? TreeItemCheckboxState.Checked : TreeItemCheckboxState.Unchecked;
         this.tooltip = `Name: ${settingFile.name}\n` +
-            `Path: ${settingFile.path}\n`;
+            `Path: ${settingFile.path}`;
     }
 
-    static getSecretTreeItem(workspaceFolder: WorkspaceFolder, secretFile: SettingFile): SettingFileTreeItem {
+    static getSecretTreeItem(workspaceFolder: WorkspaceFolder, secretFile: CustomSetting): SettingFileTreeItem {
         return new SettingFileTreeItem(
             workspaceFolder,
             secretFile,
@@ -31,7 +31,7 @@ export default class SettingFileTreeItem extends TreeItem implements GithubLocal
         );
     }
 
-    static getVariableTreeItem(workspaceFolder: WorkspaceFolder, variableFile: SettingFile): SettingFileTreeItem {
+    static getVariableTreeItem(workspaceFolder: WorkspaceFolder, variableFile: CustomSetting): SettingFileTreeItem {
         return new SettingFileTreeItem(
             workspaceFolder,
             variableFile,
@@ -43,7 +43,7 @@ export default class SettingFileTreeItem extends TreeItem implements GithubLocal
         );
     }
 
-    static getInputTreeItem(workspaceFolder: WorkspaceFolder, inputFile: SettingFile): SettingFileTreeItem {
+    static getInputTreeItem(workspaceFolder: WorkspaceFolder, inputFile: CustomSetting): SettingFileTreeItem {
         return new SettingFileTreeItem(
             workspaceFolder,
             inputFile,
@@ -55,7 +55,7 @@ export default class SettingFileTreeItem extends TreeItem implements GithubLocal
         );
     }
 
-    static getPayloadTreeItem(workspaceFolder: WorkspaceFolder, payloadFile: SettingFile): SettingFileTreeItem {
+    static getPayloadTreeItem(workspaceFolder: WorkspaceFolder, payloadFile: CustomSetting): SettingFileTreeItem {
         return new SettingFileTreeItem(
             workspaceFolder,
             payloadFile,

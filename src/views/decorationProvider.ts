@@ -2,6 +2,8 @@ import { CancellationToken, Event, FileDecoration, FileDecorationProvider, Provi
 import { CliStatus, ExtensionStatus } from "../componentsManager";
 import ComponentTreeItem from "./components/component";
 import InputsTreeItem from "./settings/inputs";
+import OptionTreeItem from "./settings/option";
+import OptionsTreeItem from "./settings/options";
 import RunnersTreeItem from "./settings/runners";
 import SecretsTreeItem from "./settings/secrets";
 import { SettingContextValue } from "./settings/setting";
@@ -42,7 +44,7 @@ export class DecorationProvider implements FileDecorationProvider {
                     color: new ThemeColor('GitHubLocalActions.red')
                 };
             }
-        } else if ([SecretsTreeItem.contextValue, VariablesTreeItem.contextValue, InputsTreeItem.contextValue, RunnersTreeItem.contextValue].includes(uri.scheme)) {
+        } else if ([SecretsTreeItem.contextValue, VariablesTreeItem.contextValue, InputsTreeItem.contextValue, RunnersTreeItem.contextValue, OptionsTreeItem.contextValue].includes(uri.scheme)) {
             const hasAllValues = params.get('hasAllValues') === 'true';
 
             if (!hasAllValues) {
@@ -50,11 +52,12 @@ export class DecorationProvider implements FileDecorationProvider {
                     color: new ThemeColor('GitHubLocalActions.red')
                 };
             }
-        } else if (Object.values(SettingContextValue).includes(uri.scheme as any)) {
+        } else if ([...Object.values(SettingContextValue), OptionTreeItem].includes(uri.scheme as any)) {
             const isSelected = params.get('isSelected') === 'true';
             const hasValue = params.get('hasValue') === 'true';
+            const editable = params.get('editable') === 'true';
 
-            if (isSelected && !hasValue) {
+            if (isSelected && !hasValue && editable) {
                 return {
                     badge: '?',
                     color: new ThemeColor('GitHubLocalActions.red')

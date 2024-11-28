@@ -7,13 +7,14 @@ import { StorageKey, StorageManager } from "./storageManager";
 
 export interface Settings {
     secrets: Setting[];
-    secretFiles: SettingFile[];
+    secretFiles: CustomSetting[];
     variables: Setting[];
-    variableFiles: SettingFile[];
+    variableFiles: CustomSetting[];
     inputs: Setting[];
-    inputFiles: SettingFile[];
+    inputFiles: CustomSetting[];
     runners: Setting[];
-    payloadFiles: SettingFile[];
+    payloadFiles: CustomSetting[];
+    options: CustomSetting[];
     environments: Setting[];
 }
 
@@ -25,10 +26,14 @@ export interface Setting {
     visible: Visibility
 }
 
-export interface SettingFile {
+// This is either a secret/variable/input/payload file or an option
+export interface CustomSetting {
     name: string,
     path: string,
-    selected: boolean
+    selected: boolean,
+    notEditable?: boolean,
+    default?: string,
+    description?: string,
 }
 
 export enum Visibility {
@@ -61,13 +66,14 @@ export class SettingsManager {
 
     async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean): Promise<Settings> {
         const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || (secret.selected && secret.value));
-        const secretFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.SecretFiles)).filter(secretFile => !isUserSelected || secretFile.selected);
+        const secretFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.SecretFiles)).filter(secretFile => !isUserSelected || secretFile.selected);
         const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || (variable.selected && variable.value));
-        const variableFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
+        const variableFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
         const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
-        const inputFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.InputFiles)).filter(inputFile => !isUserSelected || inputFile.selected);
+        const inputFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.InputFiles)).filter(inputFile => !isUserSelected || inputFile.selected);
         const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
-        const payloadFiles = (await this.getSettingFiles(workspaceFolder, StorageKey.PayloadFiles)).filter(payloadFile => !isUserSelected || payloadFile.selected);
+        const payloadFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.PayloadFiles)).filter(payloadFile => !isUserSelected || payloadFile.selected);
+        const options = (await this.getCustomSettings(workspaceFolder, StorageKey.Options)).filter(option => !isUserSelected || (option.selected && (option.path || option.notEditable)));
         const environments = await this.getEnvironments(workspaceFolder);
 
         return {
@@ -79,6 +85,7 @@ export class SettingsManager {
             inputFiles: inputFiles,
             runners: runners,
             payloadFiles: payloadFiles,
+            options: options,
             environments: environments
         };
     }
@@ -129,9 +136,9 @@ export class SettingsManager {
         return settings;
     }
 
-    async getSettingFiles(workspaceFolder: WorkspaceFolder, storageKey: StorageKey): Promise<SettingFile[]> {
-        const existingSettingFiles = this.storageManager.get<{ [path: string]: SettingFile[] }>(storageKey) || {};
-        return existingSettingFiles[workspaceFolder.uri.fsPath] || [];
+    async getCustomSettings(workspaceFolder: WorkspaceFolder, storageKey: StorageKey): Promise<CustomSetting[]> {
+        const existingCustomSettings = this.storageManager.get<{ [path: string]: CustomSetting[] }>(storageKey) || {};
+        return existingCustomSettings[workspaceFolder.uri.fsPath] || [];
     }
 
     async getEnvironments(workspaceFolder: WorkspaceFolder): Promise<Setting[]> {
@@ -184,7 +191,7 @@ export class SettingsManager {
     }
 
     async locateSettingFile(workspaceFolder: WorkspaceFolder, storageKey: StorageKey, settingFilesUris: Uri[]) {
-        const settingFilesPaths = (await act.settingsManager.getSettingFiles(workspaceFolder, storageKey)).map(settingFile => settingFile.path);
+        const settingFilesPaths = (await act.settingsManager.getCustomSettings(workspaceFolder, storageKey)).map(settingFile => settingFile.path);
         const existingSettingFileNames: string[] = [];
 
         for await (const uri of settingFilesUris) {
@@ -193,12 +200,12 @@ export class SettingsManager {
             if (settingFilesPaths.includes(uri.fsPath)) {
                 existingSettingFileNames.push(settingFileName);
             } else {
-                const newSettingFile: SettingFile = {
+                const newSettingFile: CustomSetting = {
                     name: path.parse(uri.fsPath).base,
                     path: uri.fsPath,
                     selected: false
                 };
-                await act.settingsManager.editSettingFile(workspaceFolder, newSettingFile, storageKey);
+                await act.settingsManager.editCustomSetting(workspaceFolder, newSettingFile, storageKey);
             }
         }
 
@@ -207,35 +214,44 @@ export class SettingsManager {
         }
     }
 
-    async editSettingFile(workspaceFolder: WorkspaceFolder, newSettingFile: SettingFile, storageKey: StorageKey) {
-        const existingSettingFiles = this.storageManager.get<{ [path: string]: SettingFile[] }>(storageKey) || {};
-        if (existingSettingFiles[workspaceFolder.uri.fsPath]) {
-            const index = existingSettingFiles[workspaceFolder.uri.fsPath].findIndex(settingFile => settingFile.path === newSettingFile.path);
+    async editCustomSetting(workspaceFolder: WorkspaceFolder, newCustomSetting: CustomSetting, storageKey: StorageKey) {
+        const existingCustomSettings = this.storageManager.get<{ [path: string]: CustomSetting[] }>(storageKey) || {};
+        if (existingCustomSettings[workspaceFolder.uri.fsPath]) {
+            const index = existingCustomSettings[workspaceFolder.uri.fsPath]
+                .findIndex(customSetting =>
+                    storageKey === StorageKey.Options ?
+                        customSetting.name === newCustomSetting.name :
+                        customSetting.path === newCustomSetting.path
+                );
             if (index > -1) {
-                existingSettingFiles[workspaceFolder.uri.fsPath][index] = newSettingFile;
+                existingCustomSettings[workspaceFolder.uri.fsPath][index] = newCustomSetting;
             } else {
-                existingSettingFiles[workspaceFolder.uri.fsPath].push(newSettingFile);
+                existingCustomSettings[workspaceFolder.uri.fsPath].push(newCustomSetting);
             }
         } else {
-            existingSettingFiles[workspaceFolder.uri.fsPath] = [newSettingFile];
+            existingCustomSettings[workspaceFolder.uri.fsPath] = [newCustomSetting];
         }
 
-        await this.storageManager.update(storageKey, existingSettingFiles);
+        await this.storageManager.update(storageKey, existingCustomSettings);
     }
 
-    async removeSettingFile(workspaceFolder: WorkspaceFolder, settingFile: SettingFile, storageKey: StorageKey) {
-        const existingSettingFiles = this.storageManager.get<{ [path: string]: SettingFile[] }>(storageKey) || {};
-        if (existingSettingFiles[workspaceFolder.uri.fsPath]) {
-            const settingFileIndex = existingSettingFiles[workspaceFolder.uri.fsPath].findIndex(settingFile => settingFile.path === settingFile.path);
-            if (settingFileIndex > -1) {
-                existingSettingFiles[workspaceFolder.uri.fsPath].splice(settingFileIndex, 1);
+    async removeCustomSetting(workspaceFolder: WorkspaceFolder, existingCustomSetting: CustomSetting, storageKey: StorageKey) {
+        const existingCustomSettings = this.storageManager.get<{ [path: string]: CustomSetting[] }>(storageKey) || {};
+        if (existingCustomSettings[workspaceFolder.uri.fsPath]) {
+            const index = existingCustomSettings[workspaceFolder.uri.fsPath].findIndex(customSetting =>
+                storageKey === StorageKey.Options ?
+                    customSetting.name === existingCustomSetting.name :
+                    customSetting.path === existingCustomSetting.path
+            );
+            if (index > -1) {
+                existingCustomSettings[workspaceFolder.uri.fsPath].splice(index, 1);
             }
         }
 
-        await this.storageManager.update(storageKey, existingSettingFiles);
+        await this.storageManager.update(storageKey, existingCustomSettings);
     }
 
-    async deleteSettingFile(workspaceFolder: WorkspaceFolder, settingFile: SettingFile, storageKey: StorageKey) {
+    async deleteSettingFile(workspaceFolder: WorkspaceFolder, settingFile: CustomSetting, storageKey: StorageKey) {
         try {
             await workspace.fs.delete(Uri.file(settingFile.path));
         } catch (error: any) {
@@ -246,7 +262,7 @@ export class SettingsManager {
             } catch (error: any) { }
         }
 
-        await this.removeSettingFile(workspaceFolder, settingFile, storageKey);
+        await this.removeCustomSetting(workspaceFolder, settingFile, storageKey);
     }
 
     async editSetting(workspaceFolder: WorkspaceFolder, newSetting: Setting, storageKey: StorageKey) {

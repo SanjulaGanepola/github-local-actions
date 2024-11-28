@@ -8,8 +8,9 @@ export enum StorageKey {
     VariableFiles = 'variableFiles',
     Inputs = 'inputs',
     InputFiles = 'inputFiles',
+    Runners = 'runners',
     PayloadFiles = 'PayloadFiles',
-    Runners = 'runners'
+    Options = 'options'
 }
 
 export class StorageManager {
