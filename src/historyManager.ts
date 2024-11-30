@@ -90,7 +90,7 @@ export class HistoryManager {
 
         this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
         historyTreeDataProvider.refresh();
-        this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
+        await this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
     }
 
     async viewOutput(history: History) {
@@ -114,7 +114,7 @@ export class HistoryManager {
         const historyIndex = this.workspaceHistory[history.commandArgs.path].findIndex(workspaceHistory => workspaceHistory.index === history.index);
         if (historyIndex > -1) {
             this.workspaceHistory[history.commandArgs.path].splice(historyIndex, 1);
-            this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
+            await this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
 
             try {
                 await workspace.fs.delete(Uri.file(history.logPath));

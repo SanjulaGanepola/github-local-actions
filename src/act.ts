@@ -114,7 +114,7 @@ export enum Option {
 
 export interface CommandArgs {
     path: string,
-    options: string,
+    options: string[],
     name: string,
     extraHeader: { key: string, value: string }[]
 }
@@ -253,7 +253,7 @@ export class Act {
     async runAllWorkflows(workspaceFolder: WorkspaceFolder) {
         return await this.runCommand({
             path: workspaceFolder.uri.fsPath,
-            options: ``,
+            options: [],
             name: workspaceFolder.name,
             extraHeader: []
         });
@@ -262,7 +262,9 @@ export class Act {
     async runWorkflow(workspaceFolder: WorkspaceFolder, workflow: Workflow) {
         return await this.runCommand({
             path: workspaceFolder.uri.fsPath,
-            options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`,
+            options: [
+                `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`
+            ],
             name: workflow.name,
             extraHeader: [
                 { key: 'Workflow', value: workflow.name }
@@ -273,7 +275,10 @@ export class Act {
     async runJob(workspaceFolder: WorkspaceFolder, workflow: Workflow, job: Job) {
         return await this.runCommand({
             path: workspaceFolder.uri.fsPath,
-            options: `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}" ${Option.Job} "${job.id}"`,
+            options: [
+                `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`,
+                `${Option.Job} "${job.id}"`
+            ],
             name: `${workflow.name}/${job.name}`,
             extraHeader: [
                 { key: 'Workflow', value: workflow.name },
@@ -283,14 +288,19 @@ export class Act {
     }
 
     async runEvent(workspaceFolder: WorkspaceFolder, event: Event) {
-        return await this.runCommand({
-            path: workspaceFolder.uri.fsPath,
-            options: event,
-            name: event,
-            extraHeader: [
-                { key: 'Event', value: event }
-            ]
-        });
+        let eventExists: boolean = false;
+
+        const workflows = await this.workflowsManager.getWorkflows(workspaceFolder);
+        for (const workflow of workflows) {
+            if (event in workflow.yaml.on) {
+                eventExists = true;
+                await this.runWorkflow(workspaceFolder, workflow);
+            }
+        }
+
+        if (!eventExists) {
+            window.showErrorMessage(`No workflows triggered by the ${event} event.`)
+        }
     }
 
     async runCommand(commandArgs: CommandArgs) {
@@ -315,7 +325,7 @@ export class Act {
         // Initialize history for workspace
         if (!this.historyManager.workspaceHistory[commandArgs.path]) {
             this.historyManager.workspaceHistory[commandArgs.path] = [];
-            this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+            await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
         }
 
         // Process task count suffix
@@ -343,17 +353,21 @@ export class Act {
         // Build command with settings
         const actCommand = Act.getActCommand();
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
-        const command =
-            `${actCommand} ${Option.Json} ${commandArgs.options}` +
-            (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
-            (settings.secretFiles.length > 0 ? ` ${Option.SecretFile} "${settings.secretFiles[0].path}"` : ` ${Option.SecretFile} ""`) +
-            (settings.variables.length > 0 ? ` ${Option.Var} ${settings.variables.map(variable => `${variable.key}=${variable.value}`).join(` ${Option.Var} `)}` : ``) +
-            (settings.variableFiles.length > 0 ? ` ${Option.VarFile} "${settings.variableFiles[0].path}"` : ` ${Option.VarFile} ""`) +
-            (settings.inputs.length > 0 ? ` ${Option.Input} ${settings.inputs.map(input => `${input.key}=${input.value}`).join(` ${Option.Input} `)}` : ``) +
-            (settings.inputFiles.length > 0 ? ` ${Option.InputFile} "${settings.inputFiles[0].path}"` : ` ${Option.InputFile} ""`) +
-            (settings.runners.length > 0 ? ` ${Option.Platform} ${settings.runners.map(runner => `${runner.key}=${runner.value}`).join(` ${Option.Platform} `)}` : ``) +
-            (settings.payloadFiles.length > 0 ? ` ${Option.EventPath} "${settings.payloadFiles[0].path}"` : ` ${Option.EventPath} ""`) +
-            (settings.options.map(option => option.path ? ` --${option.name} ${option.path}` : ` --${option.name}`).join(''));
+
+        const userOptions: string[] = [
+            ...settings.secrets.map(secret => `${Option.Secret} ${secret.key}`),
+            (settings.secretFiles.length > 0 ? `${Option.SecretFile} "${settings.secretFiles[0].path}"` : `${Option.SecretFile} ""`),
+            ...settings.variables.map(variable => `${Option.Var} ${variable.key}=${variable.value}`),
+            (settings.variableFiles.length > 0 ? `${Option.VarFile} "${settings.variableFiles[0].path}"` : `${Option.VarFile} ""`),
+            ...settings.inputs.map(input => `${Option.Input} ${input.key}=${input.value}`),
+            (settings.inputFiles.length > 0 ? `${Option.InputFile} "${settings.inputFiles[0].path}"` : `${Option.InputFile} ""`),
+            ...settings.runners.map(runner => `${Option.Platform} ${runner.key}=${runner.value}`),
+            (settings.payloadFiles.length > 0 ? `${Option.EventPath} "${settings.payloadFiles[0].path}"` : `${Option.EventPath} ""`),
+            ...settings.options.map(option => option.path ? `--${option.name} ${option.path}` : `--${option.name}`)
+        ];
+
+        const command = `${actCommand} ${Option.Json} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
+        const displayCommand = `${actCommand} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
 
         // Execute task
         const taskExecution = await tasks.executeTask({
@@ -383,23 +397,6 @@ export class Act {
             runOptions: {},
             group: TaskGroup.Build,
             execution: new CustomExecution(async (resolvedDefinition: TaskDefinition): Promise<Pseudoterminal> => {
-                // Add new entry to workspace history
-                this.historyManager.workspaceHistory[commandArgs.path].push({
-                    index: historyIndex,
-                    count: count,
-                    name: `${commandArgs.name}`,
-                    status: HistoryStatus.Running,
-                    date: {
-                        start: start.toString()
-                    },
-                    taskExecution: taskExecution,
-                    commandArgs: commandArgs,
-                    logPath: logPath,
-                    jobs: []
-                });
-                historyTreeDataProvider.refresh();
-                this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-
                 const writeEmitter = new EventEmitter<string>();
                 const closeEmitter = new EventEmitter<number>();
 
@@ -417,9 +414,9 @@ export class Act {
                     } catch (error) { }
                 });
 
-                const handleIO = (data: any) => {
+                const handleIO = async (data: any) => {
                     const lines: string[] = data.toString().split('\n').filter((line: string) => line !== '');
-                    for (const line of lines) {
+                    for await (const line of lines) {
                         const dateString = new Date().toString();
 
                         let message: string;
@@ -507,9 +504,14 @@ export class Act {
                         } catch (error) {
                             message = line;
                         }
+
+                        if (userOptions.includes(Option.Json)) {
+                            message = line;
+                        }
+
                         writeEmitter.fire(`${message.trimEnd()}\r\n`);
                         historyTreeDataProvider.refresh();
-                        this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+                        await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
                     }
                 };
 
@@ -544,7 +546,7 @@ export class Act {
                 );
                 exec.stdout.on('data', handleIO);
                 exec.stderr.on('data', handleIO);
-                exec.on('exit', (code, signal) => {
+                exec.on('exit', async (code, signal) => {
                     const dateString = new Date().toString();
 
                     // Set execution status and end time in workspace history
@@ -577,7 +579,7 @@ export class Act {
                     }
                     this.historyManager.workspaceHistory[commandArgs.path][historyIndex].date.end = dateString;
                     historyTreeDataProvider.refresh();
-                    this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+                    await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
 
                     if (signal === 'SIGINT') {
                         writeEmitter.fire(`\r\nTask interrupted.\r\n`);
@@ -595,7 +597,7 @@ export class Act {
                     onDidWrite: writeEmitter.event,
                     onDidClose: closeEmitter.event,
                     open: async (initialDimensions: TerminalDimensions | undefined): Promise<void> => {
-                        writeEmitter.fire(`${command}\r\n\r\n`);
+                        writeEmitter.fire(`${displayCommand}\r\n\r\n`);
                     },
                     handleInput: (data: string) => {
                         if (data === '\x03') {
@@ -616,6 +618,23 @@ export class Act {
                 };
             })
         });
+
+        // Add new entry to workspace history
+        this.historyManager.workspaceHistory[commandArgs.path].push({
+            index: historyIndex,
+            count: count,
+            name: `${commandArgs.name}`,
+            status: HistoryStatus.Running,
+            date: {
+                start: start.toString()
+            },
+            taskExecution: taskExecution,
+            commandArgs: commandArgs,
+            logPath: logPath,
+            jobs: []
+        });
+        historyTreeDataProvider.refresh();
+        await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
     }
 
     async install(packageManager: string) {

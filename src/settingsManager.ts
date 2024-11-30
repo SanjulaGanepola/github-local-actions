@@ -15,7 +15,7 @@ export interface Settings {
     runners: Setting[];
     payloadFiles: CustomSetting[];
     options: CustomSetting[];
-    environments: Setting[];
+    // environments: Setting[];
 }
 
 export interface Setting {
@@ -74,7 +74,7 @@ export class SettingsManager {
         const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
         const payloadFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.PayloadFiles)).filter(payloadFile => !isUserSelected || payloadFile.selected);
         const options = (await this.getCustomSettings(workspaceFolder, StorageKey.Options)).filter(option => !isUserSelected || (option.selected && (option.path || option.notEditable)));
-        const environments = await this.getEnvironments(workspaceFolder);
+        // const environments = await this.getEnvironments(workspaceFolder);
 
         return {
             secrets: secrets,
@@ -86,7 +86,7 @@ export class SettingsManager {
             runners: runners,
             payloadFiles: payloadFiles,
             options: options,
-            environments: environments
+            // environments: environments
         };
     }
 
@@ -131,7 +131,7 @@ export class SettingsManager {
             }
         }
         existingSettings[workspaceFolder.uri.fsPath] = settings;
-        this.storageManager.update(storageKey, existingSettings);
+        await this.storageManager.update(storageKey, existingSettings);
 
         return settings;
     }
