@@ -114,6 +114,7 @@ export enum Option {
 
 export interface CommandArgs {
     path: string,
+    workflow: Workflow,
     options: string[],
     name: string,
     extraHeader: { key: string, value: string }[]
@@ -251,17 +252,20 @@ export class Act {
     }
 
     async runAllWorkflows(workspaceFolder: WorkspaceFolder) {
-        return await this.runCommand({
-            path: workspaceFolder.uri.fsPath,
-            options: [],
-            name: workspaceFolder.name,
-            extraHeader: []
-        });
+        const workflows = await this.workflowsManager.getWorkflows(workspaceFolder);
+        if (workflows.length > 0) {
+            for (const workflow of workflows) {
+                await this.runWorkflow(workspaceFolder, workflow);
+            }
+        } else {
+            window.showErrorMessage('No workflows found.');
+        }
     }
 
     async runWorkflow(workspaceFolder: WorkspaceFolder, workflow: Workflow) {
         return await this.runCommand({
             path: workspaceFolder.uri.fsPath,
+            workflow: workflow,
             options: [
                 `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`
             ],
@@ -275,6 +279,7 @@ export class Act {
     async runJob(workspaceFolder: WorkspaceFolder, workflow: Workflow, job: Job) {
         return await this.runCommand({
             path: workspaceFolder.uri.fsPath,
+            workflow: workflow,
             options: [
                 `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`,
                 `${Option.Job} "${job.id}"`
@@ -291,15 +296,19 @@ export class Act {
         let eventExists: boolean = false;
 
         const workflows = await this.workflowsManager.getWorkflows(workspaceFolder);
-        for (const workflow of workflows) {
-            if (event in workflow.yaml.on) {
-                eventExists = true;
-                await this.runWorkflow(workspaceFolder, workflow);
+        if (workflows.length > 0) {
+            for (const workflow of workflows) {
+                if (event in workflow.yaml.on) {
+                    eventExists = true;
+                    await this.runWorkflow(workspaceFolder, workflow);
+                }
             }
-        }
 
-        if (!eventExists) {
-            window.showErrorMessage(`No workflows triggered by the ${event} event.`)
+            if (!eventExists) {
+                window.showErrorMessage(`No workflows triggered by the ${event} event.`)
+            }
+        } else {
+            window.showErrorMessage('No workflows found.');
         }
     }
 
@@ -411,7 +420,7 @@ export class Act {
 
                         // Append data to log file
                         await fs.appendFile(logPath, data);
-                    } catch (error) { }
+                    } catch (error: any) { }
                 });
 
                 const handleIO = async (data: any) => {
@@ -430,12 +439,20 @@ export class Act {
 
                             // Update job and step status in workspace history
                             if (parsedMessage.jobID) {
+                                let jobName: string = parsedMessage.jobID;
+                                try {
+                                    if (parsedMessage.jobID in commandArgs.workflow.yaml.jobs && commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name) {
+                                        jobName = commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name;
+                                    }
+                                } catch (error: any) { }
+
                                 let jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!
-                                    .findIndex(job => job.name === parsedMessage.jobID);
+                                    .findIndex(job => job.name === jobName);
                                 if (jobIndex < 0) {
+
                                     // Add new job with setup step
                                     this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.push({
-                                        name: parsedMessage.jobID,
+                                        name: jobName,
                                         status: HistoryStatus.Running,
                                         date: {
                                             start: dateString
@@ -501,7 +518,7 @@ export class Act {
                                         dateString;
                                 }
                             }
-                        } catch (error) {
+                        } catch (error: any) {
                             message = line;
                         }
 
