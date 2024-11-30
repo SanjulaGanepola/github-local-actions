@@ -214,7 +214,7 @@ export class Act {
             if (taskDefinition.type === 'GitHub Local Actions') {
                 this.runningTaskCount--;
 
-                if (this.refreshInterval && this.runningTaskCount == 0) {
+                if (this.refreshInterval && this.runningTaskCount === 0) {
                     clearInterval(this.refreshInterval);
                     this.refreshInterval = undefined;
                 }
@@ -344,7 +344,7 @@ export class Act {
         const actCommand = Act.getActCommand();
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
         const command =
-            `${actCommand} ${commandArgs.options}` +
+            `${actCommand} ${Option.Json} ${commandArgs.options}` +
             (settings.secrets.length > 0 ? ` ${Option.Secret} ${settings.secrets.map(secret => secret.key).join(` ${Option.Secret} `)}` : ``) +
             (settings.secretFiles.length > 0 ? ` ${Option.SecretFile} "${settings.secretFiles[0].path}"` : ` ${Option.SecretFile} ""`) +
             (settings.variables.length > 0 ? ` ${Option.Var} ${settings.variables.map(variable => `${variable.key}=${variable.value}`).join(` ${Option.Var} `)}` : ``) +
@@ -394,7 +394,8 @@ export class Act {
                     },
                     taskExecution: taskExecution,
                     commandArgs: commandArgs,
-                    logPath: logPath
+                    logPath: logPath,
+                    jobs: []
                 });
                 historyTreeDataProvider.refresh();
                 this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
@@ -417,11 +418,100 @@ export class Act {
                 });
 
                 const handleIO = (data: any) => {
-                    const lines: string[] = data.toString().split('\n').filter((line: string) => line != '');
+                    const lines: string[] = data.toString().split('\n').filter((line: string) => line !== '');
                     for (const line of lines) {
-                        writeEmitter.fire(`${line.trimEnd()}\r\n`);
+                        const dateString = new Date().toString();
+
+                        let message: string;
+                        try {
+                            const parsedMessage = JSON.parse(line);
+                            if (parsedMessage.msg) {
+                                message = `${parsedMessage.job ? `[${parsedMessage.job}] ` : ``}${parsedMessage.msg}`;
+                            } else {
+                                message = line;
+                            }
+
+                            // Update job and step status in workspace history
+                            if (parsedMessage.jobID) {
+                                let jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!
+                                    .findIndex(job => job.name === parsedMessage.jobID);
+                                if (jobIndex < 0) {
+                                    // Add new job with setup step
+                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.push({
+                                        name: parsedMessage.jobID,
+                                        status: HistoryStatus.Running,
+                                        date: {
+                                            start: dateString
+                                        },
+                                        steps: [
+                                            {
+                                                id: -1, // Special id for setup job
+                                                name: 'Setup Job',
+                                                status: HistoryStatus.Running,
+                                                date: {
+                                                    start: dateString
+                                                }
+                                            }
+                                        ]
+                                    });
+                                    jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.length - 1;
+                                }
+
+                                const isCompleteJobStep = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length > 1;
+                                if (parsedMessage.stepID || isCompleteJobStep) {
+                                    let stepName: string;
+                                    let stepId: number;
+                                    if (!parsedMessage.stepID && isCompleteJobStep) {
+                                        stepName = 'Complete Job';
+                                        stepId = -2; // Special Id for complete job
+                                    } else {
+                                        stepName = parsedMessage.stage !== 'Main' ? `${parsedMessage.stage} ${parsedMessage.step}` : parsedMessage.step;
+                                        stepId = parseInt(parsedMessage.stepID[0]);
+                                    }
+
+                                    if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status === HistoryStatus.Running) {
+                                        // TODO: How to know if setup job step failed?
+                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status = HistoryStatus.Success;
+                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].date.end = dateString;
+                                    }
+
+                                    let stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
+                                        .findIndex(step => step.id === stepId && step.name === stepName);
+                                    if (stepIndex < 0) {
+                                        // Add new step
+                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.push({
+                                            id: stepId,
+                                            name: stepName,
+                                            status: HistoryStatus.Running,
+                                            date: {
+                                                start: dateString
+                                            }
+                                        });
+                                        stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length - 1;
+                                    }
+
+                                    if (parsedMessage.stepResult) {
+                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].status =
+                                            parsedMessage.stepResult === 'success' ? HistoryStatus.Success : HistoryStatus.Failed;
+                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].date.end = dateString;
+                                    }
+                                }
+
+                                if (parsedMessage.jobResult) {
+                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].status =
+                                        parsedMessage.jobResult === 'success' ? HistoryStatus.Success : HistoryStatus.Failed;
+                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].date.end =
+                                        dateString;
+                                }
+                            }
+                        } catch (error) {
+                            message = line;
+                        }
+                        writeEmitter.fire(`${message.trimEnd()}\r\n`);
+                        historyTreeDataProvider.refresh();
+                        this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
                     }
-                }
+                };
 
                 let shell = env.shell;
                 switch (process.platform) {
@@ -455,8 +545,28 @@ export class Act {
                 exec.stdout.on('data', handleIO);
                 exec.stderr.on('data', handleIO);
                 exec.on('exit', (code, signal) => {
+                    const dateString = new Date().toString();
+
                     // Set execution status and end time in workspace history
                     if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status === HistoryStatus.Running) {
+                        const jobAndStepStatus = (!code && code !== 0) ? HistoryStatus.Cancelled : HistoryStatus.Unknown;
+                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs?.forEach((job, jobIndex) => {
+                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps?.forEach((step, stepIndex) => {
+                                if (step.status === HistoryStatus.Running) {
+                                    // Update status of all running steps
+                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].status = jobAndStepStatus;
+                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].date.end = dateString;
+                                }
+                            });
+
+                            if (job.status === HistoryStatus.Running) {
+                                // Update status of all running jobs
+                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].status = jobAndStepStatus;
+                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].date.end = dateString;
+                            }
+                        });
+
+                        // Update history status
                         if (code === 0) {
                             this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Success;
                         } else if (!code) {
@@ -465,7 +575,7 @@ export class Act {
                             this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Failed;
                         }
                     }
-                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].date.end = new Date().toString();
+                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].date.end = dateString;
                     historyTreeDataProvider.refresh();
                     this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
 
@@ -494,7 +604,7 @@ export class Act {
                             exec.stdin.destroy();
                             exec.stderr.destroy();
                         } else {
-                            exec.stdin.write(data === '\r' ? '\r\n' : data)
+                            exec.stdin.write(data === '\r' ? '\r\n' : data);
                         }
                     },
                     close: () => {
@@ -506,7 +616,6 @@ export class Act {
                 };
             })
         });
-        this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
     }
 
     async install(packageManager: string) {

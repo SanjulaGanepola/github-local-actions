@@ -1,4 +1,4 @@
-import { TaskExecution, Uri, window, workspace, WorkspaceFolder } from "vscode";
+import { TaskExecution, ThemeColor, ThemeIcon, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { CommandArgs } from "./act";
 import { act, historyTreeDataProvider } from "./extension";
 import { StorageKey, StorageManager } from "./storageManager";
@@ -12,16 +12,38 @@ export interface History {
         start: string,
         end?: string,
     },
-    taskExecution?: TaskExecution,
     commandArgs: CommandArgs,
-    logPath: string
+    logPath: string,
+    taskExecution?: TaskExecution,
+    jobs?: Job[],
+}
+
+export interface Job {
+    name: string,
+    status: HistoryStatus,
+    date: {
+        start: string,
+        end?: string,
+    },
+    steps?: Step[]
+}
+
+export interface Step {
+    id: number,
+    name: string,
+    status: HistoryStatus,
+    date: {
+        start: string,
+        end?: string,
+    }
 }
 
 export enum HistoryStatus {
     Running = 'Running',
     Success = 'Success',
     Failed = 'Failed',
-    Cancelled = 'Cancelled'
+    Cancelled = 'Cancelled',
+    Unknown = 'Unknown'
 }
 
 export class HistoryManager {
@@ -33,6 +55,21 @@ export class HistoryManager {
         const workspaceHistory = this.storageManager.get<{ [path: string]: History[] }>(StorageKey.WorkspaceHistory) || {};
         for (const [path, historyLogs] of Object.entries(workspaceHistory)) {
             workspaceHistory[path] = historyLogs.map(history => {
+                history.jobs?.forEach((job, jobIndex) => {
+                    history.jobs![jobIndex].steps?.forEach((step, stepIndex) => {
+                        // Update status of all running steps
+                        if (step.status === HistoryStatus.Running) {
+                            history.jobs![jobIndex].steps![stepIndex].status = HistoryStatus.Cancelled;
+                        }
+                    });
+
+                    // Update status of all running jobs
+                    if (job.status === HistoryStatus.Running) {
+                        history.jobs![jobIndex].status = HistoryStatus.Cancelled;
+                    }
+                });
+
+                // Update history status
                 if (history.status === HistoryStatus.Running) {
                     history.status = HistoryStatus.Cancelled;
                 }
@@ -82,6 +119,21 @@ export class HistoryManager {
             try {
                 await workspace.fs.delete(Uri.file(history.logPath));
             } catch (error: any) { }
+        }
+    }
+
+    static statusToIcon(status: HistoryStatus) {
+        switch (status) {
+            case HistoryStatus.Running:
+                return new ThemeIcon('loading~spin');
+            case HistoryStatus.Success:
+                return new ThemeIcon('pass', new ThemeColor('GitHubLocalActions.green'));
+            case HistoryStatus.Failed:
+                return new ThemeIcon('error', new ThemeColor('GitHubLocalActions.red'));
+            case HistoryStatus.Cancelled:
+                return new ThemeIcon('circle-slash', new ThemeColor('GitHubLocalActions.yellow'));
+            case HistoryStatus.Unknown:
+                return new ThemeIcon('question', new ThemeColor('GitHubLocalActions.purple'));
         }
     }
 }
