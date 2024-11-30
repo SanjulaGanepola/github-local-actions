@@ -29,7 +29,7 @@ export interface Job {
 }
 
 export interface Step {
-    id: number,
+    id: string,
     name: string,
     status: HistoryStatus,
     date: {
