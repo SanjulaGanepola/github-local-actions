@@ -242,6 +242,11 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.focusTask",
+        "title": "Focus Task"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.refreshSettings",
         "title": "Refresh",
         "icon": "$(refresh)"
@@ -434,6 +439,10 @@
         },
         {
           "command": "githubLocalActions.remove",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.focusTask",
           "when": "never"
         },
         {
@@ -639,6 +648,11 @@
           "command": "githubLocalActions.remove",
           "when": "view == history && viewItem =~ /^githubLocalActions.history.*/",
           "group": "inline@3"
+        },
+        {
+          "command": "githubLocalActions.focusTask",
+          "when": "view == history && viewItem =~ /^githubLocalActions.history.*/",
+          "group": "0_focus@0"
         },
         {
           "command": "githubLocalActions.createSecretFile",
