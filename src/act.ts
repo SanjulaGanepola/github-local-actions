@@ -445,7 +445,7 @@ export class Act {
                                         },
                                         steps: [
                                             {
-                                                id: -1, // Special id for setup job
+                                                id: "--setup-job", // Special id for setup job
                                                 name: 'Setup Job',
                                                 status: HistoryStatus.Running,
                                                 date: {
@@ -460,13 +460,13 @@ export class Act {
                                 const isCompleteJobStep = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length > 1;
                                 if (parsedMessage.stepID || isCompleteJobStep) {
                                     let stepName: string;
-                                    let stepId: number;
+                                    let stepId: string;
                                     if (!parsedMessage.stepID && isCompleteJobStep) {
                                         stepName = 'Complete Job';
-                                        stepId = -2; // Special Id for complete job
+                                        stepId = "--complete-job"; // Special Id for complete job
                                     } else {
                                         stepName = parsedMessage.stage !== 'Main' ? `${parsedMessage.stage} ${parsedMessage.step}` : parsedMessage.step;
-                                        stepId = parseInt(parsedMessage.stepID[0]);
+                                        stepId = parsedMessage.stepID[0];
                                     }
 
                                     if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status === HistoryStatus.Running) {
