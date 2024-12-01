@@ -528,8 +528,8 @@ export class Act {
 
                         writeEmitter.fire(`${message.trimEnd()}\r\n`);
                         historyTreeDataProvider.refresh();
-                        await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
                     }
+                    await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
                 };
 
                 let shell = env.shell;
