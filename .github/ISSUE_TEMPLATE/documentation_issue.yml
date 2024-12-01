@@ -1,0 +1,15 @@
+name: 📖 Documentation Issue
+description: Report an issue or enhancement regarding the documentation.
+labels:
+  - 'documentation'
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description:
+        label: Description
+        description: |
+          Describe the issue or enhancement regarding the documentation.
+    validations:
+      required: true
