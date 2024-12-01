@@ -1,0 +1,33 @@
+name: 💡 Feature Request
+description: Suggest an idea for this project.
+labels:
+  - 'enhancement'
+body:
+  - type: input
+    id: github-local-actions-version
+    attributes:
+      label: Github Local Actions Version
+      description: |
+        What version of `Github Local Actions` are you using? This can be obtained from the standard `Extensions` view.
+      placeholder: |
+        v#.#.#
+    validations:
+      required: true
+  - type: input
+    id: act-version
+    attributes:
+      label: Act Version
+      description: |
+        What version of `act` are you using? This can be obtained from the `Components` view or by running `act --version`.
+      placeholder: |
+        act version #.#.#
+    validations:
+      required: true
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature Description
+      description: |
+        Describe the feature that you would like to see.
+    validations:
+      required: true
