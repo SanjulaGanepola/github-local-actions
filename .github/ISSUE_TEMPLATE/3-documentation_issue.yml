@@ -1,5 +1,5 @@
 name: 📖 Documentation Issue
-description: Report an issue or enhancement regarding the documentation.
+description: Share an issue to fix or enhancement to make in the documentation.
 labels:
   - 'documentation'
 body:
@@ -8,6 +8,8 @@ body:
     attributes:
       label: Description
       description: |
-        Describe the issue or enhancement regarding the documentation.
+        Describe the issue to fix or enhancement to make in the documentation.
+      placeholder: |
+        Description
     validations:
       required: true

@@ -18,7 +18,7 @@ body:
     attributes:
       label: Act Version
       description: |
-        What version of `act` are you using? This can be obtained from the `Components` view or by running `act --version`.
+        What version of `nektos/act` are you using? This can be obtained from the `Components` view or by running `act --version`.
       placeholder: |
         act version #.#.#
     validations:
@@ -28,7 +28,7 @@ body:
     attributes:
       label: GitHub Repository Link
       description: |
-        If your GitHub repository is public, provide a link to help us troubleshoot the problem.
+        If your GitHub repository is **public**, provide a link to help us troubleshoot the problem.
       placeholder: |
         https://github.com/...
     validations:
@@ -56,9 +56,9 @@ body:
     attributes:
       label: Act Command Used
       description: |
-        Share the entire act command which was used. This can be obtained from the VS Code task used to execute the workflow.
+        Share the **entire** act command which was used. This can be obtained from the VS Code task used to execute the workflow.
         If you no longer have the task open, you can select `View Output` from the `History` view and find it on the first line of the log file.
-        ⚠️ Please make sure all sensitive information is removed. ⚠️
+        ⚠️ Please make sure to remove all sensitive information. ⚠️
       placeholder: |
         act -P ubuntu-latest=node:12 -v ...
       render: sh
@@ -69,10 +69,14 @@ body:
     attributes:
       label: Act Command Output
       description: |
-        Copy and paste any relevant log output from the VS Code task or log file. This will be automatically formatted into code, so no need for backticks.
-        ⚠️ Please make sure all sensitive information is removed. ⚠️
+        Share any relevant log output from the VS Code task or log file. This will be automatically formatted into code, so no need for backticks.
+        ⚠️ Please make sure to remove all sensitive information. ⚠️
       placeholder: |
-        Use `act -v` for verbose output
+        time="2024-11-30T18:48:19-05:00" level=info msg="Using docker host 'npipe:////./pipe/docker_engine', and daemon socket 'npipe:////./pipe/docker_engine'"
+        [Build/Extension] 🚀  Start image=catthehacker/ubuntu:act-latest
+        [Build/Extension]   🐳  docker pull image=catthehacker/ubuntu:act-latest platform= username= forcePull=true
+        [Build/Extension] using DockerAuthConfig authentication for docker pull
+        [...]
       render: sh
     validations:
       required: false
@@ -82,6 +86,8 @@ body:
       label: Bug Description
       description: |
         Describe the bug you encountered and share all steps to reproduce it.
+      placeholder: |
+        Bug description
     validations:
       required: true
   - type: textarea
@@ -91,7 +97,16 @@ body:
       description: |
         Provide the output of `act --bug-report`
       placeholder: |
-        act --bug-report
+        act version:            0.2.69
+        GOOS:                   windows
+        GOARCH:                 amd64
+        NumCPU:                 20
+        Docker host:            DOCKER_HOST environment variable is not set
+        Sockets found:
+                \\.\pipe\docker_engine(broken)
+        Config files:
+                C:\Users\sanjula\.actrc:
+        [...]
       render: yml
     validations:
       required: false

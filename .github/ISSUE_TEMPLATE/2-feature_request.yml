@@ -29,5 +29,7 @@ body:
       label: Feature Description
       description: |
         Describe the feature that you would like to see.
+      placeholder: |
+        Feature description
     validations:
       required: true
