@@ -18,7 +18,7 @@ body:
     attributes:
       label: Act Version
       description: |
-        What version of `act` are you using? This can be obtained from the `Components` view or by running `act --version`.
+        What version of `nektos/act` are you using? This can be obtained from the `Components` view or by running `act --version`.
       placeholder: |
         act version #.#.#
     validations:
