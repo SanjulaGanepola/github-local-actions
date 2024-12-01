@@ -6,9 +6,8 @@ body:
   - type: textarea
     id: description
     attributes:
-      description:
-        label: Description
-        description: |
-          Describe the issue or enhancement regarding the documentation.
+      label: Description
+      description: |
+        Describe the issue or enhancement regarding the documentation.
     validations:
       required: true
