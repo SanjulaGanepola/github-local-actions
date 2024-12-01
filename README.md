@@ -63,7 +63,7 @@ Feel free to share any bugs or feature requests in the project's [GitHub Issues]
 
 ## Contribution
 
-Contributions are always welcome! Please see our contributing guide for more details.
+Contributions are always welcome! Please see our [contributing guide](https://github.com/SanjulaGanepola/github-local-actions/blob/main/CONTRIBUTING.md) for more details.
 
 ## Maintainers
 
