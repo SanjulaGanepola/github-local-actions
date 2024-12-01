@@ -423,113 +423,124 @@ export class Act {
                     } catch (error: any) { }
                 });
 
-                const handleIO = async (data: any) => {
-                    const lines: string[] = data.toString().split('\n').filter((line: string) => line !== '');
-                    for await (const line of lines) {
-                        const dateString = new Date().toString();
+                const handleIO = () => {
+                    let lastline: string = "";
+                    return async (data: any) => {
+                        let xdata: string = data.toString();
+                        let lines: string[] = xdata.split('\n').filter((line: string) => line !== '');
+                        if (lastline?.length > 0) {
+                            lines[0] = lastline + lines[0];
+                            lastline = "";
+                        }
+                        if (!xdata.endsWith("\n")) {
+                            lastline = lines.pop() || "";
+                        }
+                        for await (const line of lines) {
+                            const dateString = new Date().toString();
 
-                        let message: string;
-                        try {
-                            const parsedMessage = JSON.parse(line);
-                            if (parsedMessage.msg) {
-                                message = `${parsedMessage.job ? `[${parsedMessage.job}] ` : ``}${parsedMessage.msg}`;
-                            } else {
-                                message = line;
-                            }
+                            let message: string;
+                            try {
+                                const parsedMessage = JSON.parse(line);
+                                if (typeof parsedMessage.msg === 'string') {
+                                    message = `${parsedMessage.job ? `[${parsedMessage.job}] ` : ``}${parsedMessage.msg}`;
+                                } else {
+                                    message = line;
+                                }
 
-                            // Update job and step status in workspace history
-                            if (parsedMessage.jobID) {
-                                let jobName: string = parsedMessage.jobID;
-                                try {
-                                    if (parsedMessage.jobID in commandArgs.workflow.yaml.jobs && commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name) {
-                                        jobName = commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name;
+                                // Update job and step status in workspace history
+                                if (parsedMessage.jobID) {
+                                    let jobName: string = parsedMessage.jobID;
+                                    try {
+                                        if (parsedMessage.jobID in commandArgs.workflow.yaml.jobs && commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name) {
+                                            jobName = commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name;
+                                        }
+                                    } catch (error: any) { }
+
+                                    let jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!
+                                        .findIndex(job => job.name === jobName);
+                                    if (jobIndex < 0) {
+
+                                        // Add new job with setup step
+                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.push({
+                                            name: jobName,
+                                            status: HistoryStatus.Running,
+                                            date: {
+                                                start: dateString
+                                            },
+                                            steps: [
+                                                {
+                                                    id: "--setup-job", // Special id for setup job
+                                                    name: 'Setup Job',
+                                                    status: HistoryStatus.Running,
+                                                    date: {
+                                                        start: dateString
+                                                    }
+                                                }
+                                            ]
+                                        });
+                                        jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.length - 1;
                                     }
-                                } catch (error: any) { }
 
-                                let jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!
-                                    .findIndex(job => job.name === jobName);
-                                if (jobIndex < 0) {
+                                    const isCompleteJobStep = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length > 1;
+                                    if (parsedMessage.stepID || isCompleteJobStep) {
+                                        let stepName: string;
+                                        let stepId: string;
+                                        if (!parsedMessage.stepID && isCompleteJobStep) {
+                                            stepName = 'Complete Job';
+                                            stepId = "--complete-job"; // Special Id for complete job
+                                        } else {
+                                            stepName = parsedMessage.stage !== 'Main' ? `${parsedMessage.stage} ${parsedMessage.step}` : parsedMessage.step;
+                                            stepId = parsedMessage.stepID[0];
+                                        }
 
-                                    // Add new job with setup step
-                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.push({
-                                        name: jobName,
-                                        status: HistoryStatus.Running,
-                                        date: {
-                                            start: dateString
-                                        },
-                                        steps: [
-                                            {
-                                                id: "--setup-job", // Special id for setup job
-                                                name: 'Setup Job',
+                                        if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status === HistoryStatus.Running) {
+                                            // TODO: How to know if setup job step failed?
+                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status = HistoryStatus.Success;
+                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].date.end = dateString;
+                                        }
+
+                                        let stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
+                                            .findIndex(step => step.id === stepId && step.name === stepName);
+                                        if (stepIndex < 0) {
+                                            // Add new step
+                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.push({
+                                                id: stepId,
+                                                name: stepName,
                                                 status: HistoryStatus.Running,
                                                 date: {
                                                     start: dateString
                                                 }
-                                            }
-                                        ]
-                                    });
-                                    jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.length - 1;
-                                }
+                                            });
+                                            stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length - 1;
+                                        }
 
-                                const isCompleteJobStep = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length > 1;
-                                if (parsedMessage.stepID || isCompleteJobStep) {
-                                    let stepName: string;
-                                    let stepId: string;
-                                    if (!parsedMessage.stepID && isCompleteJobStep) {
-                                        stepName = 'Complete Job';
-                                        stepId = "--complete-job"; // Special Id for complete job
-                                    } else {
-                                        stepName = parsedMessage.stage !== 'Main' ? `${parsedMessage.stage} ${parsedMessage.step}` : parsedMessage.step;
-                                        stepId = parsedMessage.stepID[0];
+                                        if (parsedMessage.stepResult) {
+                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].status =
+                                                parsedMessage.stepResult === 'success' ? HistoryStatus.Success : HistoryStatus.Failed;
+                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].date.end = dateString;
+                                        }
                                     }
 
-                                    if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status === HistoryStatus.Running) {
-                                        // TODO: How to know if setup job step failed?
-                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status = HistoryStatus.Success;
-                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].date.end = dateString;
-                                    }
-
-                                    let stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
-                                        .findIndex(step => step.id === stepId && step.name === stepName);
-                                    if (stepIndex < 0) {
-                                        // Add new step
-                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.push({
-                                            id: stepId,
-                                            name: stepName,
-                                            status: HistoryStatus.Running,
-                                            date: {
-                                                start: dateString
-                                            }
-                                        });
-                                        stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length - 1;
-                                    }
-
-                                    if (parsedMessage.stepResult) {
-                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].status =
-                                            parsedMessage.stepResult === 'success' ? HistoryStatus.Success : HistoryStatus.Failed;
-                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].date.end = dateString;
+                                    if (parsedMessage.jobResult) {
+                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].status =
+                                            parsedMessage.jobResult === 'success' ? HistoryStatus.Success : HistoryStatus.Failed;
+                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].date.end =
+                                            dateString;
                                     }
                                 }
-
-                                if (parsedMessage.jobResult) {
-                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].status =
-                                        parsedMessage.jobResult === 'success' ? HistoryStatus.Success : HistoryStatus.Failed;
-                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].date.end =
-                                        dateString;
-                                }
+                            } catch (error: any) {
+                                message = line;
                             }
-                        } catch (error: any) {
-                            message = line;
-                        }
 
-                        if (userOptions.includes(Option.Json)) {
-                            message = line;
-                        }
+                            if (userOptions.includes(Option.Json)) {
+                                message = line;
+                            }
 
-                        writeEmitter.fire(`${message.trimEnd()}\r\n`);
-                        historyTreeDataProvider.refresh();
+                            writeEmitter.fire(`${message.trimEnd()}\r\n`);
+                            historyTreeDataProvider.refresh();
+                        }
+                        await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
                     }
-                    await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
                 };
 
                 let shell = env.shell;
@@ -561,8 +572,8 @@ export class Act {
                         }
                     }
                 );
-                exec.stdout.on('data', handleIO);
-                exec.stderr.on('data', handleIO);
+                exec.stdout.on('data', handleIO());
+                exec.stderr.on('data', handleIO());
                 exec.on('exit', async (code, signal) => {
                     const dateString = new Date().toString();
 
