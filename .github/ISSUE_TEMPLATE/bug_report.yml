@@ -52,18 +52,18 @@ body:
     validations:
       required: false
   - type: textarea
-      id: act-command-used
-      attributes:
-        label: Act Command Used
-        description: |
-          Share the entire act command which was used. This can be obtained from the VS Code task used to execute the workflow.
-          If you no longer have the task open, you can select `View Output` from the `History` view and find it on the first line of the log file.
-          ⚠️ Please make sure all sensitive information is removed. ⚠️
-        placeholder: |
-          act -P ubuntu-latest=node:12 -v ...
-        render: sh
-      validations:
-        required: false
+    id: act-command-used
+    attributes:
+      label: Act Command Used
+      description: |
+        Share the entire act command which was used. This can be obtained from the VS Code task used to execute the workflow.
+        If you no longer have the task open, you can select `View Output` from the `History` view and find it on the first line of the log file.
+        ⚠️ Please make sure all sensitive information is removed. ⚠️
+      placeholder: |
+        act -P ubuntu-latest=node:12 -v ...
+      render: sh
+    validations:
+      required: false
   - type: textarea
     id: act-command-output
     attributes:
