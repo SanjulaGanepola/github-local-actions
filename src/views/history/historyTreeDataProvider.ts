@@ -31,8 +31,15 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
                 for (const terminal of terminals) {
                     if (terminal.creationOptions.name === `${historyTreeItem.history.name} #${historyTreeItem.history.count}`) {
                         terminal.show();
+                        return;
                     }
                 }
+
+                window.showErrorMessage(`${historyTreeItem.history.name} #${historyTreeItem.history.count} task is no longer open.`, 'View Output').then(async value => {
+                    if (value === 'View Output') {
+                        await commands.executeCommand('githubLocalActions.viewOutput', historyTreeItem);
+                    }
+                });
             }),
             commands.registerCommand('githubLocalActions.viewOutput', async (historyTreeItem: HistoryTreeItem) => {
                 await act.historyManager.viewOutput(historyTreeItem.history);
