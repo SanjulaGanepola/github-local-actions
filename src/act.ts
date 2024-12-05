@@ -459,7 +459,6 @@ export class Act {
                                     let jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!
                                         .findIndex(job => job.name === jobName);
                                     if (jobIndex < 0) {
-
                                         // Add new job with setup step
                                         this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.push({
                                             name: jobName,
@@ -481,20 +480,40 @@ export class Act {
                                         jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.length - 1;
                                     }
 
-                                    const isCompleteJobStep = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length > 1;
-                                    if (parsedMessage.stepID || isCompleteJobStep) {
+                                    // TODO: Add complete job step. To be fixed with https://github.com/nektos/act/issues/2551
+                                    // const isCompleteJobStep = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length > 1;
+                                    // if (parsedMessage.stepID || isCompleteJobStep) {
+                                    // let stepName: string;
+                                    // let stepId: string;
+                                    // if (!parsedMessage.stepID && isCompleteJobStep) {
+                                    //     stepName = 'Complete Job';
+                                    //     stepId = "--complete-job"; // Special Id for complete job
+                                    // } else {
+                                    //     stepName = parsedMessage.stage !== 'Main' ? `${parsedMessage.stage} ${parsedMessage.step}` : parsedMessage.step;
+                                    //     stepId = parsedMessage.stepID[0];
+                                    // }
+
+                                    if (parsedMessage.stepID) {
                                         let stepName: string;
-                                        let stepId: string;
-                                        if (!parsedMessage.stepID && isCompleteJobStep) {
-                                            stepName = 'Complete Job';
-                                            stepId = "--complete-job"; // Special Id for complete job
+                                        const stepId: string = parsedMessage.stepID[0];
+                                        if (parsedMessage.stage !== 'Main') {
+                                            stepName = `${parsedMessage.stage} ${parsedMessage.step}`;
                                         } else {
-                                            stepName = parsedMessage.stage !== 'Main' ? `${parsedMessage.stage} ${parsedMessage.step}` : parsedMessage.step;
-                                            stepId = parsedMessage.stepID[0];
+                                            stepName = parsedMessage.step;
+
+                                            // TODO: This forcefully sets any pre step to success. To be fixed with https://github.com/nektos/act/issues/2551
+                                            const preStepName = `Pre ${parsedMessage.step}`;
+                                            let preStepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
+                                                .findIndex(step => step.id === stepId && step.name === preStepName);
+                                            if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status === HistoryStatus.Running) {
+
+                                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status = HistoryStatus.Success;
+                                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].date.end = dateString;
+                                            }
                                         }
 
                                         if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status === HistoryStatus.Running) {
-                                            // TODO: How to know if setup job step failed?
+                                            // TODO: This forcefully sets the setup job step to success. To be fixed with https://github.com/nektos/act/issues/2551
                                             this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status = HistoryStatus.Success;
                                             this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].date.end = dateString;
                                         }
