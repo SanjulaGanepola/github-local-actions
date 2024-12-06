@@ -467,14 +467,15 @@ export class Act {
                                                 start: dateString
                                             },
                                             steps: [
-                                                {
-                                                    id: "--setup-job", // Special id for setup job
-                                                    name: 'Setup Job',
-                                                    status: HistoryStatus.Running,
-                                                    date: {
-                                                        start: dateString
-                                                    }
-                                                }
+                                                // TODO: Add setup job step. To be fixed with https://github.com/nektos/act/issues/2551
+                                                // {
+                                                //     id: "--setup-job", // Special id for setup job
+                                                //     name: 'Setup Job',
+                                                //     status: HistoryStatus.Running,
+                                                //     date: {
+                                                //         start: dateString
+                                                //     }
+                                                // }
                                             ]
                                         });
                                         jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.length - 1;
@@ -512,11 +513,12 @@ export class Act {
                                             }
                                         }
 
-                                        if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status === HistoryStatus.Running) {
-                                            // TODO: This forcefully sets the setup job step to success. To be fixed with https://github.com/nektos/act/issues/2551
-                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status = HistoryStatus.Success;
-                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].date.end = dateString;
-                                        }
+                                        // TODO: Add setup job status check. To be fixed with https://github.com/nektos/act/issues/2551
+                                        // if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status === HistoryStatus.Running) {
+                                        //     // TODO: This forcefully sets the setup job step to success. To be fixed with https://github.com/nektos/act/issues/2551
+                                        //     this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status = HistoryStatus.Success;
+                                        //     this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].date.end = dateString;
+                                        // }
 
                                         let stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
                                             .findIndex(step => step.id === stepId && step.name === stepName);
