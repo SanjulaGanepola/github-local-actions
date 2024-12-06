@@ -307,9 +307,9 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 ];
 
                 options.forEach((option, index) => {
-                    options[index].label = options[index].label.slice(2)
+                    options[index].label = options[index].label.slice(2);
                     options[index].iconPath = new ThemeIcon('symbol-property');
-                })
+                });
 
                 const settings = await act.settingsManager.getSettings(optionsTreeItem.workspaceFolder, false);
                 const optionNames = settings.options.map(option => option.name);

@@ -242,6 +242,11 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.focusTask",
+        "title": "Focus Task"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.refreshSettings",
         "title": "Refresh",
         "icon": "$(refresh)"
@@ -434,6 +439,10 @@
         },
         {
           "command": "githubLocalActions.remove",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.focusTask",
           "when": "never"
         },
         {
@@ -641,6 +650,11 @@
           "group": "inline@3"
         },
         {
+          "command": "githubLocalActions.focusTask",
+          "when": "view == history && viewItem =~ /^githubLocalActions.history.*/",
+          "group": "0_focus@0"
+        },
+        {
           "command": "githubLocalActions.createSecretFile",
           "when": "view == settings && viewItem =~ /^githubLocalActions.secrets.*/",
           "group": "inline@0"
@@ -745,7 +759,7 @@
     "colors": [
       {
         "id": "GitHubLocalActions.green",
-        "description": "Color for green in GitHub Local Actions extension",
+        "description": "Color for green in the GitHub Local Actions extension",
         "defaults": {
           "dark": "#89d185",
           "light": "#89d185"
@@ -753,15 +767,23 @@
       },
       {
         "id": "GitHubLocalActions.yellow",
-        "description": "Color for yellow in GitHub Local Actions extension",
+        "description": "Color for yellow in the GitHub Local Actions extension",
         "defaults": {
           "dark": "#cca700",
           "light": "#cca700"
         }
       },
       {
+        "id": "GitHubLocalActions.purple",
+        "description": "Color for purple in the GitHub Local Actions extension",
+        "defaults": {
+          "dark": "#d6bcfa",
+          "light": "#d6bcfa"
+        }
+      },
+      {
         "id": "GitHubLocalActions.red",
-        "description": "Color for red in GitHub Local Actions extension",
+        "description": "Color for red in the GitHub Local Actions extension",
         "defaults": {
           "dark": "#f48771",
           "light": "#f48771"
