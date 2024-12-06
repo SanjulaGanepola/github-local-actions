@@ -505,7 +505,7 @@ export class Act {
                                             const preStepName = `Pre ${parsedMessage.step}`;
                                             let preStepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
                                                 .findIndex(step => step.id === stepId && step.name === preStepName);
-                                            if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status === HistoryStatus.Running) {
+                                            if (preStepIndex > -1 && this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status === HistoryStatus.Running) {
 
                                                 this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status = HistoryStatus.Success;
                                                 this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].date.end = dateString;
