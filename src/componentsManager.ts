@@ -1,6 +1,7 @@
 import * as childProcess from "child_process";
-import { commands, env, extensions, QuickPickItemKind, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, ThemeIcon, Uri, window } from "vscode";
-import { Act } from "./act";
+import * as path from "path";
+import { commands, env, extensions, QuickPickItemKind, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, ThemeIcon, Uri, window, workspace } from "vscode";
+import { Act, Option } from "./act";
 import { ConfigurationManager, Platform, Section } from "./configurationManager";
 import { act, componentsTreeDataProvider } from "./extension";
 import ComponentsTreeDataProvider from "./views/components/componentsTreeDataProvider";
@@ -16,6 +17,7 @@ export interface Component<T extends CliStatus | ExtensionStatus> {
     installation: () => Promise<void>,
     start?: () => Promise<void>,
     fixPermissions?: () => Promise<void>,
+    openConfigFile?: () => Promise<void>,
     message?: string
 }
 
@@ -35,6 +37,7 @@ export enum ExtensionStatus {
 export class ComponentsManager {
     static actVersionRegExp: RegExp = /act version (.+)/;
     static dockerVersionRegExp: RegExp = /Docker Engine Version:\s(.+)/;
+    static actConfigFilesRegExp: RegExp = /^\s*(.+\.actrc)/gm;
 
     async getComponents(): Promise<Component<CliStatus | ExtensionStatus>[]> {
         const components: Component<CliStatus | ExtensionStatus>[] = [];
@@ -129,6 +132,73 @@ export class ComponentsManager {
                     } else {
                         await act.install(selectedInstallationMethod.label);
                     }
+                }
+            },
+            openConfigFile: async () => {
+                const getConfigFiles = (cwd?: string): Promise<string[]> => {
+                    return new Promise<string[]>((resolve, reject) => {
+                        const actCommand = Act.getActCommand();
+                        const command = `${actCommand} ${Option.BugReport}`;
+
+                        childProcess.exec(command, { cwd: cwd }, (error, stdout, stderr) => {
+                            const configFilesSection = stdout.match(ComponentsManager.actConfigFilesRegExp);
+
+
+                            if (configFilesSection) {
+                                resolve(configFilesSection.map(configFile => {
+                                    const configFilePath = configFile.trim();
+                                    if (!cwd || path.isAbsolute(configFilePath)) {
+                                        return configFilePath;
+                                    } else {
+                                        return path.resolve(cwd, configFilePath);
+                                    }
+                                }));
+                            } else {
+                                resolve([]);
+                            }
+                        });
+                    });
+                }
+
+                let configFiles: string[] = [];
+                const workspaceFolders = workspace.workspaceFolders;
+                if (workspaceFolders && workspaceFolders.length > 0) {
+                    for (const workspaceFolder of workspaceFolders) {
+                        configFiles.push(...(await getConfigFiles(workspaceFolder.uri.fsPath)))
+                    }
+                } else {
+                    configFiles = await getConfigFiles();
+                }
+
+                if (configFiles.length === 1) {
+                    try {
+                        const document = await workspace.openTextDocument(Uri.file(configFiles[0]));
+                        await window.showTextDocument(document);
+                    } catch (error: any) {
+                        window.showErrorMessage(`Failed to open config file ${configFiles[0]}. Error: ${error}`);
+                    }
+                } else if (configFiles.length > 0) {
+                    const configFileOptions = configFiles.map(configFile => {
+                        return {
+                            icon: new ThemeIcon('file'),
+                            label: configFile
+                        }
+                    });
+                    const selectedConfigFile = await window.showQuickPick(configFileOptions, {
+                        title: 'Select the config file to open',
+                        placeHolder: 'Config File'
+                    });
+
+                    if (selectedConfigFile) {
+                        try {
+                            const document = await workspace.openTextDocument(Uri.file(selectedConfigFile.label));
+                            await window.showTextDocument(document);
+                        } catch (error: any) {
+                            window.showErrorMessage(`Failed to open config file ${selectedConfigFile.label}. Error: ${error}`);
+                        }
+                    }
+                } else {
+                    window.showErrorMessage('Failed to retrieve config files. Ensure nektos/act is installed. If the issue persists, manually run the command "act --bug-report" to locate these files.');
                 }
             }
         });

@@ -1,4 +1,5 @@
 import { CancellationToken, commands, env, EventEmitter, ExtensionContext, extensions, TreeDataProvider, TreeItem, Uri } from "vscode";
+import { ConfigurationManager } from "../../configurationManager";
 import { act } from "../../extension";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import ComponentTreeItem from "./component";
@@ -36,6 +37,16 @@ export default class ComponentsTreeDataProvider implements TreeDataProvider<Gith
                     await fixPermissions();
                     this.refresh();
                 }
+            }),
+            commands.registerCommand('githubLocalActions.openConfigFile', async (componentTreeItem: ComponentTreeItem) => {
+                const openConfigFile = componentTreeItem.component.openConfigFile;
+                if (openConfigFile) {
+                    await openConfigFile();
+                }
+            }),
+            commands.registerCommand('githubLocalActions.editSettings', async (componentTreeItem: ComponentTreeItem) => {
+                const section = componentTreeItem.component.name === 'nektos/act' ? 'act' : 'dockerEngine';
+                await commands.executeCommand('workbench.action.openSettings', ConfigurationManager.getSearchTerm(section as any));
             })
         );
     }

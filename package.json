@@ -164,6 +164,16 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.openConfigFile",
+        "title": "Open Config File"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.editSettings",
+        "title": "Edit Settings"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.runAllWorkflows",
         "title": "Run All Workflows",
         "enablement": "!githubLocalActions:noWorkflows && workspaceFolderCount > 0",
@@ -369,6 +379,11 @@
         "id": "githubLocalActions.helpAndSupport",
         "label": "Help and Support",
         "icon": "$(question)"
+      },
+      {
+        "id": "githubLocalActions.settings",
+        "label": "Settings",
+        "icon": "$(gear)"
       }
     ],
     "menus": {
@@ -391,6 +406,14 @@
         },
         {
           "command": "githubLocalActions.fixPermissions",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.openConfigFile",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.editSettings",
           "when": "never"
         },
         {
@@ -578,6 +601,17 @@
           "group": "0_more@1"
         }
       ],
+      "githubLocalActions.settings": [
+        {
+          "command": "githubLocalActions.openConfigFile",
+          "group": "0_setting@0",
+          "when": "view == components && viewItem =~ /^.*_nektos\\/act.*/"
+        },
+        {
+          "command": "githubLocalActions.editSettings",
+          "group": "0_setting@1"
+        }
+      ],
       "view/item/context": [
         {
           "command": "githubLocalActions.information",
@@ -598,6 +632,11 @@
           "command": "githubLocalActions.fixPermissions",
           "when": "view == components && viewItem =~ /^githubLocalActions.component_Invalid Permissions.*/",
           "group": "inline@1"
+        },
+        {
+          "submenu": "githubLocalActions.settings",
+          "when": "view == components && viewItem =~ /^githubLocalActions.component.*/",
+          "group": "inline@2"
         },
         {
           "command": "githubLocalActions.runAllWorkflows",
