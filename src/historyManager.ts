@@ -42,6 +42,7 @@ export enum HistoryStatus {
     Running = 'Running',
     Success = 'Success',
     Failed = 'Failed',
+    Skipped = 'Skipped',
     Cancelled = 'Cancelled',
     Unknown = 'Unknown'
 }
@@ -132,8 +133,21 @@ export class HistoryManager {
                 return new ThemeIcon('error', new ThemeColor('GitHubLocalActions.red'));
             case HistoryStatus.Cancelled:
                 return new ThemeIcon('circle-slash', new ThemeColor('GitHubLocalActions.yellow'));
+            case HistoryStatus.Skipped:
+                return new ThemeIcon('issues', new ThemeColor('GitHubLocalActions.grey'));
             case HistoryStatus.Unknown:
                 return new ThemeIcon('question', new ThemeColor('GitHubLocalActions.purple'));
+        }
+    }
+
+    static stepResultToHistoryStatus(stepResult: string) {
+        switch (stepResult) {
+            case 'success':
+                return HistoryStatus.Success;
+            case 'skipped':
+                return HistoryStatus.Skipped;
+            default:
+                return HistoryStatus.Failed;
         }
     }
 }

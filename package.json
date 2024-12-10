@@ -766,6 +766,14 @@
         }
       },
       {
+        "id": "GitHubLocalActions.red",
+        "description": "Color for red in the GitHub Local Actions extension",
+        "defaults": {
+          "dark": "#f48771",
+          "light": "#f48771"
+        }
+      },
+      {
         "id": "GitHubLocalActions.yellow",
         "description": "Color for yellow in the GitHub Local Actions extension",
         "defaults": {
@@ -774,19 +782,19 @@
         }
       },
       {
+        "id": "GitHubLocalActions.grey",
+        "description": "Color for grey in the GitHub Local Actions extension",
+        "defaults": {
+          "dark": "#808080",
+          "light": "#808080"
+        }
+      },
+      {
         "id": "GitHubLocalActions.purple",
         "description": "Color for purple in the GitHub Local Actions extension",
         "defaults": {
           "dark": "#d6bcfa",
           "light": "#d6bcfa"
-        }
-      },
-      {
-        "id": "GitHubLocalActions.red",
-        "description": "Color for red in the GitHub Local Actions extension",
-        "defaults": {
-          "dark": "#f48771",
-          "light": "#f48771"
         }
       }
     ]

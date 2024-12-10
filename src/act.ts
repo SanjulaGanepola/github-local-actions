@@ -375,7 +375,7 @@ export class Act {
             ...settings.options.map(option => option.path ? `--${option.name} ${option.path}` : `--${option.name}`)
         ];
 
-        const command = `${actCommand} ${Option.Json} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
+        const command = `${actCommand} ${Option.Json} ${Option.Verbose} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
         const displayCommand = `${actCommand} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
 
         // Execute task
@@ -442,6 +442,13 @@ export class Act {
                             let message: string;
                             try {
                                 const parsedMessage = JSON.parse(line);
+
+                                // Filter all debug and trace messages except for skipped jobs and steps
+                                if (parsedMessage.level && ['debug', 'trace'].includes(parsedMessage.level) && parsedMessage.jobResult !== 'skipped' && parsedMessage.stepResult !== 'skipped') {
+                                    continue;
+                                }
+
+                                // Prepend job name to message
                                 if (typeof parsedMessage.msg === 'string') {
                                     message = `${parsedMessage.job ? `[${parsedMessage.job}] ` : ``}${parsedMessage.msg}`;
                                 } else {
@@ -516,14 +523,14 @@ export class Act {
 
                                         if (parsedMessage.stepResult) {
                                             this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].status =
-                                                parsedMessage.stepResult === 'success' ? HistoryStatus.Success : HistoryStatus.Failed;
+                                                HistoryManager.stepResultToHistoryStatus(parsedMessage.stepResult);
                                             this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].date.end = dateString;
                                         }
                                     }
 
                                     if (parsedMessage.jobResult) {
                                         this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].status =
-                                            parsedMessage.jobResult === 'success' ? HistoryStatus.Success : HistoryStatus.Failed;
+                                            HistoryManager.stepResultToHistoryStatus(parsedMessage.jobResult);
                                         this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].date.end =
                                             dateString;
                                     }
