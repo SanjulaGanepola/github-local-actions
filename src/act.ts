@@ -455,14 +455,14 @@ export class Act {
                                         if (parsedMessage.jobID in commandArgs.workflow.yaml.jobs && commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name) {
                                             // Use the name set for the job by the user
                                             jobName = commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name;
-
-                                            // Update name if it is a matrix
-                                            if (parsedMessage.matrix && Object.keys(parsedMessage.matrix).length > 0) {
-                                                const matrixValues = Object.values(parsedMessage.matrix).join(", ");
-                                                jobName = `${jobName} (${matrixValues})`;
-                                            }
                                         }
                                     } catch (error: any) { }
+
+                                    // Update name if it is a matrix
+                                    if (parsedMessage.matrix && Object.keys(parsedMessage.matrix).length > 0) {
+                                        const matrixValues = Object.values(parsedMessage.matrix).join(", ");
+                                        jobName = `${jobName} (${matrixValues})`;
+                                    }
 
                                     let jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!
                                         .findIndex(job => job.name === jobName);
