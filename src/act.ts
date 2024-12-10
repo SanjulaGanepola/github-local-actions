@@ -435,6 +435,7 @@ export class Act {
                         if (!xdata.endsWith("\n")) {
                             lastline = lines.pop() || "";
                         }
+
                         for await (const line of lines) {
                             const dateString = new Date().toString();
 
@@ -447,12 +448,19 @@ export class Act {
                                     message = line;
                                 }
 
-                                // Update job and step status in workspace history
+                                // Update job status in workspace history
                                 if (parsedMessage.jobID) {
                                     let jobName: string = parsedMessage.jobID;
                                     try {
                                         if (parsedMessage.jobID in commandArgs.workflow.yaml.jobs && commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name) {
+                                            // Use the name set for the job by the user
                                             jobName = commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name;
+
+                                            // Update name if it is a matrix
+                                            if (parsedMessage.matrix && Object.keys(parsedMessage.matrix).length > 0) {
+                                                const matrixValues = Object.values(parsedMessage.matrix).join(", ");
+                                                jobName = `${jobName} (${matrixValues})`;
+                                            }
                                         }
                                     } catch (error: any) { }
 
@@ -466,34 +474,12 @@ export class Act {
                                             date: {
                                                 start: dateString
                                             },
-                                            steps: [
-                                                // TODO: Add setup job step. To be fixed with https://github.com/nektos/act/issues/2551
-                                                // {
-                                                //     id: "--setup-job", // Special id for setup job
-                                                //     name: 'Setup Job',
-                                                //     status: HistoryStatus.Running,
-                                                //     date: {
-                                                //         start: dateString
-                                                //     }
-                                                // }
-                                            ]
+                                            steps: []
                                         });
                                         jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.length - 1;
                                     }
 
-                                    // TODO: Add complete job step. To be fixed with https://github.com/nektos/act/issues/2551
-                                    // const isCompleteJobStep = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length > 1;
-                                    // if (parsedMessage.stepID || isCompleteJobStep) {
-                                    // let stepName: string;
-                                    // let stepId: string;
-                                    // if (!parsedMessage.stepID && isCompleteJobStep) {
-                                    //     stepName = 'Complete Job';
-                                    //     stepId = "--complete-job"; // Special Id for complete job
-                                    // } else {
-                                    //     stepName = parsedMessage.stage !== 'Main' ? `${parsedMessage.stage} ${parsedMessage.step}` : parsedMessage.step;
-                                    //     stepId = parsedMessage.stepID[0];
-                                    // }
-
+                                    // Update step status in workspace history
                                     if (parsedMessage.stepID) {
                                         let stepName: string;
                                         const stepId: string = parsedMessage.stepID[0];
@@ -512,13 +498,6 @@ export class Act {
                                                 this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].date.end = dateString;
                                             }
                                         }
-
-                                        // TODO: Add setup job status check. To be fixed with https://github.com/nektos/act/issues/2551
-                                        // if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status === HistoryStatus.Running) {
-                                        //     // TODO: This forcefully sets the setup job step to success. To be fixed with https://github.com/nektos/act/issues/2551
-                                        //     this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].status = HistoryStatus.Success;
-                                        //     this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![0].date.end = dateString;
-                                        // }
 
                                         let stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
                                             .findIndex(step => step.id === stepId && step.name === stepName);
