@@ -448,6 +448,11 @@ export class Act {
                                     continue;
                                 }
 
+                                // Filter all skipped pre and post stage steps
+                                if ((parsedMessage.jobResult === 'skipped' || parsedMessage.stepResult === 'skipped') && parsedMessage.stage !== 'Main') {
+                                    continue;
+                                }
+
                                 // Prepend job name to message
                                 if (typeof parsedMessage.msg === 'string') {
                                     message = `${parsedMessage.job ? `[${parsedMessage.job}] ` : ``}${parsedMessage.msg}`;
