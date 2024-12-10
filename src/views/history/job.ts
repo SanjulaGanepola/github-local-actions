@@ -9,7 +9,7 @@ export default class JobTreeItem extends TreeItem implements GithubLocalActionsT
     job: Job;
 
     constructor(public workspaceFolder: WorkspaceFolder, job: Job) {
-        super(job.name, TreeItemCollapsibleState.Expanded);
+        super(job.name, job.status === HistoryStatus.Skipped ? TreeItemCollapsibleState.None : TreeItemCollapsibleState.Expanded);
         this.job = job;
 
         let endTime: string | undefined;
