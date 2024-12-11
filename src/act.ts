@@ -626,15 +626,12 @@ export class Act {
                     await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
 
                     if (signal === 'SIGINT') {
-                        writeEmitter.fire(`\r\nTask interrupted.\r\n`);
+                        writeEmitter.fire(`\r\n${commandArgs.name} #${count} was interrupted.\r\n`);
                         closeEmitter.fire(code || 1);
                     } else {
-                        writeEmitter.fire(`\r\nTask exited with exit code ${code}.\r\n`);
+                        writeEmitter.fire(`\r\n${commandArgs.name} #${count} exited with exit code ${code}.\r\n`);
                         closeEmitter.fire(code || 0);
                     }
-                });
-                exec.on('close', (code) => {
-                    closeEmitter.fire(code || 0);
                 });
 
                 return {
