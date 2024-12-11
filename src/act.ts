@@ -375,7 +375,7 @@ export class Act {
             ...settings.options.map(option => option.path ? `--${option.name} ${option.path}` : `--${option.name}`)
         ];
 
-        const command = `${actCommand} ${Option.Json} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
+        const command = `${actCommand} ${Option.Json} ${Option.Verbose} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
         const displayCommand = `${actCommand} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
 
         // Execute task
@@ -442,90 +442,106 @@ export class Act {
                             let message: string;
                             try {
                                 const parsedMessage = JSON.parse(line);
+
+                                let updateHistory: boolean = true;
+                                // 1. Filter all debug and trace messages except for skipped jobs and steps
+                                // 2. Filter all skipped pre and post stage steps
+                                if ((parsedMessage.level && ['debug', 'trace'].includes(parsedMessage.level) && parsedMessage.jobResult !== 'skipped' && parsedMessage.stepResult !== 'skipped') ||
+                                    (parsedMessage.stepResult === 'skipped' && parsedMessage.stage !== 'Main')) {
+                                    if (userOptions.includes(Option.Verbose)) {
+                                        updateHistory = false;
+                                    } else {
+                                        continue;
+                                    }
+                                }
+
+                                // Prepend job name to message
                                 if (typeof parsedMessage.msg === 'string') {
                                     message = `${parsedMessage.job ? `[${parsedMessage.job}] ` : ``}${parsedMessage.msg}`;
                                 } else {
                                     message = line;
                                 }
 
-                                // Update job status in workspace history
-                                if (parsedMessage.jobID) {
-                                    let jobName: string = parsedMessage.jobID;
-                                    try {
-                                        if (parsedMessage.jobID in commandArgs.workflow.yaml.jobs && commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name) {
-                                            // Use the name set for the job by the user
-                                            jobName = commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name;
-                                        }
-                                    } catch (error: any) { }
-
-                                    // Update name if it is a matrix
-                                    if (parsedMessage.matrix && Object.keys(parsedMessage.matrix).length > 0) {
-                                        const matrixValues = Object.values(parsedMessage.matrix).join(", ");
-                                        jobName = `${jobName} (${matrixValues})`;
-                                    }
-
-                                    let jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!
-                                        .findIndex(job => job.name === jobName);
-                                    if (jobIndex < 0) {
-                                        // Add new job with setup step
-                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.push({
-                                            name: jobName,
-                                            status: HistoryStatus.Running,
-                                            date: {
-                                                start: dateString
-                                            },
-                                            steps: []
-                                        });
-                                        jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.length - 1;
-                                    }
-
-                                    // Update step status in workspace history
-                                    if (parsedMessage.stepID) {
-                                        let stepName: string;
-                                        const stepId: string = parsedMessage.stepID[0];
-                                        if (parsedMessage.stage !== 'Main') {
-                                            stepName = `${parsedMessage.stage} ${parsedMessage.step}`;
-                                        } else {
-                                            stepName = parsedMessage.step;
-
-                                            // TODO: This forcefully sets any pre step to success. To be fixed with https://github.com/nektos/act/issues/2551
-                                            const preStepName = `Pre ${parsedMessage.step}`;
-                                            let preStepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
-                                                .findIndex(step => step.id === stepId && step.name === preStepName);
-                                            if (preStepIndex > -1 && this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status === HistoryStatus.Running) {
-
-                                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status = HistoryStatus.Success;
-                                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].date.end = dateString;
+                                if (updateHistory) {
+                                    // Update job status in workspace history
+                                    if (parsedMessage.jobID) {
+                                        let jobName: string = parsedMessage.jobID;
+                                        try {
+                                            if (parsedMessage.jobID in commandArgs.workflow.yaml.jobs && commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name) {
+                                                // Use the name set for the job by the user
+                                                jobName = commandArgs.workflow.yaml.jobs[parsedMessage.jobID].name;
                                             }
+                                        } catch (error: any) { }
+
+                                        // Update name if it is a matrix
+                                        if (parsedMessage.matrix && Object.keys(parsedMessage.matrix).length > 0) {
+                                            const matrixValues = Object.values(parsedMessage.matrix).join(", ");
+                                            jobName = `${jobName} (${matrixValues})`;
                                         }
 
-                                        let stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
-                                            .findIndex(step => step.id === stepId && step.name === stepName);
-                                        if (stepIndex < 0) {
-                                            // Add new step
-                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.push({
-                                                id: stepId,
-                                                name: stepName,
+                                        let jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!
+                                            .findIndex(job => job.name === jobName);
+                                        if (jobIndex < 0) {
+                                            // Add new job with setup step
+                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.push({
+                                                name: jobName,
                                                 status: HistoryStatus.Running,
                                                 date: {
                                                     start: dateString
-                                                }
+                                                },
+                                                steps: []
                                             });
-                                            stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length - 1;
+                                            jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.length - 1;
                                         }
 
-                                        if (parsedMessage.stepResult) {
-                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].status =
-                                                parsedMessage.stepResult === 'success' ? HistoryStatus.Success : HistoryStatus.Failed;
-                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].date.end = dateString;
-                                        }
-                                    }
+                                        // Update step status in workspace history
+                                        if (parsedMessage.stepID) {
+                                            let stepName: string;
+                                            const stepId: string = parsedMessage.stepID[0];
+                                            if (parsedMessage.stage !== 'Main') {
+                                                stepName = `${parsedMessage.stage} ${parsedMessage.step}`;
+                                            } else {
+                                                stepName = parsedMessage.step;
 
-                                    if (parsedMessage.jobResult) {
-                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].status =
-                                            parsedMessage.jobResult === 'success' ? HistoryStatus.Success : HistoryStatus.Failed;
-                                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].date.end =
-                                            dateString;
+                                                // TODO: This forcefully sets any pre step to success. To be fixed with https://github.com/nektos/act/issues/2551
+                                                const preStepName = `Pre ${parsedMessage.step}`;
+                                                let preStepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
+                                                    .findIndex(step => step.id === stepId && step.name === preStepName);
+                                                if (preStepIndex > -1 && this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status === HistoryStatus.Running) {
+
+                                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status = HistoryStatus.Success;
+                                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].date.end = dateString;
+                                                }
+                                            }
+
+                                            let stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
+                                                .findIndex(step => step.id === stepId && step.name === stepName);
+                                            if (stepIndex < 0) {
+                                                // Add new step
+                                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.push({
+                                                    id: stepId,
+                                                    name: stepName,
+                                                    status: HistoryStatus.Running,
+                                                    date: {
+                                                        start: dateString
+                                                    }
+                                                });
+                                                stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length - 1;
+                                            }
+
+                                            if (parsedMessage.stepResult) {
+                                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].status =
+                                                    HistoryManager.stepResultToHistoryStatus(parsedMessage.stepResult);
+                                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].date.end = dateString;
+                                            }
+                                        }
+
+                                        if (parsedMessage.jobResult) {
+                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].status =
+                                                HistoryManager.stepResultToHistoryStatus(parsedMessage.jobResult);
+                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].date.end =
+                                                dateString;
+                                        }
                                     }
                                 }
                             } catch (error: any) {
