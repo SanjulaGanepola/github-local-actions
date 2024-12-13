@@ -120,6 +120,13 @@ export interface CommandArgs {
     extraHeader: { key: string, value: string }[]
 }
 
+export interface ActOption {
+    default: string;
+    name: string,
+    description: string
+    type: string
+}
+
 export class Act {
     static defaultActCommand: string = 'act';
     static githubCliActCommand: string = 'gh act';
@@ -310,6 +317,26 @@ export class Act {
         } else {
             window.showErrorMessage('No workflows found.');
         }
+    }
+
+    getOptions(): Promise<ActOption[]> {
+        return new Promise<ActOption[]>((resolve, reject) => {
+            const exec = childProcess.spawn(
+                `${Act.getActCommand()} --list-options`,
+                {
+                    shell: true,
+                }
+            );
+            let options: string = ""
+            exec.stdout.on('data', b => options += b.toString());
+            exec.on('exit', async (code, signal) => {
+                if (code === 0) {
+                    resolve(JSON.parse(options));
+                } else {
+                    reject(new Error("not supported by this binary"));
+                }
+            });
+        })
     }
 
     async runCommand(commandArgs: CommandArgs) {

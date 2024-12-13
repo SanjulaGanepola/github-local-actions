@@ -1,7 +1,7 @@
 import * as os from "os";
 import * as path from "path";
 import { CancellationToken, commands, EventEmitter, ExtensionContext, QuickPickItem, QuickPickItemKind, ThemeIcon, TreeCheckboxChangeEvent, TreeDataProvider, TreeItem, TreeItemCheckboxState, Uri, window, workspace } from "vscode";
-import { Option } from "../../act";
+import { Act, Option } from "../../act";
 import { act } from "../../extension";
 import { SettingFileName, Visibility } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
@@ -22,6 +22,19 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
     static VIEW_ID = 'settings';
 
     constructor(context: ExtensionContext) {
+        let getActOptions = async () => {
+            try {
+                let act = new Act(context);
+                var opts = await act.getOptions();
+                return opts.map(opt => ({
+                    label: "--" + opt.name,
+                    description: opt.default,
+                    detail: opt.description
+                }));
+            } catch {
+                return null;
+            }
+        }
         context.subscriptions.push(
             commands.registerCommand('githubLocalActions.refreshSettings', async () => {
                 this.refresh();
@@ -117,7 +130,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 }
             }),
             commands.registerCommand('githubLocalActions.addOption', async (optionsTreeItem: OptionsTreeItem) => {
-                let options: any[] = [
+                let options: any[] = await getActOptions() ?? [
                     {
                         label: Option.ActionCachePath,
                         description: this.getCacheDirectory(['act']),
