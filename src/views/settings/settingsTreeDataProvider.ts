@@ -24,13 +24,14 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
     constructor(context: ExtensionContext) {
         let getActOptions = async () => {
             try {
-                let act = new Act(context);
-                var opts = await act.getOptions();
+                const act = new Act(context);
+                const opts = await act.getOptions();
+                const specialOptions: string[] = [Option.Input, Option.InputFile, Option.Var, Option.VarFile, Option.Secret, Option.SecretFile, Option.EventPath, Option.Platform];
                 return opts.map(opt => ({
                     label: "--" + opt.name,
                     description: opt.default,
                     detail: opt.description
-                }));
+                })).filter(opt => !specialOptions.includes(opt.label));
             } catch {
                 return null;
             }
