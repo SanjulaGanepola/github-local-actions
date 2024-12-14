@@ -319,7 +319,7 @@ export class Act {
         }
     }
 
-    getOptions(): Promise<ActOption[]> {
+    getAllOptions(): Promise<ActOption[]> {
         return new Promise<ActOption[]>((resolve, reject) => {
             const exec = childProcess.spawn(
                 `${Act.getActCommand()} --list-options`,
@@ -333,7 +333,7 @@ export class Act {
                 if (code === 0) {
                     resolve(JSON.parse(options));
                 } else {
-                    reject(new Error("not supported by this binary"));
+                    reject(new Error("Not supported by this binary"));
                 }
             });
         })
