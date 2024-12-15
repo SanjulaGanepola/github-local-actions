@@ -300,7 +300,18 @@ export class Act {
             for (const workflow of workflows) {
                 if (event in workflow.yaml.on) {
                     eventExists = true;
-                    await this.runWorkflow(workspaceFolder, workflow);
+                    await this.runCommand({
+                        path: workspaceFolder.uri.fsPath,
+                        workflow: workflow,
+                        options: [
+                            `${event} ${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`
+                        ],
+                        name: `${workflow.name} (${event})`,
+                        extraHeader: [
+                            { key: 'Workflow', value: workflow.name },
+                            { key: 'Event', value: event }
+                        ]
+                    });
                 }
             }
 
