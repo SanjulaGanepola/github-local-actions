@@ -129,7 +129,13 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                         Option.Secret,
                         Option.SecretFile,
                         Option.EventPath,
-                        Option.Platform
+                        Option.Platform,
+                        // The following options would break this integration
+                        Option.Help,
+                        Option.BugReport,
+                        Option.Watch,
+                        Option.List,
+                        Option.Version
                     ];
                     options = allOptions.map(opt => ({
                         label: "--" + opt.name,
