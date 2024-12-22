@@ -139,7 +139,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                     ];
                     options = allOptions.map(opt => ({
                         label: "--" + opt.name,
-                        description: opt.type !== 'bool' ? opt.default : undefined,
+                        description: opt.type !== 'bool' ? opt.type === 'stringArray' ? "" : opt.default : undefined,
                         detail: opt.description.charAt(0).toUpperCase() + opt.description.slice(1)
                     })).filter(opt => !specialOptions.includes(opt.label));
                 } catch (error: any) {
