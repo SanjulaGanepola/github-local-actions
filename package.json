@@ -131,6 +131,13 @@
         "when": "githubLocalActions:noSettings && workspaceFolderCount > 0"
       }
     ],
+    "keybindings": [
+      {
+        "command": "githubLocalActions.runWorkflow",
+        "key": "ctrl+g",
+        "mac": "cmd+g"
+      }
+    ],
     "commands": [
       {
         "category": "GitHub Local Actions",
