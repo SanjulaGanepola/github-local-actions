@@ -17,10 +17,14 @@ export interface Job {
 }
 
 export class WorkflowsManager {
+  static WORKFLOWS_DIRECTORY: string = '.github/workflows';
+  static YAML_EXTENSION: string = 'yaml';
+  static YML_EXTENSION: string = 'yml';
+
   async getWorkflows(workspaceFolder: WorkspaceFolder): Promise<Workflow[]> {
     const workflows: Workflow[] = [];
 
-    const workflowFileUris = await workspace.findFiles(new RelativePattern(workspaceFolder, `.github/workflows/*.{yml,yaml}`));
+    const workflowFileUris = await workspace.findFiles(new RelativePattern(workspaceFolder, `${WorkflowsManager.WORKFLOWS_DIRECTORY}/*.{${WorkflowsManager.YAML_EXTENSION},${WorkflowsManager.YML_EXTENSION}}`));
     for await (const workflowFileUri of workflowFileUris) {
       let yamlContent: any | undefined;
 

@@ -267,7 +267,7 @@ export class Act {
             path: workspaceFolder.uri.fsPath,
             workflow: workflow,
             options: [
-                `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`
+                `${Option.Workflows} "${WorkflowsManager.WORKFLOWS_DIRECTORY}/${path.parse(workflow.uri.fsPath).base}"`
             ],
             name: workflow.name,
             extraHeader: [
@@ -281,7 +281,7 @@ export class Act {
             path: workspaceFolder.uri.fsPath,
             workflow: workflow,
             options: [
-                `${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`,
+                `${Option.Workflows} "${WorkflowsManager.WORKFLOWS_DIRECTORY}/${path.parse(workflow.uri.fsPath).base}"`,
                 `${Option.Job} "${job.id}"`
             ],
             name: `${workflow.name}/${job.name}`,
@@ -304,7 +304,7 @@ export class Act {
                         path: workspaceFolder.uri.fsPath,
                         workflow: workflow,
                         options: [
-                            `${event} ${Option.Workflows} ".github/workflows/${path.parse(workflow.uri.fsPath).base}"`
+                            `${event} ${Option.Workflows} "${WorkflowsManager.WORKFLOWS_DIRECTORY}/${path.parse(workflow.uri.fsPath).base}"`
                         ],
                         name: `${workflow.name} (${event})`,
                         extraHeader: [

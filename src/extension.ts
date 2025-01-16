@@ -9,6 +9,7 @@ import HistoryTreeDataProvider from './views/history/historyTreeDataProvider';
 import SettingTreeItem from './views/settings/setting';
 import SettingsTreeDataProvider from './views/settings/settingsTreeDataProvider';
 import WorkflowsTreeDataProvider from './views/workflows/workflowsTreeDataProvider';
+import { WorkflowsManager } from './workflowsManager';
 
 export let act: Act;
 export let componentsTreeDataProvider: ComponentsTreeDataProvider;
@@ -36,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	// Create file watcher
-	const workflowsFileWatcher = workspace.createFileSystemWatcher('**/.github/workflows/*.{yml,yaml}');
+	const workflowsFileWatcher = workspace.createFileSystemWatcher(`**/${WorkflowsManager.WORKFLOWS_DIRECTORY}/*.{${WorkflowsManager.YML_EXTENSION},${WorkflowsManager.YAML_EXTENSION}}`);
 	workflowsFileWatcher.onDidCreate(() => {
 		workflowsTreeDataProvider.refresh();
 		settingsTreeDataProvider.refresh();

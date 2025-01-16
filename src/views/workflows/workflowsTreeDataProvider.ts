@@ -3,6 +3,7 @@ import { CancellationToken, commands, EventEmitter, ExtensionContext, TreeDataPr
 import { Event } from "../../act";
 import { act } from "../../extension";
 import { Utils } from "../../utils";
+import { WorkflowsManager } from "../../workflowsManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import JobTreeItem from "./job";
 import WorkflowTreeItem from "./workflow";
@@ -51,7 +52,43 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 }
             }),
             commands.registerCommand('githubLocalActions.runWorkflow', async (workflowTreeItem: WorkflowTreeItem) => {
-                await act.runWorkflow(workflowTreeItem.workspaceFolder, workflowTreeItem.workflow);
+                if (workflowTreeItem) {
+                    await act.runWorkflow(workflowTreeItem.workspaceFolder, workflowTreeItem.workflow);
+                } else {
+                    let errorMessage: string | undefined;
+
+                    const activeTextEditor = window.activeTextEditor;
+                    if (activeTextEditor) {
+                        const uri = activeTextEditor.document.uri;
+                        const fileName = path.parse(uri.fsPath).base;
+                        if (uri.path.match(`.*/${WorkflowsManager.WORKFLOWS_DIRECTORY}/.*\\.(${WorkflowsManager.YAML_EXTENSION}|${WorkflowsManager.YML_EXTENSION})`)) {
+                            const workspaceFolder = workspace.getWorkspaceFolder(uri);
+                            if (workspaceFolder) {
+                                const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
+                                const workflow = workflows.find(workflow => workflow.uri.fsPath === uri.fsPath);
+                                if (workflow) {
+                                    await act.runWorkflow(workspaceFolder, workflow);
+                                } else {
+                                    errorMessage = `Workflow not found in workflow directory (${WorkflowsManager.WORKFLOWS_DIRECTORY}).`;
+                                }
+                            } else {
+                                errorMessage = `${fileName} must be opened in a workspace folder to be executed locally.`;
+                            }
+                        } else {
+                            errorMessage = `${fileName} is not a workflow that can be executed locally.`;
+                        }
+                    } else {
+                        errorMessage = 'No workflow opened to execute locally.';
+                    }
+
+                    if (errorMessage) {
+                        window.showErrorMessage(errorMessage, 'View Workflows').then(async value => {
+                            if (value === 'View Workflows') {
+                                await commands.executeCommand('workflows.focus');
+                            }
+                        });
+                    }
+                }
             }),
             commands.registerCommand('githubLocalActions.runJob', async (jobTreeItem: JobTreeItem) => {
                 await act.runJob(jobTreeItem.workspaceFolder, jobTreeItem.workflow, jobTreeItem.job);
