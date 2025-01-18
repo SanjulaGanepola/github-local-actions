@@ -120,7 +120,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 try {
                     const allOptions = await act.getAllOptions();
                     const excludeOptions: string[] = [
-                        // The following options can be added directory from the Settings view
+                        // The following options can be added directly from the Settings view
                         Option.Input,
                         Option.InputFile,
                         Option.Var,
