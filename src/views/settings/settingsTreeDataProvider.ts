@@ -134,7 +134,8 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                         Option.BugReport,
                         Option.Watch,
                         Option.List,
-                        Option.Version
+                        Option.Version,
+                        Option.ListOptions
                     ];
                     options = allOptions.map(opt => ({
                         label: "--" + opt.name,
