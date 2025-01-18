@@ -150,10 +150,6 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                     options[index].iconPath = new ThemeIcon('symbol-property');
                 });
 
-                const settings = await act.settingsManager.getSettings(optionsTreeItem.workspaceFolder, false);
-                const optionNames = settings.options.map(option => option.name);
-                options = options.filter(option => !optionNames.includes(option.label));
-
                 const selectedOption = await window.showQuickPick(options, {
                     title: 'Select the option to add',
                     placeHolder: 'Option',
@@ -186,7 +182,8 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                             default: selectedOption.description,
                             description: selectedOption.detail
                         },
-                        optionsTreeItem.storageKey
+                        optionsTreeItem.storageKey,
+                        true
                     );
                     this.refresh();
                 }
