@@ -56,4 +56,11 @@ export namespace Utils {
             }
         }
     }
+
+    /**
+     * Replaces all double quotes with an escaped double quotes.
+     */
+    export function escapeDoubleQuotes(input: string): string {
+        return input.replace(/"/g, '\\"');
+    }
 }
