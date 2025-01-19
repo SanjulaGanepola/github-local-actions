@@ -368,6 +368,7 @@ export class Act {
             },
             {
                 label: Option.ActionOfflineMode,
+                description: 'false',
                 detail: 'If action contents exists, it will not be fetched and pulled again. If this is turned on, it will turn off force pull.'
             },
             {
@@ -392,6 +393,7 @@ export class Act {
             },
             {
                 label: Option.Bind,
+                description: 'false',
                 detail: 'Bind working directory to container, rather than copy.'
             },
             {
@@ -441,6 +443,7 @@ export class Act {
             },
             {
                 label: Option.DetectEvent,
+                description: 'false',
                 detail: 'Use first event type from workflow as event that triggered the workflow.'
             },
             {
@@ -450,6 +453,7 @@ export class Act {
             },
             {
                 label: Option.DryRun,
+                description: 'false',
                 detail: 'Disable container creation and validate only workflow correctness.'
             },
             {
@@ -459,10 +463,12 @@ export class Act {
             },
             {
                 label: Option.InsecureSecrets,
+                description: 'false',
                 detail: 'Show secrets while printing logs (NOT RECOMMENDED!).'
             },
             {
                 label: Option.Json,
+                description: 'false',
                 detail: 'Output logs in json format.'
             },
             {
@@ -472,6 +478,7 @@ export class Act {
             },
             {
                 label: Option.LogPrefixJobId,
+                description: 'false',
                 detail: 'Output the job id within non-json logs instead of the entire name.'
             },
             {
@@ -481,30 +488,37 @@ export class Act {
             },
             {
                 label: Option.NoCacheServer,
+                description: 'false',
                 detail: 'Disable cache server.'
             },
             {
                 label: Option.NoRecurse,
+                description: 'false',
                 detail: 'Flag to disable running workflows from subdirectories of specified path in --workflows/-W flag.'
             },
             {
                 label: Option.NoSkipCheckout,
+                description: 'false',
                 detail: 'Do not skip actions/checkout.'
             },
             {
                 label: Option.Privileged,
+                description: 'false',
                 detail: 'Use privileged mode.'
             },
             {
                 label: Option.Pull,
+                description: 'true',
                 detail: 'Pull docker image(s) even if already present.'
             },
             {
                 label: Option.Quiet,
+                description: 'false',
                 detail: 'Disable logging of output from steps.'
             },
             {
                 label: Option.Rebuild,
+                description: 'true',
                 detail: 'Rebuild local action docker image(s) even if already present.'
             },
             {
@@ -524,18 +538,22 @@ export class Act {
             },
             {
                 label: Option.Reuse,
+                description: 'false',
                 detail: 'Don\'t remove container(s) on successfully completed workflow(s) to maintain state between runs.'
             },
             {
                 label: Option.Rm,
+                description: 'false',
                 detail: 'Automatically remove container(s)/volume(s) after a workflow(s) failure.'
             },
             {
                 label: Option.UseGitignore,
+                description: 'true',
                 detail: 'Controls whether paths specified in a .gitignore file should be copied into the container.'
             },
             {
                 label: Option.UseNewActionCache,
+                description: 'false',
                 detail: 'Enable using the new Action Cache for storing Actions locally.'
             },
             {
@@ -545,6 +563,7 @@ export class Act {
             },
             {
                 label: Option.Verbose,
+                description: 'false',
                 detail: 'Enable verbose output.'
             }
         ];
@@ -616,7 +635,7 @@ export class Act {
             (settings.inputFiles.length > 0 ? `${Option.InputFile} "${settings.inputFiles[0].path}"` : `${Option.InputFile} ""`),
             ...settings.runners.map(runner => `${Option.Platform} ${runner.key}=${runner.value}`),
             (settings.payloadFiles.length > 0 ? `${Option.EventPath} "${settings.payloadFiles[0].path}"` : `${Option.EventPath} ""`),
-            ...settings.options.map(option => option.path ? `--${option.name} ${option.path}` : `--${option.name}`)
+            ...settings.options.map(option => option.path ? `--${option.name}${option.default && ['true', 'false'].includes(option.default) ? "=" : " "}${option.path}` : `--${option.name}`)
         ];
 
         const command = `${actCommand} ${Option.Json} ${Option.Verbose} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
