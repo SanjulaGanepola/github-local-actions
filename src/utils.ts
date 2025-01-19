@@ -56,4 +56,11 @@ export namespace Utils {
             }
         }
     }
+
+    /**
+     * Escape all backslashes and double quotes. 
+     */
+    export function escapeSpecialCharacters(input: string): string {
+        return input.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    }
 }
