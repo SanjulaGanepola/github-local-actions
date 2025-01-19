@@ -139,7 +139,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                     ];
                     options = allOptions.map(opt => ({
                         label: "--" + opt.name,
-                        description: opt.type !== 'bool' ? (opt.type === 'stringArray' ? '' : opt.default) : undefined,
+                        description: opt.type === 'stringArray' ? '' : opt.default,
                         detail: opt.description ? (opt.description.charAt(0).toUpperCase() + opt.description.slice(1)) : undefined
                     })).filter(opt => !excludeOptions.includes(opt.label));
                 } catch (error: any) {
@@ -162,11 +162,18 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                     let value: string | undefined;
 
                     if (requiresInputFromUser) {
-                        value = await window.showInputBox({
-                            prompt: `Enter a value for the option`,
-                            placeHolder: `Option value`,
-                            value: selectedOption.description
-                        });
+                        if (['true', 'false'].includes(selectedOption.description)) {
+                            value = (await window.showQuickPick([{ label: 'true' }, { label: 'false' }], {
+                                title: `Select a value for the option ${selectedOption.label}`,
+                                placeHolder: selectedOption.label,
+                            }))?.label;
+                        } else {
+                            value = await window.showInputBox({
+                                prompt: `Enter a value for the option ${selectedOption.label}`,
+                                placeHolder: selectedOption.label,
+                                value: selectedOption.description
+                            });
+                        }
 
                         if (value === undefined) {
                             return;
@@ -204,11 +211,19 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 }
             }),
             commands.registerCommand('githubLocalActions.editOption', async (optionTreeItem: OptionTreeItem) => {
-                const value = await window.showInputBox({
-                    prompt: `Enter a value for the option (${optionTreeItem.option.name})`,
-                    placeHolder: `Option value`,
-                    value: optionTreeItem.option.path
-                });
+                let value: string | undefined;
+                if (optionTreeItem.option.default && ['true', 'false'].includes(optionTreeItem.option.default)) {
+                    value = (await window.showQuickPick([{ label: 'true' }, { label: 'false' }], {
+                        title: `Select a value for the option ${optionTreeItem.option.name}`,
+                        placeHolder: optionTreeItem.option.name,
+                    }))?.label;
+                } else {
+                    value = await window.showInputBox({
+                        prompt: `Enter a value for the option ${optionTreeItem.option.name}`,
+                        placeHolder: optionTreeItem.option.name,
+                        value: optionTreeItem.option.path
+                    });
+                }
 
                 if (value !== undefined) {
                     const newOption = optionTreeItem.option;
