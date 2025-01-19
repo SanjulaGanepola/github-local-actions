@@ -58,9 +58,9 @@ export namespace Utils {
     }
 
     /**
-     * Replaces all double quotes with an escaped double quotes.
+     * Escape all backslashes and double quotes. 
      */
-    export function escapeDoubleQuotes(input: string): string {
+    export function escapeSpecialCharacters(input: string): string {
         return input.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     }
 }

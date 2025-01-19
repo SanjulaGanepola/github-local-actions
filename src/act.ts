@@ -405,13 +405,13 @@ export class Act {
         const userOptions: string[] = [
             ...settings.secrets.map(secret => `${Option.Secret} ${secret.key}`),
             (settings.secretFiles.length > 0 ? `${Option.SecretFile} "${settings.secretFiles[0].path}"` : `${Option.SecretFile} ""`),
-            ...settings.variables.map(variable => `${Option.Var} ${variable.key}="${Utils.escapeDoubleQuotes(variable.value)}"`),
+            ...settings.variables.map(variable => `${Option.Var} ${variable.key}="${Utils.escapeSpecialCharacters(variable.value)}"`),
             (settings.variableFiles.length > 0 ? `${Option.VarFile} "${settings.variableFiles[0].path}"` : `${Option.VarFile} ""`),
-            ...settings.inputs.map(input => `${Option.Input} ${input.key}="${Utils.escapeDoubleQuotes(input.value)}"`),
+            ...settings.inputs.map(input => `${Option.Input} ${input.key}="${Utils.escapeSpecialCharacters(input.value)}"`),
             (settings.inputFiles.length > 0 ? `${Option.InputFile} "${settings.inputFiles[0].path}"` : `${Option.InputFile} ""`),
-            ...settings.runners.map(runner => `${Option.Platform} ${runner.key}="${Utils.escapeDoubleQuotes(runner.value)}"`),
+            ...settings.runners.map(runner => `${Option.Platform} ${runner.key}="${Utils.escapeSpecialCharacters(runner.value)}"`),
             (settings.payloadFiles.length > 0 ? `${Option.EventPath} "${settings.payloadFiles[0].path}"` : `${Option.EventPath} ""`),
-            ...settings.options.map(option => option.path ? `--${option.name} "${Utils.escapeDoubleQuotes(option.path)}"` : `--${option.name}`)
+            ...settings.options.map(option => option.path ? `--${option.name} "${Utils.escapeSpecialCharacters(option.path)}"` : `--${option.name}`)
         ];
 
         const command = `${actCommand} ${Option.Json} ${Option.Verbose} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
