@@ -1,5 +1,6 @@
 import * as childProcess from "child_process";
 import * as fs from "fs/promises";
+import * as os from "os";
 import * as path from "path";
 import sanitize from "sanitize-filename";
 import { commands, CustomExecution, env, EventEmitter, ExtensionContext, Pseudoterminal, ShellExecution, TaskDefinition, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, TerminalDimensions, Uri, window, workspace, WorkspaceFolder } from "vscode";
@@ -82,6 +83,7 @@ export enum Option {
     Job = "--job",
     Json = "--json",
     List = "--list",
+    ListOptions = "--list-options",
     LocalRepository = "--local-repository",
     LogPrefixJobId = "--log-prefix-job-id",
     ManPage = "--man-page",
@@ -122,10 +124,10 @@ export interface CommandArgs {
 }
 
 export interface ActOption {
-    default: string;
     name: string,
     description: string
-    type: string
+    type: string,
+    default: string
 }
 
 export class Act {
@@ -324,7 +326,7 @@ export class Act {
             }
 
             if (!eventExists) {
-                window.showErrorMessage(`No workflows triggered by the ${event} event.`)
+                window.showErrorMessage(`No workflows triggered by the ${event} event.`);
             }
         } else {
             window.showErrorMessage('No workflows found.');
@@ -334,21 +336,244 @@ export class Act {
     getAllOptions(): Promise<ActOption[]> {
         return new Promise<ActOption[]>((resolve, reject) => {
             const exec = childProcess.spawn(
-                `${Act.getActCommand()} --list-options`,
+                `${Act.getActCommand()} ${Option.ListOptions}`,
                 {
                     shell: true,
                 }
             );
-            let options: string = ""
-            exec.stdout.on('data', b => options += b.toString());
+
+            let options: string = "";
+            exec.stdout.on('data', data => {
+                options += data.toString();
+            });
             exec.on('exit', async (code, signal) => {
                 if (code === 0) {
                     resolve(JSON.parse(options));
                 } else {
-                    reject(new Error("Not supported by this binary"));
+                    reject(new Error(`The ${Option.ListOptions} option is not supported by this binary`));
                 }
             });
-        })
+        });
+    }
+
+    /**
+     * This is to be used until act adopts "--list-options"
+     * https://github.com/nektos/act/pull/2557
+     */
+    getDefaultOptions() {
+        return [
+            {
+                label: Option.ActionCachePath,
+                description: this.getCacheDirectory(['act']),
+                detail: 'Defines the path where the actions get cached and host workspaces are created.'
+            },
+            {
+                label: Option.ActionOfflineMode,
+                description: 'false',
+                detail: 'If action contents exists, it will not be fetched and pulled again. If this is turned on, it will turn off force pull.'
+            },
+            {
+                label: Option.Actor,
+                description: 'nektos/act',
+                detail: 'User that triggered the event.'
+            },
+            {
+                label: Option.ArtifactServerAddr,
+                description: '',
+                detail: 'Defines the address to which the artifact server binds. If not set, nektos/act will use the outbound IP address of this machine. This means that it will try to access the internet and return the local IP address of the connection. If the machine cannot access the internet, it returns a preferred IP address from network interfaces. If no IP address is found, this will not be set.'
+            },
+            {
+                label: Option.ArtifactServerPath,
+                description: '',
+                detail: 'Defines the path where the artifact server stores uploads and retrieves downloads from. If not specified, the artifact server will not start.'
+            },
+            {
+                label: Option.ArtifactServerPort,
+                description: '34567',
+                detail: 'Defines the port where the artifact server listens.'
+            },
+            {
+                label: Option.Bind,
+                description: 'false',
+                detail: 'Bind working directory to container, rather than copy.'
+            },
+            {
+                label: Option.CacheServerAddr,
+                description: '',
+                detail: 'Defines the address to which the cache server binds. If not set, nektos/act will use the outbound IP address of this machine. This means that it will try to access the internet and return the local IP address of the connection. If the machine cannot access the internet, it returns a preferred IP address from network interfaces. If no IP address is found, this will not be set.'
+            },
+            {
+                label: Option.CacheServerPath,
+                description: this.getCacheDirectory(['actcache']),
+                detail: 'Defines the path where the cache server stores caches.'
+            },
+            {
+                label: Option.CacheServerPort,
+                description: '0',
+                detail: 'Defines the port where the artifact server listens. 0 means a randomly available port.'
+            },
+            {
+                label: Option.ContainerArchitecture,
+                description: '',
+                detail: 'The architecture which should be used to run containers (e.g.: linux/amd64). If not specified, the host default architecture will be used. This requires Docker server API Version 1.41+ (ignored on earlier Docker server platforms).'
+            },
+            {
+                label: Option.ContainerCapAdd,
+                description: '',
+                detail: 'Kernel capabilities to add to the workflow containers (e.g. SYS_PTRACE).'
+            },
+            {
+                label: Option.ContainerCapDrop,
+                description: '',
+                detail: 'Kernel capabilities to remove from the workflow containers (e.g. SYS_PTRACE).'
+            },
+            {
+                label: Option.ContainerDaemonSocket,
+                description: '',
+                detail: 'URI to Docker Engine socket (e.g.: unix://~/.docker/run/docker.sock or - to disable bind mounting the socket).'
+            },
+            {
+                label: Option.ContainerOptions,
+                description: '',
+                detail: 'Custom docker container options for the job container without an options property in the job definition.'
+            },
+            {
+                label: Option.DefaultBranch,
+                description: '',
+                detail: 'The name of the main branch.'
+            },
+            {
+                label: Option.DetectEvent,
+                description: 'false',
+                detail: 'Use first event type from workflow as event that triggered the workflow.'
+            },
+            {
+                label: Option.Directory,
+                description: '.',
+                detail: 'The working directory used when running a nektos/act command.'
+            },
+            {
+                label: Option.DryRun,
+                description: 'false',
+                detail: 'Disable container creation and validate only workflow correctness.'
+            },
+            {
+                label: Option.GithubInstance,
+                description: 'github.com',
+                detail: 'The GitHub instance to use. Only use this when using GitHub Enterprise Server.'
+            },
+            {
+                label: Option.InsecureSecrets,
+                description: 'false',
+                detail: 'Show secrets while printing logs (NOT RECOMMENDED!).'
+            },
+            {
+                label: Option.Json,
+                description: 'false',
+                detail: 'Output logs in json format.'
+            },
+            {
+                label: Option.LocalRepository,
+                description: '',
+                detail: 'Replaces the specified repository and ref with a local folder (e.g. https://github.com/test/test@v0=/home/act/test or test/test@v0=/home/act/test, the latter matches any hosts or protocols).'
+            },
+            {
+                label: Option.LogPrefixJobId,
+                description: 'false',
+                detail: 'Output the job id within non-json logs instead of the entire name.'
+            },
+            {
+                label: Option.Network,
+                description: 'host',
+                detail: 'Sets a docker network name.'
+            },
+            {
+                label: Option.NoCacheServer,
+                description: 'false',
+                detail: 'Disable cache server.'
+            },
+            {
+                label: Option.NoRecurse,
+                description: 'false',
+                detail: 'Flag to disable running workflows from subdirectories of specified path in --workflows/-W flag.'
+            },
+            {
+                label: Option.NoSkipCheckout,
+                description: 'false',
+                detail: 'Do not skip actions/checkout.'
+            },
+            {
+                label: Option.Privileged,
+                description: 'false',
+                detail: 'Use privileged mode.'
+            },
+            {
+                label: Option.Pull,
+                description: 'true',
+                detail: 'Pull docker image(s) even if already present.'
+            },
+            {
+                label: Option.Quiet,
+                description: 'false',
+                detail: 'Disable logging of output from steps.'
+            },
+            {
+                label: Option.Rebuild,
+                description: 'true',
+                detail: 'Rebuild local action docker image(s) even if already present.'
+            },
+            {
+                label: Option.RemoteName,
+                description: 'origin',
+                detail: 'Git remote name that will be used to retrieve the URL of Git repo.'
+            },
+            {
+                label: Option.ReplaceGheActionTokenWithGithubCom,
+                description: '',
+                detail: 'If you are using replace-ghe-action-with-github-com and you want to use private actions on GitHub, you have to set a personal access token.'
+            },
+            {
+                label: Option.ReplaceGheActionWithGithubCom,
+                description: '',
+                detail: 'If you are using GitHub Enterprise Server and allow specified actions from GitHub (github.com), you can set actions on this.'
+            },
+            {
+                label: Option.Reuse,
+                description: 'false',
+                detail: 'Don\'t remove container(s) on successfully completed workflow(s) to maintain state between runs.'
+            },
+            {
+                label: Option.Rm,
+                description: 'false',
+                detail: 'Automatically remove container(s)/volume(s) after a workflow(s) failure.'
+            },
+            {
+                label: Option.UseGitignore,
+                description: 'true',
+                detail: 'Controls whether paths specified in a .gitignore file should be copied into the container.'
+            },
+            {
+                label: Option.UseNewActionCache,
+                description: 'false',
+                detail: 'Enable using the new Action Cache for storing Actions locally.'
+            },
+            {
+                label: Option.Userns,
+                description: '',
+                detail: 'User namespace to use.'
+            },
+            {
+                label: Option.Verbose,
+                description: 'false',
+                detail: 'Enable verbose output.'
+            }
+        ];
+    }
+
+    getCacheDirectory(paths: string[]) {
+        const userHomeDir = os.homedir();
+        const cacheHomeDir = process.env.XDG_CACHE_HOME || path.join(userHomeDir, '.cache');
+        return path.join(cacheHomeDir, ...paths);
     }
 
     async runCommand(commandArgs: CommandArgs) {
@@ -411,7 +636,7 @@ export class Act {
             (settings.inputFiles.length > 0 ? `${Option.InputFile} "${settings.inputFiles[0].path}"` : `${Option.InputFile} ""`),
             ...settings.runners.map(runner => `${Option.Platform} ${runner.key}="${Utils.escapeSpecialCharacters(runner.value)}"`),
             (settings.payloadFiles.length > 0 ? `${Option.EventPath} "${settings.payloadFiles[0].path}"` : `${Option.EventPath} ""`),
-            ...settings.options.map(option => option.path ? `--${option.name} "${Utils.escapeSpecialCharacters(option.path)}"` : `--${option.name}`)
+            ...settings.options.map(option => option.path ? `--${option.name}${option.default && ['true', 'false'].includes(option.default) ? "=" : " "}"${Utils.escapeSpecialCharacters(option.path)}"` : `--${option.name}`)
         ];
 
         const command = `${actCommand} ${Option.Json} ${Option.Verbose} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
@@ -595,7 +820,7 @@ export class Act {
                             historyTreeDataProvider.refresh();
                         }
                         await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
-                    }
+                    };
                 };
 
                 let shell = env.shell;

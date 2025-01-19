@@ -214,7 +214,7 @@ export class SettingsManager {
         }
     }
 
-    async editCustomSetting(workspaceFolder: WorkspaceFolder, newCustomSetting: CustomSetting, storageKey: StorageKey) {
+    async editCustomSetting(workspaceFolder: WorkspaceFolder, newCustomSetting: CustomSetting, storageKey: StorageKey, forceAppend: boolean = false) {
         const existingCustomSettings = this.storageManager.get<{ [path: string]: CustomSetting[] }>(storageKey) || {};
         if (existingCustomSettings[workspaceFolder.uri.fsPath]) {
             const index = existingCustomSettings[workspaceFolder.uri.fsPath]
@@ -223,7 +223,7 @@ export class SettingsManager {
                         customSetting.name === newCustomSetting.name :
                         customSetting.path === newCustomSetting.path
                 );
-            if (index > -1) {
+            if (index > -1 && !forceAppend) {
                 existingCustomSettings[workspaceFolder.uri.fsPath][index] = newCustomSetting;
             } else {
                 existingCustomSettings[workspaceFolder.uri.fsPath].push(newCustomSetting);
@@ -240,7 +240,7 @@ export class SettingsManager {
         if (existingCustomSettings[workspaceFolder.uri.fsPath]) {
             const index = existingCustomSettings[workspaceFolder.uri.fsPath].findIndex(customSetting =>
                 storageKey === StorageKey.Options ?
-                    customSetting.name === existingCustomSetting.name :
+                    (customSetting.name === existingCustomSetting.name && customSetting.path === existingCustomSetting.path) :
                     customSetting.path === existingCustomSetting.path
             );
             if (index > -1) {

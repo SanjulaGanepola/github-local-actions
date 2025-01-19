@@ -733,7 +733,7 @@
         },
         {
           "command": "githubLocalActions.removeCustomSetting",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.((secret|variable|input|payload|)File|option(?!s)).*/",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.((secret|variable|input|payload)File|option(?!s)).*/",
           "group": "inline@1"
         },
         {
