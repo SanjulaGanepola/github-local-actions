@@ -262,7 +262,7 @@
         "category": "GitHub Local Actions",
         "command": "githubLocalActions.createSecretFile",
         "title": "Create Secret File",
-        "icon": "$(add)"
+        "icon": "$(file-add)"
       },
       {
         "category": "GitHub Local Actions",
@@ -286,7 +286,7 @@
         "category": "GitHub Local Actions",
         "command": "githubLocalActions.createVariableFile",
         "title": "Create Variable File",
-        "icon": "$(add)"
+        "icon": "$(file-add)"
       },
       {
         "category": "GitHub Local Actions",
@@ -304,7 +304,7 @@
         "category": "GitHub Local Actions",
         "command": "githubLocalActions.createInputFile",
         "title": "Create Input File",
-        "icon": "$(add)"
+        "icon": "$(file-add)"
       },
       {
         "category": "GitHub Local Actions",
@@ -316,7 +316,7 @@
         "category": "GitHub Local Actions",
         "command": "githubLocalActions.createPayloadFile",
         "title": "Create Payload File",
-        "icon": "$(add)"
+        "icon": "$(file-add)"
       },
       {
         "category": "GitHub Local Actions",
