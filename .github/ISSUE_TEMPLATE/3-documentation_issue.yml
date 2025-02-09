@@ -11,5 +11,3 @@ body:
         Describe the documentation issue or enhancement.
       placeholder: |
         Description
-    validations:
-      required: true
