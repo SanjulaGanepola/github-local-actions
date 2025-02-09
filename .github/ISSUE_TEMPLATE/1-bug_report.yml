@@ -11,8 +11,6 @@ body:
         What version of `Github Local Actions` are you using? This can be obtained from the standard `Extensions` view.
       placeholder: |
         v#.#.#
-    validations:
-      required: true
   - type: input
     id: act-version
     attributes:
@@ -21,8 +19,6 @@ body:
         What version of `nektos/act` are you using? This can be obtained from the `Components` view or by running `act --version`.
       placeholder: |
         act version #.#.#
-    validations:
-      required: true
   - type: input
     id: github-repository-link
     attributes:
@@ -88,8 +84,6 @@ body:
         Describe the bug you encountered and share all steps to reproduce it.
       placeholder: |
         Bug description
-    validations:
-      required: true
   - type: textarea
     id: act-bug-report
     attributes:
