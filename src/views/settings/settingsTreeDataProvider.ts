@@ -272,7 +272,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 const settings = await act.settingsManager.getSettings(settingTreeItem.workspaceFolder, false);
                 const variableNames = settings.variables.map(variable => variable.key);
                 if (variableNames.length > 0) {
-                    const repository = await act.settingsManager.githubManager.getRepository(settingTreeItem.workspaceFolder, 'githubLocalActions.importFromGithub', [settingTreeItem]);
+                    const repository = await act.settingsManager.githubManager.getRepository(settingTreeItem.workspaceFolder, false, { command: 'githubLocalActions.importFromGithub', args: [settingTreeItem] });
                     if (repository) {
                         const variableOptions: QuickPickItem[] = [];
                         const errors: string[] = [];

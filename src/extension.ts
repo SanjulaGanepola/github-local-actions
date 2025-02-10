@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { commands, env, TreeCheckboxChangeEvent, Uri, window, workspace } from 'vscode';
 import { Act } from './act';
 import { ConfigurationManager } from './configurationManager';
+import { IssueHandler } from './issueHandler';
 import ComponentsTreeDataProvider from './views/components/componentsTreeDataProvider';
 import { DecorationProvider } from './views/decorationProvider';
 import { GithubLocalActionsTreeItem } from './views/githubLocalActionsTreeItem';
@@ -68,10 +69,10 @@ export function activate(context: vscode.ExtensionContext) {
 		window.registerFileDecorationProvider(decorationProvider),
 		workflowsFileWatcher,
 		commands.registerCommand('githubLocalActions.viewDocumentation', async () => {
-			await env.openExternal(Uri.parse('https://nektosact.com'));
+			await env.openExternal(Uri.parse('https://sanjulaganepola.github.io/github-local-actions-docs'));
 		}),
 		commands.registerCommand('githubLocalActions.reportAnIssue', async () => {
-			await env.openExternal(Uri.parse('https://github.com/SanjulaGanepola/github-local-actions/issues'));
+			await IssueHandler.openBugReport(context);
 		}),
 	);
 }

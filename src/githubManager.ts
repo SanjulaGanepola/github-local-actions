@@ -9,6 +9,7 @@ export interface Response<T> {
 }
 
 export interface GithubRepository {
+    remoteOriginUrl: string,
     owner: string,
     repo: string
 }
@@ -23,7 +24,7 @@ export interface GithubVariable {
 }
 
 export class GitHubManager {
-    async getRepository(workspaceFolder: WorkspaceFolder, command: string, args: any[]): Promise<GithubRepository | undefined> {
+    async getRepository(workspaceFolder: WorkspaceFolder, suppressNotFoundErrors: boolean, tryAgainOptions?: { command: string, args: any[] }): Promise<GithubRepository | undefined> {
         const gitApi = extensions.getExtension<GitExtension>('vscode.git')?.exports.getAPI(1);
         if (gitApi) {
             if (gitApi.state === 'initialized') {
@@ -37,19 +38,25 @@ export class GitHubManager {
                         const parsedParentPath = path.parse(parsedPath.dir);
 
                         return {
+                            remoteOriginUrl: remoteOriginUrl,
                             owner: parsedParentPath.name,
                             repo: parsedPath.name
                         };
                     } else {
-                        window.showErrorMessage('Remote GitHub URL not found.');
+                        if (!suppressNotFoundErrors) {
+                            window.showErrorMessage('Remote GitHub URL not found.');
+                        }
                     }
                 } else {
-                    window.showErrorMessage(`${workspaceFolder.name} does not have a Git repository`);
+                    if (!suppressNotFoundErrors) {
+                        window.showErrorMessage(`${workspaceFolder.name} does not have a Git repository`);
+                    }
                 }
             } else {
-                window.showErrorMessage('Git extension is still being initialized. Please try again later.', 'Try Again').then(async value => {
-                    if (value && value === 'Try Again') {
-                        await commands.executeCommand(command, ...args);
+                const items = tryAgainOptions ? ['Try Again'] : [];
+                window.showErrorMessage('Git extension is still being initialized. Please try again later.', ...items).then(async value => {
+                    if (value && value === 'Try Again' && tryAgainOptions) {
+                        await commands.executeCommand(tryAgainOptions.command, ...tryAgainOptions.args);
                     }
                 });
             }
