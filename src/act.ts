@@ -712,7 +712,7 @@ export class Act {
                                 // 2. Filter all skipped pre and post stage steps
                                 if ((parsedMessage.level && ['debug', 'trace'].includes(parsedMessage.level) && parsedMessage.jobResult !== 'skipped' && parsedMessage.stepResult !== 'skipped') ||
                                     (parsedMessage.stepResult === 'skipped' && parsedMessage.stage !== 'Main')) {
-                                    if (userOptions.includes(Option.Verbose)) {
+                                    if (userOptions.includes(`${Option.Verbose}="true"`)) {
                                         updateHistory = false;
                                     } else {
                                         continue;
@@ -812,7 +812,7 @@ export class Act {
                                 message = line;
                             }
 
-                            if (userOptions.includes(Option.Json)) {
+                            if (userOptions.includes(`${Option.Json}="true"`)) {
                                 message = line;
                             }
 
