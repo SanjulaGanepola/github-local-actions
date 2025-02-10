@@ -159,8 +159,8 @@ export class GitHubManager {
             childProcess.exec('gh auth token', (error, stdout, stderr) => {
                 if (error) {
                     const errorMessage = (String(stderr).charAt(0).toUpperCase() + String(stderr).slice(1)).trim();
-                    window.showErrorMessage(`${errorMessage}. Login and try again to enable your GitHub CLI token.`, 'Login').then(async value => {
-                        if (value === 'Login') {
+                    window.showErrorMessage(`${errorMessage}. Authenticate to GitHub and try again.`, 'Authenticate').then(async value => {
+                        if (value === 'Authenticate') {
                             await tasks.executeTask({
                                 name: 'GitHub CLI',
                                 detail: 'Authenticate with a GitHub host',
@@ -188,7 +188,7 @@ export class GitHubManager {
                     });
                     resolve(undefined);
                 } else {
-                    resolve(stdout);
+                    resolve(stdout.trim());
                 }
             });
         });
