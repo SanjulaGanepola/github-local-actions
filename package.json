@@ -284,6 +284,18 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.enableGithubCLIToken",
+        "title": "Enable GitHub CLI Token",
+        "icon": "$(sync)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.disableGithubCLIToken",
+        "title": "Disable GitHub CLI Token",
+        "icon": "$(sync-ignored)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.createVariableFile",
         "title": "Create Variable File",
         "icon": "$(file-add)"
@@ -470,6 +482,14 @@
         },
         {
           "command": "githubLocalActions.hide",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.enableGithubCLIToken",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.disableGithubCLIToken",
           "when": "never"
         },
         {
@@ -673,13 +693,23 @@
         },
         {
           "command": "githubLocalActions.show",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.secret(?!s)_hide.*/",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.secret(?!s)_hide(?!_generate).*/",
           "group": "inline@0"
         },
         {
           "command": "githubLocalActions.hide",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.secret(?!s)_show.*/",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.secret(?!s)_show(?!_generate).*/",
           "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.enableGithubCLIToken",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.secret(?!s).*_manual.*/",
+          "group": "inline@2"
+        },
+        {
+          "command": "githubLocalActions.disableGithubCLIToken",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.secret(?!s).*_generate.*/",
+          "group": "inline@2"
         },
         {
           "command": "githubLocalActions.createVariableFile",
@@ -743,7 +773,7 @@
         },
         {
           "command": "githubLocalActions.editSetting",
-          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|runner)(?!(File|s)).*/",
+          "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|runner)(?!(File|s))(?!_(show|hide)_generate).*/",
           "group": "inline@1"
         }
       ]

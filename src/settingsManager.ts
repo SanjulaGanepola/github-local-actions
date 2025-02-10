@@ -23,7 +23,8 @@ export interface Setting {
     value: string,
     password: boolean,
     selected: boolean,
-    visible: Visibility
+    visible: Visibility,
+    mode: Mode
 }
 
 // This is either a secret/variable/input/payload file or an option
@@ -39,6 +40,11 @@ export interface CustomSetting {
 export enum Visibility {
     show = 'show',
     hide = 'hide'
+}
+
+export enum Mode {
+    generate = 'generate',
+    manual = 'manual'
 }
 
 export enum SettingFileName {
@@ -65,7 +71,17 @@ export class SettingsManager {
     }
 
     async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean): Promise<Settings> {
-        const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || (secret.selected && secret.value));
+        const defaultSecrets: Setting[] = [
+            {
+                key: 'GITHUB_TOKEN',
+                value: '',
+                password: true,
+                selected: false,
+                visible: Visibility.hide,
+                mode: Mode.manual
+            }
+        ];
+        const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide, defaultSecrets)).filter(secret => !isUserSelected || (secret.selected && (secret.value || secret.mode === Mode.generate)));
         const secretFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.SecretFiles)).filter(secretFile => !isUserSelected || secretFile.selected);
         const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || (variable.selected && variable.value));
         const variableFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
@@ -90,8 +106,8 @@ export class SettingsManager {
         };
     }
 
-    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey, password: boolean, visible: Visibility): Promise<Setting[]> {
-        const settings: Setting[] = [];
+    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey, password: boolean, visible: Visibility, defaultSettings: Setting[] = []): Promise<Setting[]> {
+        const settings: Setting[] = defaultSettings;
 
         const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
         for (const workflow of workflows) {
@@ -125,7 +141,8 @@ export class SettingsManager {
                         value: value,
                         password: existingSetting.password,
                         selected: existingSetting.selected,
-                        visible: existingSetting.visible
+                        visible: existingSetting.visible,
+                        mode: existingSetting.mode || Mode.manual
                     };
                 }
             }
@@ -161,7 +178,8 @@ export class SettingsManager {
                                 value: '',
                                 password: false,
                                 selected: false,
-                                visible: Visibility.show
+                                visible: Visibility.show,
+                                mode: Mode.manual
                             });
                         }
                     }
@@ -298,7 +316,7 @@ export class SettingsManager {
 
         const matches = content.matchAll(regExp);
         for (const match of matches) {
-            results.push({ key: match[1], value: '', password: password, selected: false, visible: visible });
+            results.push({ key: match[1], value: '', password: password, selected: false, visible: visible, mode: Mode.manual });
         }
 
         return results;
