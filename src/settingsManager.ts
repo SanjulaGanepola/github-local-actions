@@ -1,3 +1,11 @@
+import { Lexer, Parser } from "@actions/expressions";
+import { ContextAccess, Literal } from "@actions/expressions/ast";
+import { TokenType } from "@actions/expressions/lexer";
+import { NoOperationTraceWriter, parseWorkflow } from "@actions/workflow-parser";
+import { splitAllowedContext } from "@actions/workflow-parser/templates/allowed-context";
+import { BasicExpressionToken } from "@actions/workflow-parser/templates/tokens/basic-expression-token";
+import { TemplateToken } from "@actions/workflow-parser/templates/tokens/template-token";
+import { TokenType as TMPLTokenType } from "@actions/workflow-parser/templates/tokens/types";
 import * as path from "path";
 import { Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { act } from "./extension";
@@ -65,13 +73,13 @@ export class SettingsManager {
     }
 
     async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean): Promise<Settings> {
-        const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || (secret.selected && secret.value));
+        const secrets = (await this.getSetting(workspaceFolder, undefined, "secrets", StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || (secret.selected && secret.value));
         const secretFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.SecretFiles)).filter(secretFile => !isUserSelected || secretFile.selected);
-        const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || (variable.selected && variable.value));
+        const variables = (await this.getSetting(workspaceFolder, undefined, "vars", StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || (variable.selected && variable.value));
         const variableFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
-        const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
+        const inputs = (await this.getSetting(workspaceFolder, undefined, "inputs", StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
         const inputFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.InputFiles)).filter(inputFile => !isUserSelected || inputFile.selected);
-        const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
+        const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, undefined, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
         const payloadFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.PayloadFiles)).filter(payloadFile => !isUserSelected || payloadFile.selected);
         const options = (await this.getCustomSettings(workspaceFolder, StorageKey.Options)).filter(option => !isUserSelected || (option.selected && (option.path || option.notEditable)));
         // const environments = await this.getEnvironments(workspaceFolder);
@@ -90,7 +98,7 @@ export class SettingsManager {
         };
     }
 
-    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey, password: boolean, visible: Visibility): Promise<Setting[]> {
+    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp | undefined, contextName: string | undefined, storageKey: StorageKey, password: boolean, visible: Visibility): Promise<Setting[]> {
         const settings: Setting[] = [];
 
         const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
@@ -98,12 +106,22 @@ export class SettingsManager {
             if (!workflow.fileContent) {
                 continue;
             }
-
-            const workflowSettings = this.findInWorkflow(workflow.fileContent, regExp, password, visible);
-            for (const workflowSetting of workflowSettings) {
-                const existingSetting = settings.find(setting => setting.key === workflowSetting.key);
-                if (!existingSetting) {
-                    settings.push(workflowSetting);
+            if (contextName) {
+                const workflowSettings = this.findExpressionAccessInWorkflow(workflow.name, workflow.fileContent, contextName, password, visible);
+                for (const workflowSetting of workflowSettings) {
+                    const existingSetting = settings.find(setting => setting.key === workflowSetting.key);
+                    if (!existingSetting) {
+                        settings.push(workflowSetting);
+                    }
+                }
+            }
+            if (regExp) {
+                const workflowSettings = this.findInWorkflow(workflow.fileContent, regExp, password, visible);
+                for (const workflowSetting of workflowSettings) {
+                    const existingSetting = settings.find(setting => setting.key === workflowSetting.key);
+                    if (!existingSetting) {
+                        settings.push(workflowSetting);
+                    }
                 }
             }
         }
@@ -134,6 +152,62 @@ export class SettingsManager {
         await this.storageManager.update(storageKey, existingSettings);
 
         return settings;
+    }
+
+    private findExpressionAccessInWorkflow(name: string, fileContent: string, contextName: string, password: boolean, visible: Visibility) {
+        let workflowSettings: Setting[] = []
+        var result = parseWorkflow({
+            name: name,
+            content: fileContent
+        }, new NoOperationTraceWriter());
+        if (result.value) {
+            for (var [parent, token, keyToken] of TemplateToken.traverse(result.value, false)) {
+                if (token.templateTokenType == TMPLTokenType.BasicExpression) {
+                    var l = new Lexer((token as BasicExpressionToken).expression);
+                    var res = l.lex();
+                    var sres = splitAllowedContext(token.definitionInfo?.allowedContext ?? []);
+                    var p = new Parser(res.tokens, sres.namedContexts, sres.functions);
+                    p.parse().accept({
+                        visitBinary(binary) {
+                            binary.left.accept(this);
+                            binary.right.accept(this);
+                        },
+                        visitContextAccess(contextAccess) {
+                        },
+                        visitFunctionCall(functionCall) {
+                            for (let index = 0; index < functionCall.args.length; index++) {
+                                const element = functionCall.args[index];
+                                element.accept(this);
+                            }
+                        },
+                        visitGrouping(grouping) {
+                            grouping.group.accept(this);
+                        },
+                        visitIndexAccess(indexAccess) {
+                            if (indexAccess.expr instanceof ContextAccess && (indexAccess.expr as ContextAccess)?.name?.type === TokenType.IDENTIFIER && (indexAccess.expr as ContextAccess)?.name?.lexeme === contextName) {
+                                if (indexAccess.index instanceof Literal) {
+                                    workflowSettings.push({ key: (indexAccess.index as Literal).token.value?.toString() ?? (indexAccess.index as Literal).token.lexeme, value: '', password: password, selected: false, visible: visible });
+                                }
+                            }
+                            indexAccess.expr.accept(this);
+                            indexAccess.index.accept(this);
+                        },
+                        visitLiteral(literal) {
+                        },
+                        visitLogical(binary) {
+                            for (let index = 0; index < binary.args.length; index++) {
+                                const element = binary.args[index];
+                                element.accept(this);
+                            }
+                        },
+                        visitUnary(unary) {
+                            unary.expr.accept(this);
+                        },
+                    });
+                }
+            }
+        }
+        return workflowSettings;
     }
 
     async getCustomSettings(workspaceFolder: WorkspaceFolder, storageKey: StorageKey): Promise<CustomSetting[]> {
