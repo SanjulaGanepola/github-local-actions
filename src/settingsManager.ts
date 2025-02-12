@@ -200,7 +200,7 @@ export class SettingsManager {
                         visitIndexAccess(indexAccess) {
                             if (indexAccess.expr instanceof ContextAccess && (indexAccess.expr as ContextAccess)?.name?.type === TokenType.IDENTIFIER && (indexAccess.expr as ContextAccess)?.name?.lexeme === contextName) {
                                 if (indexAccess.index instanceof Literal) {
-                                    workflowSettings.push({ key: (indexAccess.index as Literal).token.value?.toString() ?? (indexAccess.index as Literal).token.lexeme, value: '', password: password, selected: false, visible: visible, mode: Mode.generate });
+                                    workflowSettings.push({ key: (indexAccess.index as Literal).token.value?.toString() ?? (indexAccess.index as Literal).token.lexeme, value: '', password: password, selected: false, visible: visible, mode: Mode.manual });
                                 }
                             }
                             indexAccess.expr.accept(this);
