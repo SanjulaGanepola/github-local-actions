@@ -1,6 +1,7 @@
+import * as childProcess from "child_process";
 import { Octokit } from "octokit";
 import * as path from "path";
-import { authentication, AuthenticationSession, commands, extensions, window, WorkspaceFolder } from "vscode";
+import { authentication, AuthenticationSession, commands, extensions, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, window, WorkspaceFolder } from "vscode";
 import { GitExtension } from "./import/git";
 
 export interface Response<T> {
@@ -151,5 +152,45 @@ export class GitHubManager {
             window.showErrorMessage(`Failed to authenticate to GitHub. Error ${error}`);
             return;
         }
+    }
+
+    public async getGithubCLIToken(): Promise<string | undefined> {
+        return new Promise<string | undefined>((resolve, reject) => {
+            childProcess.exec('gh auth token', (error, stdout, stderr) => {
+                if (error) {
+                    const errorMessage = (String(stderr).charAt(0).toUpperCase() + String(stderr).slice(1)).trim();
+                    window.showErrorMessage(`${errorMessage}. Authenticate to GitHub and try again.`, 'Authenticate').then(async value => {
+                        if (value === 'Authenticate') {
+                            await tasks.executeTask({
+                                name: 'GitHub CLI',
+                                detail: 'Authenticate with a GitHub host',
+                                definition: {
+                                    type: 'Authenticate with a GitHub host'
+                                },
+                                source: 'GitHub Local Actions',
+                                scope: TaskScope.Workspace,
+                                isBackground: true,
+                                presentationOptions: {
+                                    reveal: TaskRevealKind.Always,
+                                    focus: false,
+                                    clear: true,
+                                    close: false,
+                                    echo: true,
+                                    panel: TaskPanelKind.Shared,
+                                    showReuseMessage: false
+                                },
+                                problemMatchers: [],
+                                runOptions: {},
+                                group: TaskGroup.Build,
+                                execution: new ShellExecution('gh auth login')
+                            });
+                        }
+                    });
+                    resolve(undefined);
+                } else {
+                    resolve(stdout.trim());
+                }
+            });
+        });
     }
 }

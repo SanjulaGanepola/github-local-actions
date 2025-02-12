@@ -9,7 +9,7 @@ import { ConfigurationManager, Platform, Section } from "./configurationManager"
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
 import { HistoryManager, HistoryStatus } from './historyManager';
 import { SecretManager } from "./secretManager";
-import { SettingsManager } from './settingsManager';
+import { Mode, SettingsManager } from './settingsManager';
 import { StorageKey, StorageManager } from './storageManager';
 import { Utils } from "./utils";
 import { Job, Workflow, WorkflowsManager } from "./workflowsManager";
@@ -836,20 +836,29 @@ export class Act {
                         break;
                 }
 
+                // Process environment variables for child process
+                const processedSecrets: Record<string, string> = {};
+                for (const secret of settings.secrets) {
+                    if (secret.key === 'GITHUB_TOKEN' && secret.mode === Mode.generate) {
+                        const token = await this.settingsManager.githubManager.getGithubCLIToken();
+                        if (token) {
+                            processedSecrets[secret.key] = token;
+                        }
+                    } else {
+                        processedSecrets[secret.key] = secret.value!;
+                    }
+                }
+                const envVars = {
+                    ...process.env,
+                    ...processedSecrets
+                };
+
                 const exec = childProcess.spawn(
                     command,
                     {
                         cwd: commandArgs.path,
                         shell: shell,
-                        env: {
-                            ...process.env,
-                            ...settings.secrets
-                                .filter(secret => secret.value)
-                                .reduce((previousValue, currentValue) => {
-                                    previousValue[currentValue.key] = currentValue.value;
-                                    return previousValue;
-                                }, {} as Record<string, string>)
-                        }
+                        env: envVars
                     }
                 );
                 exec.stdout.on('data', handleIO());
