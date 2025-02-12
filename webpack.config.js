@@ -37,6 +37,16 @@ const extensionConfig = {
             loader: 'ts-loader'
           }
         ]
+      },
+      {
+        test: /\.m?js$/,
+        resolve: {
+          fullySpecified: false // disable the behaviour
+        }
+      },
+      {
+        test: /\.node$/,
+        use: "node-loader"
       }
     ]
   },
