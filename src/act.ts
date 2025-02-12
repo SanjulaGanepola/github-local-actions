@@ -9,7 +9,7 @@ import { ConfigurationManager, Platform, Section } from "./configurationManager"
 import { componentsTreeDataProvider, historyTreeDataProvider } from './extension';
 import { HistoryManager, HistoryStatus } from './historyManager';
 import { SecretManager } from "./secretManager";
-import { SettingsManager } from './settingsManager';
+import { Mode, Settings, SettingsManager } from './settingsManager';
 import { StorageKey, StorageManager } from './storageManager';
 import { Utils } from "./utils";
 import { Job, Workflow, WorkflowsManager } from "./workflowsManager";
@@ -576,6 +576,30 @@ export class Act {
         return path.join(cacheHomeDir, ...paths);
     }
 
+    async buildActCommand(settings: Settings, options: string[]) {
+        const userOptions: string[] = [
+            ...settings.secrets.map(secret => `${Option.Secret} ${secret.key}`),
+            (settings.secretFiles.length > 0 ? `${Option.SecretFile} "${settings.secretFiles[0].path}"` : `${Option.SecretFile} ""`),
+            ...settings.variables.map(variable => `${Option.Var} ${variable.key}="${Utils.escapeSpecialCharacters(variable.value)}"`),
+            (settings.variableFiles.length > 0 ? `${Option.VarFile} "${settings.variableFiles[0].path}"` : `${Option.VarFile} ""`),
+            ...settings.inputs.map(input => `${Option.Input} ${input.key}="${Utils.escapeSpecialCharacters(input.value)}"`),
+            (settings.inputFiles.length > 0 ? `${Option.InputFile} "${settings.inputFiles[0].path}"` : `${Option.InputFile} ""`),
+            ...settings.runners.map(runner => `${Option.Platform} ${runner.key}="${Utils.escapeSpecialCharacters(runner.value)}"`),
+            (settings.payloadFiles.length > 0 ? `${Option.EventPath} "${settings.payloadFiles[0].path}"` : `${Option.EventPath} ""`),
+            ...settings.options.map(option => option.path ? `--${option.name}${option.default && ['true', 'false'].includes(option.default) ? "=" : " "}"${Utils.escapeSpecialCharacters(option.path)}"` : `--${option.name}`)
+        ];
+
+        const actCommand = Act.getActCommand();
+        const executionCommand = `${actCommand} ${Option.Json} ${Option.Verbose} ${options.join(' ')} ${userOptions.join(' ')}`;
+        const displayCommand = `${actCommand} ${options.join(' ')} ${userOptions.join(' ')}`;
+
+        return {
+            userOptions,
+            executionCommand,
+            displayCommand
+        };
+    }
+
     async runCommand(commandArgs: CommandArgs) {
         // Check if required components are ready
         // const unreadyComponents = await this.componentsManager.getUnreadyComponents();
@@ -624,23 +648,8 @@ export class Act {
         } catch (error: any) { }
 
         // Build command with settings
-        const actCommand = Act.getActCommand();
         const settings = await this.settingsManager.getSettings(workspaceFolder, true);
-
-        const userOptions: string[] = [
-            ...settings.secrets.map(secret => `${Option.Secret} ${secret.key}`),
-            (settings.secretFiles.length > 0 ? `${Option.SecretFile} "${settings.secretFiles[0].path}"` : `${Option.SecretFile} ""`),
-            ...settings.variables.map(variable => `${Option.Var} ${variable.key}="${Utils.escapeSpecialCharacters(variable.value)}"`),
-            (settings.variableFiles.length > 0 ? `${Option.VarFile} "${settings.variableFiles[0].path}"` : `${Option.VarFile} ""`),
-            ...settings.inputs.map(input => `${Option.Input} ${input.key}="${Utils.escapeSpecialCharacters(input.value)}"`),
-            (settings.inputFiles.length > 0 ? `${Option.InputFile} "${settings.inputFiles[0].path}"` : `${Option.InputFile} ""`),
-            ...settings.runners.map(runner => `${Option.Platform} ${runner.key}="${Utils.escapeSpecialCharacters(runner.value)}"`),
-            (settings.payloadFiles.length > 0 ? `${Option.EventPath} "${settings.payloadFiles[0].path}"` : `${Option.EventPath} ""`),
-            ...settings.options.map(option => option.path ? `--${option.name}${option.default && ['true', 'false'].includes(option.default) ? "=" : " "}"${Utils.escapeSpecialCharacters(option.path)}"` : `--${option.name}`)
-        ];
-
-        const command = `${actCommand} ${Option.Json} ${Option.Verbose} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
-        const displayCommand = `${actCommand} ${commandArgs.options.join(' ')} ${userOptions.join(' ')}`;
+        const { userOptions, executionCommand, displayCommand } = await this.buildActCommand(settings, commandArgs.options);
 
         // Execute task
         const taskExecution = await tasks.executeTask({
@@ -712,7 +721,7 @@ export class Act {
                                 // 2. Filter all skipped pre and post stage steps
                                 if ((parsedMessage.level && ['debug', 'trace'].includes(parsedMessage.level) && parsedMessage.jobResult !== 'skipped' && parsedMessage.stepResult !== 'skipped') ||
                                     (parsedMessage.stepResult === 'skipped' && parsedMessage.stage !== 'Main')) {
-                                    if (userOptions.includes(Option.Verbose)) {
+                                    if (userOptions.includes(`${Option.Verbose}="true"`)) {
                                         updateHistory = false;
                                     } else {
                                         continue;
@@ -812,7 +821,7 @@ export class Act {
                                 message = line;
                             }
 
-                            if (userOptions.includes(Option.Json)) {
+                            if (userOptions.includes(`${Option.Json}="true"`)) {
                                 message = line;
                             }
 
@@ -836,20 +845,29 @@ export class Act {
                         break;
                 }
 
+                // Process environment variables for child process
+                const processedSecrets: Record<string, string> = {};
+                for (const secret of settings.secrets) {
+                    if (secret.key === 'GITHUB_TOKEN' && secret.mode === Mode.generate) {
+                        const token = await this.settingsManager.githubManager.getGithubCLIToken();
+                        if (token) {
+                            processedSecrets[secret.key] = token;
+                        }
+                    } else {
+                        processedSecrets[secret.key] = secret.value!;
+                    }
+                }
+                const envVars = {
+                    ...process.env,
+                    ...processedSecrets
+                };
+
                 const exec = childProcess.spawn(
-                    command,
+                    executionCommand,
                     {
                         cwd: commandArgs.path,
                         shell: shell,
-                        env: {
-                            ...process.env,
-                            ...settings.secrets
-                                .filter(secret => secret.value)
-                                .reduce((previousValue, currentValue) => {
-                                    previousValue[currentValue.key] = currentValue.value;
-                                    return previousValue;
-                                }, {} as Record<string, string>)
-                        }
+                        env: envVars
                     }
                 );
                 exec.stdout.on('data', handleIO());

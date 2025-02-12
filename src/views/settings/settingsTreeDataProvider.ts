@@ -1,7 +1,7 @@
 import { CancellationToken, commands, EventEmitter, ExtensionContext, QuickPickItem, QuickPickItemKind, ThemeIcon, TreeCheckboxChangeEvent, TreeDataProvider, TreeItem, TreeItemCheckboxState, Uri, window, workspace } from "vscode";
 import { Option } from "../../act";
 import { act } from "../../extension";
-import { SettingFileName, Visibility } from "../../settingsManager";
+import { Mode, SettingFileName, Visibility } from "../../settingsManager";
 import { StorageKey } from "../../storageManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import InputsTreeItem from "./inputs";
@@ -49,6 +49,23 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                     await act.settingsManager.locateSettingFile(secretsTreeItem.workspaceFolder, secretsTreeItem.storageKey, secretFilesUris);
                     this.refresh();
                 }
+            }),
+            commands.registerCommand('githubLocalActions.enableGithubCLIToken', async (settingTreeItem: SettingTreeItem) => {
+                const token = await act.settingsManager.githubManager.getGithubCLIToken();
+                if (token) {
+                    const newSetting = settingTreeItem.setting;
+                    newSetting.mode = Mode.generate;
+                    newSetting.value = '';
+                    newSetting.visible = Visibility.hide;
+                    await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, newSetting, settingTreeItem.storageKey);
+                    this.refresh();
+                }
+            }),
+            commands.registerCommand('githubLocalActions.disableGithubCLIToken', async (settingTreeItem: SettingTreeItem) => {
+                const newSetting = settingTreeItem.setting;
+                newSetting.mode = Mode.manual;
+                await act.settingsManager.editSetting(settingTreeItem.workspaceFolder, newSetting, settingTreeItem.storageKey);
+                this.refresh();
             }),
             commands.registerCommand('githubLocalActions.createVariableFile', async (variablesTreeItem: VariablesTreeItem) => {
                 const variableFileName = await window.showInputBox({
@@ -272,7 +289,7 @@ export default class SettingsTreeDataProvider implements TreeDataProvider<Github
                 const settings = await act.settingsManager.getSettings(settingTreeItem.workspaceFolder, false);
                 const variableNames = settings.variables.map(variable => variable.key);
                 if (variableNames.length > 0) {
-                    const repository = await act.settingsManager.githubManager.getRepository(settingTreeItem.workspaceFolder, 'githubLocalActions.importFromGithub', [settingTreeItem]);
+                    const repository = await act.settingsManager.githubManager.getRepository(settingTreeItem.workspaceFolder, false, { command: 'githubLocalActions.importFromGithub', args: [settingTreeItem] });
                     if (repository) {
                         const variableOptions: QuickPickItem[] = [];
                         const errors: string[] = [];

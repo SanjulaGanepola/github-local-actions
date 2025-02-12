@@ -31,7 +31,8 @@ export interface Setting {
     value: string,
     password: boolean,
     selected: boolean,
-    visible: Visibility
+    visible: Visibility,
+    mode: Mode
 }
 
 // This is either a secret/variable/input/payload file or an option
@@ -49,6 +50,11 @@ export enum Visibility {
     hide = 'hide'
 }
 
+export enum Mode {
+    generate = 'generate',
+    manual = 'manual'
+}
+
 export enum SettingFileName {
     secretFile = '.secrets',
     envFile = '.env',
@@ -61,9 +67,6 @@ export class SettingsManager {
     storageManager: StorageManager;
     secretManager: SecretManager;
     githubManager: GitHubManager;
-    static secretsRegExp: RegExp = /\${{\s*secrets\.(.*?)\s*}}/g;
-    static variablesRegExp: RegExp = /\${{\s*vars\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
-    static inputsRegExp: RegExp = /\${{\s*(?:inputs|github\.event\.inputs)\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
     static runnersRegExp: RegExp = /runs-on:\s*(.+)/g;
 
     constructor(storageManager: StorageManager, secretManager: SecretManager) {
@@ -73,7 +76,17 @@ export class SettingsManager {
     }
 
     async getSettings(workspaceFolder: WorkspaceFolder, isUserSelected: boolean): Promise<Settings> {
-        const secrets = (await this.getSetting(workspaceFolder, undefined, "secrets", StorageKey.Secrets, true, Visibility.hide)).filter(secret => !isUserSelected || (secret.selected && secret.value));
+        const defaultSecrets: Setting[] = [
+            {
+                key: 'GITHUB_TOKEN',
+                value: '',
+                password: true,
+                selected: false,
+                visible: Visibility.hide,
+                mode: Mode.manual
+            }
+        ];
+        const secrets = (await this.getSetting(workspaceFolder, undefined, "secrets", StorageKey.Secrets, true, Visibility.hide, defaultSecrets)).filter(secret => !isUserSelected || (secret.selected && (secret.value || secret.mode === Mode.generate)));
         const secretFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.SecretFiles)).filter(secretFile => !isUserSelected || secretFile.selected);
         const variables = (await this.getSetting(workspaceFolder, undefined, "vars", StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || (variable.selected && variable.value));
         const variableFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
@@ -98,8 +111,8 @@ export class SettingsManager {
         };
     }
 
-    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp | undefined, contextName: string | undefined, storageKey: StorageKey, password: boolean, visible: Visibility): Promise<Setting[]> {
-        const settings: Setting[] = [];
+    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp | undefined, contextName: string | undefined, storageKey: StorageKey, password: boolean, visible: Visibility, defaultSettings: Setting[] = []): Promise<Setting[]> {
+        const settings: Setting[] = defaultSettings;
 
         const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
         for (const workflow of workflows) {
@@ -143,7 +156,8 @@ export class SettingsManager {
                         value: value,
                         password: existingSetting.password,
                         selected: existingSetting.selected,
-                        visible: existingSetting.visible
+                        visible: existingSetting.visible,
+                        mode: existingSetting.mode || Mode.manual
                     };
                 }
             }
@@ -186,7 +200,7 @@ export class SettingsManager {
                         visitIndexAccess(indexAccess) {
                             if (indexAccess.expr instanceof ContextAccess && (indexAccess.expr as ContextAccess)?.name?.type === TokenType.IDENTIFIER && (indexAccess.expr as ContextAccess)?.name?.lexeme === contextName) {
                                 if (indexAccess.index instanceof Literal) {
-                                    workflowSettings.push({ key: (indexAccess.index as Literal).token.value?.toString() ?? (indexAccess.index as Literal).token.lexeme, value: '', password: password, selected: false, visible: visible });
+                                    workflowSettings.push({ key: (indexAccess.index as Literal).token.value?.toString() ?? (indexAccess.index as Literal).token.lexeme, value: '', password: password, selected: false, visible: visible, mode: Mode.generate });
                                 }
                             }
                             indexAccess.expr.accept(this);
@@ -235,7 +249,8 @@ export class SettingsManager {
                                 value: '',
                                 password: false,
                                 selected: false,
-                                visible: Visibility.show
+                                visible: Visibility.show,
+                                mode: Mode.manual
                             });
                         }
                     }
@@ -372,7 +387,7 @@ export class SettingsManager {
 
         const matches = content.matchAll(regExp);
         for (const match of matches) {
-            results.push({ key: match[1], value: '', password: password, selected: false, visible: visible });
+            results.push({ key: match[1], value: '', password: password, selected: false, visible: visible, mode: Mode.manual });
         }
 
         return results;

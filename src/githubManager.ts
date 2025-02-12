@@ -1,6 +1,7 @@
+import * as childProcess from "child_process";
 import { Octokit } from "octokit";
 import * as path from "path";
-import { authentication, AuthenticationSession, commands, extensions, window, WorkspaceFolder } from "vscode";
+import { authentication, AuthenticationSession, commands, extensions, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, window, WorkspaceFolder } from "vscode";
 import { GitExtension } from "./import/git";
 
 export interface Response<T> {
@@ -9,6 +10,7 @@ export interface Response<T> {
 }
 
 export interface GithubRepository {
+    remoteOriginUrl: string,
     owner: string,
     repo: string
 }
@@ -23,7 +25,7 @@ export interface GithubVariable {
 }
 
 export class GitHubManager {
-    async getRepository(workspaceFolder: WorkspaceFolder, command: string, args: any[]): Promise<GithubRepository | undefined> {
+    async getRepository(workspaceFolder: WorkspaceFolder, suppressNotFoundErrors: boolean, tryAgainOptions?: { command: string, args: any[] }): Promise<GithubRepository | undefined> {
         const gitApi = extensions.getExtension<GitExtension>('vscode.git')?.exports.getAPI(1);
         if (gitApi) {
             if (gitApi.state === 'initialized') {
@@ -37,19 +39,25 @@ export class GitHubManager {
                         const parsedParentPath = path.parse(parsedPath.dir);
 
                         return {
+                            remoteOriginUrl: remoteOriginUrl,
                             owner: parsedParentPath.name,
                             repo: parsedPath.name
                         };
                     } else {
-                        window.showErrorMessage('Remote GitHub URL not found.');
+                        if (!suppressNotFoundErrors) {
+                            window.showErrorMessage('Remote GitHub URL not found.');
+                        }
                     }
                 } else {
-                    window.showErrorMessage(`${workspaceFolder.name} does not have a Git repository`);
+                    if (!suppressNotFoundErrors) {
+                        window.showErrorMessage(`${workspaceFolder.name} does not have a Git repository`);
+                    }
                 }
             } else {
-                window.showErrorMessage('Git extension is still being initialized. Please try again later.', 'Try Again').then(async value => {
-                    if (value && value === 'Try Again') {
-                        await commands.executeCommand(command, ...args);
+                const items = tryAgainOptions ? ['Try Again'] : [];
+                window.showErrorMessage('Git extension is still being initialized. Please try again later.', ...items).then(async value => {
+                    if (value && value === 'Try Again' && tryAgainOptions) {
+                        await commands.executeCommand(tryAgainOptions.command, ...tryAgainOptions.args);
                     }
                 });
             }
@@ -151,5 +159,45 @@ export class GitHubManager {
             window.showErrorMessage(`Failed to authenticate to GitHub. Error ${error}`);
             return;
         }
+    }
+
+    public async getGithubCLIToken(): Promise<string | undefined> {
+        return new Promise<string | undefined>((resolve, reject) => {
+            childProcess.exec('gh auth token', (error, stdout, stderr) => {
+                if (error) {
+                    const errorMessage = (String(stderr).charAt(0).toUpperCase() + String(stderr).slice(1)).trim();
+                    window.showErrorMessage(`${errorMessage}. Authenticate to GitHub and try again.`, 'Authenticate').then(async value => {
+                        if (value === 'Authenticate') {
+                            await tasks.executeTask({
+                                name: 'GitHub CLI',
+                                detail: 'Authenticate with a GitHub host',
+                                definition: {
+                                    type: 'Authenticate with a GitHub host'
+                                },
+                                source: 'GitHub Local Actions',
+                                scope: TaskScope.Workspace,
+                                isBackground: true,
+                                presentationOptions: {
+                                    reveal: TaskRevealKind.Always,
+                                    focus: false,
+                                    clear: true,
+                                    close: false,
+                                    echo: true,
+                                    panel: TaskPanelKind.Shared,
+                                    showReuseMessage: false
+                                },
+                                problemMatchers: [],
+                                runOptions: {},
+                                group: TaskGroup.Build,
+                                execution: new ShellExecution('gh auth login')
+                            });
+                        }
+                    });
+                    resolve(undefined);
+                } else {
+                    resolve(stdout.trim());
+                }
+            });
+        });
     }
 }
