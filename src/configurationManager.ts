@@ -1,5 +1,6 @@
 import { ConfigurationTarget, workspace } from 'vscode';
 import { Act } from './act';
+import { WorkflowsManager } from './workflowsManager';
 
 export enum Platform {
     windows = 'win32',
@@ -9,6 +10,7 @@ export enum Platform {
 
 export enum Section {
     actCommand = 'actCommand',
+    workflowsDirectory = 'workflowsDirectory',
     dockerDesktopPath = 'dockerDesktopPath'
 }
 
@@ -17,6 +19,16 @@ export namespace ConfigurationManager {
     export const searchPrefix: string = '@ext:sanjulaganepola.github-local-actions';
 
     export async function initialize(): Promise<void> {
+        let actCommand = ConfigurationManager.get<string>(Section.actCommand);
+        if (!actCommand) {
+            await ConfigurationManager.set(Section.actCommand, Act.defaultActCommand);
+        }
+
+        let workflowsDirectory = ConfigurationManager.get<string>(Section.workflowsDirectory);
+        if (!workflowsDirectory) {
+            await ConfigurationManager.set(Section.workflowsDirectory, WorkflowsManager.defaultWorkflowsDirectory);
+        }
+
         let dockerDesktopPath = ConfigurationManager.get<string>(Section.dockerDesktopPath);
         if (!dockerDesktopPath) {
             switch (process.platform) {
@@ -31,11 +43,6 @@ export namespace ConfigurationManager {
             }
 
             await ConfigurationManager.set(Section.dockerDesktopPath, dockerDesktopPath);
-        }
-
-        let actCommand = ConfigurationManager.get<string>(Section.actCommand);
-        if (!actCommand) {
-            await ConfigurationManager.set(Section.actCommand, Act.defaultActCommand);
         }
     }
 

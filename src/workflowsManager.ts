@@ -2,6 +2,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { RelativePattern, Uri, workspace, WorkspaceFolder } from "vscode";
 import * as yaml from "yaml";
+import { ConfigurationManager, Section } from "./configurationManager";
 
 export interface Workflow {
   name: string,
@@ -17,14 +18,19 @@ export interface Job {
 }
 
 export class WorkflowsManager {
-  static WORKFLOWS_DIRECTORY: string = '.github/workflows';
-  static YAML_EXTENSION: string = 'yaml';
-  static YML_EXTENSION: string = 'yml';
+  static defaultWorkflowsDirectory: string = '.github/workflows';
+  static yamlExtension: string = 'yaml';
+  static ymlExtension: string = 'yml';
+
+  static getWorkflowsDirectory(): string {
+    return ConfigurationManager.get<string>(Section.workflowsDirectory) || WorkflowsManager.defaultWorkflowsDirectory;
+  }
 
   async getWorkflows(workspaceFolder: WorkspaceFolder): Promise<Workflow[]> {
     const workflows: Workflow[] = [];
 
-    const workflowFileUris = await workspace.findFiles(new RelativePattern(workspaceFolder, `${WorkflowsManager.WORKFLOWS_DIRECTORY}/*.{${WorkflowsManager.YAML_EXTENSION},${WorkflowsManager.YML_EXTENSION}}`));
+    const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
+    const workflowFileUris = await workspace.findFiles(new RelativePattern(workspaceFolder, `${workflowsDirectory}/*.{${WorkflowsManager.yamlExtension},${WorkflowsManager.ymlExtension}}`));
     for await (const workflowFileUri of workflowFileUris) {
       let yamlContent: any | undefined;
 
