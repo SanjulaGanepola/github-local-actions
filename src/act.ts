@@ -273,11 +273,12 @@ export class Act {
     }
 
     async runWorkflow(workspaceFolder: WorkspaceFolder, workflow: Workflow) {
+        const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
         return await this.runCommand({
             path: workspaceFolder.uri.fsPath,
             workflow: workflow,
             options: [
-                `${Option.Workflows} "${WorkflowsManager.WORKFLOWS_DIRECTORY}/${path.parse(workflow.uri.fsPath).base}"`
+                `${Option.Workflows} "${workflowsDirectory}/${path.parse(workflow.uri.fsPath).base}"`
             ],
             name: workflow.name,
             extraHeader: [
@@ -287,11 +288,12 @@ export class Act {
     }
 
     async runJob(workspaceFolder: WorkspaceFolder, workflow: Workflow, job: Job) {
+        const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
         return await this.runCommand({
             path: workspaceFolder.uri.fsPath,
             workflow: workflow,
             options: [
-                `${Option.Workflows} "${WorkflowsManager.WORKFLOWS_DIRECTORY}/${path.parse(workflow.uri.fsPath).base}"`,
+                `${Option.Workflows} "${workflowsDirectory}/${path.parse(workflow.uri.fsPath).base}"`,
                 `${Option.Job} "${job.id}"`
             ],
             name: `${workflow.name}/${job.name}`,
@@ -304,7 +306,7 @@ export class Act {
 
     async runEvent(workspaceFolder: WorkspaceFolder, event: Event) {
         let eventExists: boolean = false;
-
+        const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
         const workflows = await this.workflowsManager.getWorkflows(workspaceFolder);
         if (workflows.length > 0) {
             for (const workflow of workflows) {
@@ -314,7 +316,7 @@ export class Act {
                         path: workspaceFolder.uri.fsPath,
                         workflow: workflow,
                         options: [
-                            `${event} ${Option.Workflows} "${WorkflowsManager.WORKFLOWS_DIRECTORY}/${path.parse(workflow.uri.fsPath).base}"`
+                            `${event} ${Option.Workflows} "${workflowsDirectory}/${path.parse(workflow.uri.fsPath).base}"`
                         ],
                         name: `${workflow.name} (${event})`,
                         extraHeader: [

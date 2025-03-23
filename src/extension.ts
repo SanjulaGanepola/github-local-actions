@@ -1,7 +1,6 @@
-import * as vscode from 'vscode';
-import { commands, env, TreeCheckboxChangeEvent, Uri, window, workspace } from 'vscode';
+import { commands, env, ExtensionContext, TreeCheckboxChangeEvent, Uri, window, workspace } from 'vscode';
 import { Act } from './act';
-import { ConfigurationManager } from './configurationManager';
+import { ConfigurationManager, Section } from './configurationManager';
 import { IssueHandler } from './issueHandler';
 import ComponentsTreeDataProvider from './views/components/componentsTreeDataProvider';
 import { DecorationProvider } from './views/decorationProvider';
@@ -18,7 +17,7 @@ export let workflowsTreeDataProvider: WorkflowsTreeDataProvider;
 export let historyTreeDataProvider: HistoryTreeDataProvider;
 export let settingsTreeDataProvider: SettingsTreeDataProvider;
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(context: ExtensionContext) {
 	console.log('Congratulations, your extension "github-local-actions" is now active!');
 
 	act = new Act(context);
@@ -38,26 +37,28 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	// Create file watcher
-	const workflowsFileWatcher = workspace.createFileSystemWatcher(`**/${WorkflowsManager.WORKFLOWS_DIRECTORY}/*.{${WorkflowsManager.YML_EXTENSION},${WorkflowsManager.YAML_EXTENSION}}`);
-	workflowsFileWatcher.onDidCreate(() => {
-		workflowsTreeDataProvider.refresh();
-		settingsTreeDataProvider.refresh();
-	});
-	workflowsFileWatcher.onDidChange(() => {
-		workflowsTreeDataProvider.refresh();
-		settingsTreeDataProvider.refresh();
-	});
-	workflowsFileWatcher.onDidDelete(() => {
-		workflowsTreeDataProvider.refresh();
-		settingsTreeDataProvider.refresh();
-	});
+	let workflowsFileWatcher = setupFileWatcher(context);
 
 	// Initialize configurations
 	ConfigurationManager.initialize();
 	workspace.onDidChangeConfiguration(async event => {
 		if (event.affectsConfiguration(ConfigurationManager.group)) {
 			await ConfigurationManager.initialize();
-			componentsTreeDataProvider.refresh();
+
+			if (event.affectsConfiguration(`${ConfigurationManager.group}.${Section.actCommand}`) ||
+				event.affectsConfiguration(`${ConfigurationManager.group}.${Section.dockerDesktopPath}`)) {
+				componentsTreeDataProvider.refresh();
+			}
+
+			if (event.affectsConfiguration(`${ConfigurationManager.group}.${Section.workflowsDirectory}`)) {
+				workflowsTreeDataProvider.refresh();
+				settingsTreeDataProvider.refresh();
+
+				if (workflowsFileWatcher) {
+					workflowsFileWatcher.dispose();
+					workflowsFileWatcher = setupFileWatcher(context);
+				}
+			}
 		}
 	});
 
@@ -75,6 +76,25 @@ export function activate(context: vscode.ExtensionContext) {
 			await IssueHandler.openBugReport(context);
 		}),
 	);
+}
+
+function setupFileWatcher(context: ExtensionContext) {
+	const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
+	const workflowsFileWatcher = workspace.createFileSystemWatcher(`**/${workflowsDirectory}/*.{${WorkflowsManager.ymlExtension},${WorkflowsManager.yamlExtension}}`);
+	workflowsFileWatcher.onDidCreate(() => {
+		workflowsTreeDataProvider.refresh();
+		settingsTreeDataProvider.refresh();
+	});
+	workflowsFileWatcher.onDidChange(() => {
+		workflowsTreeDataProvider.refresh();
+		settingsTreeDataProvider.refresh();
+	});
+	workflowsFileWatcher.onDidDelete(() => {
+		workflowsTreeDataProvider.refresh();
+		settingsTreeDataProvider.refresh();
+	});
+
+	return workflowsFileWatcher;
 }
 
 export function deactivate() { }
