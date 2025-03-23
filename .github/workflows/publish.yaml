@@ -2,6 +2,17 @@ name: Publish to the Marketplace and Open VSX
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_openvsx:
+        description: 'Publish to Open VSX'
+        type: boolean
+        required: true
+        default: true
+      publish_marketplace:
+        description: 'Publish to Marketplace'
+        type: boolean
+        required: true
+        default: true
 
   release:
     types: [created]
@@ -30,7 +41,9 @@ jobs:
           npm install -g vsce ovsx
 
       - name: Publish to Open VSX
+        if: github.event_name == 'release' || inputs.publish_openvsx == true
         run: npx ovsx publish -p ${{ secrets.OPEN_VSX_TOKEN }}
 
       - name: Publish to Marketplace
+        if: github.event_name == 'release' || inputs.publish_marketplace == true
         run: vsce publish -p ${{ secrets.VS_MARKETPLACE_TOKEN }}
