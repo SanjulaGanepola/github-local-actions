@@ -36,6 +36,14 @@ The `Workflows` view is where you can manage and run workflows locally. You have
 2. **Run Single Workflow**: Run a single workflow in the workspace.
 3. **Run Job**: Run a specific job in a workflow.
 4. **Run Event**: Run multiple workflows using a [GitHub event](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows).
+5. **Run Workflow Event**: Run a specific event on a workflow.
+6. **Run Job Event**: Run a specific event on a job.
+
+You can access these commands via:
+
+* Use the buttons in the Workflows view header for workspace-wide commands (like "Run All Workflows")
+* Inline buttons that appear when hovering over workflows and jobs
+* Right-click context menu for workflows and jobs
 
 ![Workflows View](https://raw.githubusercontent.com/SanjulaGanepola/github-local-actions/main/images/workflows-view.png)
 
