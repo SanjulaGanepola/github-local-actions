@@ -304,9 +304,46 @@ export class Act {
         });
     }
 
-    async runEvent(workspaceFolder: WorkspaceFolder, event: Event) {
+    async runEvent(workspaceFolder: WorkspaceFolder, event: Event, workflow?: Workflow, job?: Job) {
         let eventExists: boolean = false;
         const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
+
+        // If a specific workflow is provided, run the event on that workflow
+        if (workflow) {
+            if (event in workflow.yaml.on) {
+                // If a job is also provided, run the event on that specific job
+                if (job) {
+                    return await this.runCommand({
+                        path: workspaceFolder.uri.fsPath,
+                        workflow: workflow,
+                        options: [`${event} ${Option.Workflows} "${workflowsDirectory}/${path.parse(workflow.uri.fsPath).base}"`, `${Option.Job} "${job.id}"`],
+                        name: `${workflow.name}/${job.name} (${event})`,
+                        extraHeader: [
+                            { key: 'Workflow', value: workflow.name },
+                            { key: 'Job', value: job.name },
+                            { key: 'Event', value: event }
+                        ]
+                    });
+                } else {
+                    // Run the event on the entire workflow
+                    return await this.runCommand({
+                        path: workspaceFolder.uri.fsPath,
+                        workflow: workflow,
+                        options: [`${event} ${Option.Workflows} "${workflowsDirectory}/${path.parse(workflow.uri.fsPath).base}"`],
+                        name: `${workflow.name} (${event})`,
+                        extraHeader: [
+                            { key: 'Workflow', value: workflow.name },
+                            { key: 'Event', value: event }
+                        ]
+                    });
+                }
+            } else {
+                window.showErrorMessage(`Event "${event}" is not registered on the workflow "${workflow.name}".`);
+                return;
+            }
+        }
+
+        // Otherwise, run the event on all matching workflows
         const workflows = await this.workflowsManager.getWorkflows(workspaceFolder);
         if (workflows.length > 0) {
             for (const workflow of workflows) {
