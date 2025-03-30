@@ -98,7 +98,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 // Filter to only events that are registered on the workflow
                 const registeredEventsOnWorkflow = Object.keys(workflowTreeItem.workflow.yaml.on);
 
-                if (registeredEventsOnWorkflow.length !== 0) {
+                if (registeredEventsOnWorkflow.length === 0) {
                     window.showErrorMessage(`No events registered on the workflow (${workflowTreeItem.workflow.name}). Add an event to the \`on\` section of the workflow to trigger it.`);
                     return;
                 }
@@ -116,7 +116,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 // Filter to only events that are registered on the job's parent workflow
                 const registeredEventsOnJobParentWorkflow = Object.keys(jobTreeItem.workflow.yaml.on);
 
-                if (registeredEventsOnJobParentWorkflow.length !== 0) {
+                if (registeredEventsOnJobParentWorkflow.length === 0) {
                     window.showErrorMessage(`No events registered on the workflow (${jobTreeItem.workflow.name}). Add an event to the \`on\` section of the workflow to trigger it.`);
                     return;
                 }
