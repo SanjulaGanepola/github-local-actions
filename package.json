@@ -202,6 +202,18 @@
       },
       {
         "category": "GitHub Local Actions",
+        "command": "githubLocalActions.runWorkflowEvent",
+        "title": "Run Workflow with Event",
+        "icon": "$(symbol-event)"
+      },
+      {
+        "category": "GitHub Local Actions",
+        "command": "githubLocalActions.runJobEvent",
+        "title": "Run Job with Event",
+        "icon": "$(symbol-event)"
+      },
+      {
+        "category": "GitHub Local Actions",
         "command": "githubLocalActions.clearAll",
         "title": "Clear All",
         "enablement": "!githubLocalActions:noHistory && !githubLocalActions:isRunning && !githubLocalActions:noWorkflows && workspaceFolderCount > 0",
@@ -430,6 +442,14 @@
           "when": "never"
         },
         {
+          "command": "githubLocalActions.runWorkflowEvent",
+          "when": "never"
+        },
+        {
+          "command": "githubLocalActions.runJobEvent",
+          "when": "never"
+        },
+        {
           "command": "githubLocalActions.clearAll",
           "when": "never"
         },
@@ -640,9 +660,39 @@
           "group": "inline@1"
         },
         {
+          "command": "githubLocalActions.runWorkflowEvent",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.workflow.*/",
+          "group": "inline@2"
+        },
+        {
+          "command": "githubLocalActions.runWorkflow",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.workflow.*/",
+          "group": "workflows@1"
+        },
+        {
+          "command": "githubLocalActions.runWorkflowEvent",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.workflow.*/",
+          "group": "workflows@2"
+        },
+        {
           "command": "githubLocalActions.runJob",
           "when": "view == workflows && viewItem =~ /^githubLocalActions.job.*/",
           "group": "inline@0"
+        },
+        {
+          "command": "githubLocalActions.runJobEvent",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.job.*/",
+          "group": "inline@1"
+        },
+        {
+          "command": "githubLocalActions.runJob",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.job.*/",
+          "group": "jobs@0"
+        },
+        {
+          "command": "githubLocalActions.runJobEvent",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.job.*/",
+          "group": "jobs@1"
         },
         {
           "command": "githubLocalActions.clearAll",
