@@ -124,7 +124,7 @@ export class SettingsManager {
             }
         }
 
-        const existingSettings = this.storageManager.get<{ [path: string]: Setting[] }>(storageKey) || {};
+        const existingSettings = await this.storageManager.get<{ [path: string]: Setting[] }>(storageKey) || {};
         if (existingSettings[workspaceFolder.uri.fsPath]) {
             for (const [index, setting] of settings.entries()) {
                 const existingSetting = existingSettings[workspaceFolder.uri.fsPath].find(existingSetting => existingSetting.key === setting.key);
@@ -154,7 +154,7 @@ export class SettingsManager {
     }
 
     async getCustomSettings(workspaceFolder: WorkspaceFolder, storageKey: StorageKey): Promise<CustomSetting[]> {
-        const existingCustomSettings = this.storageManager.get<{ [path: string]: CustomSetting[] }>(storageKey) || {};
+        const existingCustomSettings = await this.storageManager.get<{ [path: string]: CustomSetting[] }>(storageKey) || {};
         return existingCustomSettings[workspaceFolder.uri.fsPath] || [];
     }
 
@@ -233,7 +233,7 @@ export class SettingsManager {
     }
 
     async editCustomSetting(workspaceFolder: WorkspaceFolder, newCustomSetting: CustomSetting, storageKey: StorageKey, forceAppend: boolean = false) {
-        const existingCustomSettings = this.storageManager.get<{ [path: string]: CustomSetting[] }>(storageKey) || {};
+        const existingCustomSettings = await this.storageManager.get<{ [path: string]: CustomSetting[] }>(storageKey) || {};
         if (existingCustomSettings[workspaceFolder.uri.fsPath]) {
             const index = existingCustomSettings[workspaceFolder.uri.fsPath]
                 .findIndex(customSetting =>
@@ -254,7 +254,7 @@ export class SettingsManager {
     }
 
     async removeCustomSetting(workspaceFolder: WorkspaceFolder, existingCustomSetting: CustomSetting, storageKey: StorageKey) {
-        const existingCustomSettings = this.storageManager.get<{ [path: string]: CustomSetting[] }>(storageKey) || {};
+        const existingCustomSettings = await this.storageManager.get<{ [path: string]: CustomSetting[] }>(storageKey) || {};
         if (existingCustomSettings[workspaceFolder.uri.fsPath]) {
             const index = existingCustomSettings[workspaceFolder.uri.fsPath].findIndex(customSetting =>
                 storageKey === StorageKey.Options ?
@@ -289,7 +289,7 @@ export class SettingsManager {
             newSetting.value = '';
         }
 
-        const existingSettings = this.storageManager.get<{ [path: string]: Setting[] }>(storageKey) || {};
+        const existingSettings = await this.storageManager.get<{ [path: string]: Setting[] }>(storageKey) || {};
         if (existingSettings[workspaceFolder.uri.fsPath]) {
             const index = existingSettings[workspaceFolder.uri.fsPath].findIndex(setting => setting.key === newSetting.key);
             if (index > -1) {
