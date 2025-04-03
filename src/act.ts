@@ -304,23 +304,26 @@ export class Act {
         });
     }
 
-    async runEvent(workspaceFolder: WorkspaceFolder, event: Event, workflow?: Workflow, job?: Job) {
+    async runEvent(workspaceFolder: WorkspaceFolder, event: Event, options?: { workflow: Workflow, job?: Job }) {
         let eventExists: boolean = false;
         const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
 
         // If a specific workflow is provided, run the event on that workflow
-        if (workflow) {
-            if (event in workflow.yaml.on) {
+        if (options) {
+            if (event in options.workflow.yaml.on) {
                 // If a job is also provided, run the event on that specific job
-                if (job) {
+                if (options.job) {
                     return await this.runCommand({
                         path: workspaceFolder.uri.fsPath,
-                        workflow: workflow,
-                        options: [`${event} ${Option.Workflows} "${workflowsDirectory}/${path.parse(workflow.uri.fsPath).base}"`, `${Option.Job} "${job.id}"`],
-                        name: `${workflow.name}/${job.name} (${event})`,
+                        workflow: options.workflow,
+                        options: [
+                            `${event} ${Option.Workflows} "${workflowsDirectory}/${path.parse(options.workflow.uri.fsPath).base}"`,
+                            `${Option.Job} "${options.job.id}"`
+                        ],
+                        name: `${options.workflow.name}/${options.job.name} (${event})`,
                         extraHeader: [
-                            { key: 'Workflow', value: workflow.name },
-                            { key: 'Job', value: job.name },
+                            { key: 'Workflow', value: options.workflow.name },
+                            { key: 'Job', value: options.job.name },
                             { key: 'Event', value: event }
                         ]
                     });
@@ -328,17 +331,19 @@ export class Act {
                     // Run the event on the entire workflow
                     return await this.runCommand({
                         path: workspaceFolder.uri.fsPath,
-                        workflow: workflow,
-                        options: [`${event} ${Option.Workflows} "${workflowsDirectory}/${path.parse(workflow.uri.fsPath).base}"`],
-                        name: `${workflow.name} (${event})`,
+                        workflow: options.workflow,
+                        options: [
+                            `${event} ${Option.Workflows} "${workflowsDirectory}/${path.parse(options.workflow.uri.fsPath).base}"`
+                        ],
+                        name: `${options.workflow.name} (${event})`,
                         extraHeader: [
-                            { key: 'Workflow', value: workflow.name },
+                            { key: 'Workflow', value: options.workflow.name },
                             { key: 'Event', value: event }
                         ]
                     });
                 }
             } else {
-                window.showErrorMessage(`Event "${event}" is not registered on the workflow "${workflow.name}".`);
+                window.showErrorMessage(`Event "${event}" is not registered on the workflow "${options.workflow.name}"`);
                 return;
             }
         }
@@ -365,7 +370,7 @@ export class Act {
             }
 
             if (!eventExists) {
-                window.showErrorMessage(`No workflows triggered by the ${event} event.`);
+                window.showErrorMessage(`No workflows triggered by the "${event}" event.`);
             }
         } else {
             window.showErrorMessage('No workflows found.');

@@ -109,7 +109,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 });
 
                 if (event) {
-                    await act.runEvent(workflowTreeItem.workspaceFolder, event as Event, workflowTreeItem.workflow);
+                    await act.runEvent(workflowTreeItem.workspaceFolder, event as Event, { workflow: workflowTreeItem.workflow });
                 }
             }),
             commands.registerCommand('githubLocalActions.runJobEvent', async (jobTreeItem: JobTreeItem) => {
@@ -127,7 +127,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                 });
 
                 if (event) {
-                    await act.runEvent(jobTreeItem.workspaceFolder, event as Event, jobTreeItem.workflow, jobTreeItem.job);
+                    await act.runEvent(jobTreeItem.workspaceFolder, event as Event, { workflow: jobTreeItem.workflow, job: jobTreeItem.job });
                 }
             })
         );
