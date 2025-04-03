@@ -93,6 +93,42 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
             }),
             commands.registerCommand('githubLocalActions.runJob', async (jobTreeItem: JobTreeItem) => {
                 await act.runJob(jobTreeItem.workspaceFolder, jobTreeItem.workflow, jobTreeItem.job);
+            }),
+            commands.registerCommand('githubLocalActions.runWorkflowEvent', async (workflowTreeItem: WorkflowTreeItem) => {
+                // Filter to only events that are registered on the workflow
+                const registeredEventsOnWorkflow = Object.keys(workflowTreeItem.workflow.yaml.on);
+
+                if (registeredEventsOnWorkflow.length === 0) {
+                    window.showErrorMessage(`No events registered on the workflow (${workflowTreeItem.workflow.name}). Add an event to the \`on\` section of the workflow to trigger it.`);
+                    return;
+                }
+
+                const event = await window.showQuickPick(registeredEventsOnWorkflow, {
+                    title: 'Select the event to run',
+                    placeHolder: 'Event',
+                });
+
+                if (event) {
+                    await act.runEvent(workflowTreeItem.workspaceFolder, event as Event, { workflow: workflowTreeItem.workflow });
+                }
+            }),
+            commands.registerCommand('githubLocalActions.runJobEvent', async (jobTreeItem: JobTreeItem) => {
+                // Filter to only events that are registered on the job's parent workflow
+                const registeredEventsOnJobParentWorkflow = Object.keys(jobTreeItem.workflow.yaml.on);
+
+                if (registeredEventsOnJobParentWorkflow.length === 0) {
+                    window.showErrorMessage(`No events registered on the workflow (${jobTreeItem.workflow.name}). Add an event to the \`on\` section of the workflow to trigger it.`);
+                    return;
+                }
+
+                const event = await window.showQuickPick(registeredEventsOnJobParentWorkflow, {
+                    title: 'Select the event to run',
+                    placeHolder: 'Event'
+                });
+
+                if (event) {
+                    await act.runEvent(jobTreeItem.workspaceFolder, event as Event, { workflow: jobTreeItem.workflow, job: jobTreeItem.job });
+                }
             })
         );
     }

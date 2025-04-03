@@ -1,9 +1,3 @@
 # Change Log
 
-All notable changes to the "github-local-actions" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [1.0.0]
-
-- Initial release
+All notable changes to the "github-local-actions" extension will be documented in the [GitHub release notes](https://github.com/SanjulaGanepola/github-local-actions/releases).
