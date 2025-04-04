@@ -49,11 +49,26 @@ export enum HistoryStatus {
 
 export class HistoryManager {
     storageManager: StorageManager;
-    workspaceHistory: { [path: string]: History[] };
+    private workspaceHistory: { [path: string]: History[] };
+
 
     constructor(storageManager: StorageManager) {
         this.storageManager = storageManager;
-        const workspaceHistory = this.storageManager.get<{ [path: string]: History[] }>(StorageKey.WorkspaceHistory) || {};
+        this.workspaceHistory = {};
+        this.syncHistory();
+    }
+
+
+    async getWorkspaceHistory() {
+        if (!this.workspaceHistory) {
+            await this.syncHistory();
+        }
+
+        return this.workspaceHistory;
+    }
+
+    async syncHistory() {
+        const workspaceHistory = await this.storageManager.get<{ [path: string]: History[] }>(StorageKey.WorkspaceHistory) || {};
         for (const [path, historyLogs] of Object.entries(workspaceHistory)) {
             workspaceHistory[path] = historyLogs.map(history => {
                 history.jobs?.forEach((job, jobIndex) => {
@@ -79,22 +94,27 @@ export class HistoryManager {
             });
         }
         this.workspaceHistory = workspaceHistory;
-    }
+    };
 
     async clearAll(workspaceFolder: WorkspaceFolder) {
-        const existingHistory = this.workspaceHistory[workspaceFolder.uri.fsPath];
+        await this.syncHistory();
+        const existingHistory = this.workspaceHistory?.[workspaceFolder.uri.fsPath] ?? [];
         for (const history of existingHistory) {
             try {
                 await workspace.fs.delete(Uri.file(history.logPath));
             } catch (error: any) { }
         }
 
-        this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
+        if (this.workspaceHistory) {
+            this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
+        }
         historyTreeDataProvider.refresh();
         await this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
     }
 
     async viewOutput(history: History) {
+        await this.syncHistory();
+
         try {
             const document = await workspace.openTextDocument(history.logPath);
             await window.showTextDocument(document);
@@ -112,9 +132,10 @@ export class HistoryManager {
     }
 
     async remove(history: History) {
-        const historyIndex = this.workspaceHistory[history.commandArgs.path].findIndex(workspaceHistory => workspaceHistory.index === history.index);
+        await this.syncHistory();
+        const historyIndex = (this.workspaceHistory?.[history.commandArgs.path] ?? []).findIndex(workspaceHistory => workspaceHistory.index === history.index);
         if (historyIndex > -1) {
-            this.workspaceHistory[history.commandArgs.path].splice(historyIndex, 1);
+            (this.workspaceHistory?.[history.commandArgs.path] ?? []).splice(historyIndex, 1);
             await this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
 
             try {

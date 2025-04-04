@@ -118,8 +118,8 @@ export namespace IssueHandler {
                             });
                         }
 
-                        const workflowHistory = act.historyManager.workspaceHistory[workspaceFolder.uri.fsPath]?.filter(history => history.commandArgs.workflow?.uri.fsPath === workflow.uri.fsPath);
-                        if (workflowHistory && workflowHistory.length > 0) {
+                        const workflowHistory = ((await act.historyManager.getWorkspaceHistory())[workspaceFolder.uri.fsPath] ?? []).filter(history => history.commandArgs.workflow?.uri.fsPath === workflow.uri.fsPath);
+                        if (workflowHistory.length > 0) {
                             // Get last act command
                             const settings = await act.settingsManager.getSettings(workspaceFolder, true);
                             const history = workflowHistory[workflowHistory.length - 1];
