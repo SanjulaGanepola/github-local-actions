@@ -15,7 +15,8 @@ export default class WorkspaceFolderHistoryTreeItem extends TreeItem implements 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
         const items: GithubLocalActionsTreeItem[] = [];
 
-        const workspaceHistory = (await act.historyManager.getWorkspaceHistory())[this.workspaceFolder.uri.fsPath];
+        const allHistory = await act.historyManager.getAllHistory();
+        const workspaceHistory = allHistory[this.workspaceFolder.uri.fsPath] ?? [];
         if (workspaceHistory) {
             for (const history of workspaceHistory.slice().reverse()) {
                 items.push(new HistoryTreeItem(this.workspaceFolder, history));

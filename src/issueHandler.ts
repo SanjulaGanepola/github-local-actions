@@ -118,7 +118,9 @@ export namespace IssueHandler {
                             });
                         }
 
-                        const workflowHistory = ((await act.historyManager.getWorkspaceHistory())[workspaceFolder.uri.fsPath] ?? []).filter(history => history.commandArgs.workflow?.uri.fsPath === workflow.uri.fsPath);
+                        const allHistory = await act.historyManager.getAllHistory();
+                        const workspaceHistory = allHistory[workspaceFolder.uri.fsPath] ?? [];
+                        const workflowHistory = workspaceHistory.filter(history => history.commandArgs.workflow?.uri.fsPath === workflow.uri.fsPath);
                         if (workflowHistory.length > 0) {
                             // Get last act command
                             const settings = await act.settingsManager.getSettings(workspaceFolder, true);

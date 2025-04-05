@@ -49,28 +49,30 @@ export enum HistoryStatus {
 
 export class HistoryManager {
     storageManager: StorageManager;
-    private workspaceHistory: { [path: string]: History[] };
+    private allHistory: { [path: string]: History[] };
+    private isAllHistorySynced: boolean;
 
 
     constructor(storageManager: StorageManager) {
         this.storageManager = storageManager;
-        this.workspaceHistory = {};
-        this.syncHistory();
+        this.allHistory = {};
+        this.isAllHistorySynced = false;
+        this.syncAllHistory();
     }
 
 
-    async getWorkspaceHistory() {
-        if (!this.workspaceHistory) {
-            await this.syncHistory();
+    async getAllHistory() {
+        if (!this.isAllHistorySynced) {
+            await this.syncAllHistory();
         }
 
-        return this.workspaceHistory;
+        return this.allHistory;
     }
 
-    async syncHistory() {
-        const workspaceHistory = await this.storageManager.get<{ [path: string]: History[] }>(StorageKey.WorkspaceHistory) || {};
-        for (const [path, historyLogs] of Object.entries(workspaceHistory)) {
-            workspaceHistory[path] = historyLogs.map(history => {
+    private async syncAllHistory() {
+        const allHistory = await this.storageManager.get<{ [path: string]: History[] }>(StorageKey.WorkspaceHistory) || {};
+        for (const [path, historyLogs] of Object.entries(allHistory)) {
+            allHistory[path] = historyLogs.map(history => {
                 history.jobs?.forEach((job, jobIndex) => {
                     history.jobs![jobIndex].steps?.forEach((step, stepIndex) => {
                         // Update status of all running steps
@@ -93,28 +95,25 @@ export class HistoryManager {
                 return history;
             });
         }
-        this.workspaceHistory = workspaceHistory;
+        this.allHistory = allHistory;
+        this.isAllHistorySynced = true;
     };
 
     async clearAll(workspaceFolder: WorkspaceFolder) {
-        await this.syncHistory();
-        const existingHistory = this.workspaceHistory?.[workspaceFolder.uri.fsPath] ?? [];
-        for (const history of existingHistory) {
+        const allHistory = await this.getAllHistory();
+        const workspaceHistory = allHistory[workspaceFolder.uri.fsPath] ?? [];
+        for (const history of workspaceHistory) {
             try {
                 await workspace.fs.delete(Uri.file(history.logPath));
             } catch (error: any) { }
         }
 
-        if (this.workspaceHistory) {
-            this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
-        }
+        allHistory[workspaceFolder.uri.fsPath] = [];
         historyTreeDataProvider.refresh();
-        await this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
+        await this.storageManager.update(StorageKey.WorkspaceHistory, allHistory);
     }
 
     async viewOutput(history: History) {
-        await this.syncHistory();
-
         try {
             const document = await workspace.openTextDocument(history.logPath);
             await window.showTextDocument(document);
@@ -132,11 +131,12 @@ export class HistoryManager {
     }
 
     async remove(history: History) {
-        await this.syncHistory();
-        const historyIndex = (this.workspaceHistory?.[history.commandArgs.path] ?? []).findIndex(workspaceHistory => workspaceHistory.index === history.index);
+        const allHistory = await this.getAllHistory();
+        const workspaceHistory = allHistory[history.commandArgs.path] ?? [];
+        const historyIndex = workspaceHistory.findIndex(workspaceHistory => workspaceHistory.index === history.index);
         if (historyIndex > -1) {
-            (this.workspaceHistory?.[history.commandArgs.path] ?? []).splice(historyIndex, 1);
-            await this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
+            workspaceHistory.splice(historyIndex, 1);
+            await this.storageManager.update(StorageKey.WorkspaceHistory, allHistory);
 
             try {
                 await workspace.fs.delete(Uri.file(history.logPath));
