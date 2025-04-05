@@ -664,17 +664,18 @@ export class Act {
         }
 
         // Initialize history for workspace
-        if (!this.historyManager.workspaceHistory[commandArgs.path]) {
-            this.historyManager.workspaceHistory[commandArgs.path] = [];
-            await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+        const workspaceHistory = await this.historyManager.getWorkspaceHistory();
+        if (workspaceHistory[commandArgs.path] === undefined) {
+            workspaceHistory[commandArgs.path] = [];
+            await this.storageManager.update(StorageKey.WorkspaceHistory, workspaceHistory);
         }
 
         // Process task count suffix
-        const historyIndex = this.historyManager.workspaceHistory[commandArgs.path].length;
-        const matchingTasks = this.historyManager.workspaceHistory[commandArgs.path]
+        const historyIndex = (workspaceHistory[commandArgs.path] ?? []).length;
+        const matchingTasks = (workspaceHistory[commandArgs.path] ?? [])
             .filter(history => history.name === commandArgs.name)
             .sort((a, b) => b.count - a.count);
-        const count = matchingTasks && matchingTasks.length > 0 ? matchingTasks[0].count + 1 : 1;
+        const count = matchingTasks.length > 0 ? matchingTasks[0].count + 1 : 1;
 
         // Process log file and path
         const start = new Date();
@@ -753,6 +754,7 @@ export class Act {
                             lastline = lines.pop() || "";
                         }
 
+                        const workspaceHistory = (await this.historyManager.getWorkspaceHistory());
                         for await (const line of lines) {
                             const dateString = new Date().toString();
 
@@ -796,11 +798,13 @@ export class Act {
                                             jobName = `${jobName} (${matrixValues})`;
                                         }
 
-                                        let jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!
+                                        const jobHistory = workspaceHistory[commandArgs.path][historyIndex];
+                                        const jobs = jobHistory.jobs ?? [];
+                                        let jobIndex = jobs
                                             .findIndex(job => job.name === jobName);
                                         if (jobIndex < 0) {
                                             // Add new job with setup step
-                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.push({
+                                            jobs.push({
                                                 name: jobName,
                                                 status: HistoryStatus.Running,
                                                 date: {
@@ -808,13 +812,17 @@ export class Act {
                                                 },
                                                 steps: []
                                             });
-                                            jobIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs!.length - 1;
+                                            jobIndex = jobs.length - 1;
                                         }
 
                                         // Update step status in workspace history
+                                        const job = jobs[jobIndex];
                                         if (parsedMessage.stepID) {
                                             let stepName: string;
                                             const stepId: string = parsedMessage.stepID[0];
+
+                                            const steps = job.steps ?? [];
+
                                             if (parsedMessage.stage !== 'Main') {
                                                 stepName = `${parsedMessage.stage} ${parsedMessage.step}`;
                                             } else {
@@ -822,20 +830,20 @@ export class Act {
 
                                                 // TODO: This forcefully sets any pre step to success. To be fixed with https://github.com/nektos/act/issues/2551
                                                 const preStepName = `Pre ${parsedMessage.step}`;
-                                                let preStepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
+                                                let preStepIndex = steps
                                                     .findIndex(step => step.id === stepId && step.name === preStepName);
-                                                if (preStepIndex > -1 && this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status === HistoryStatus.Running) {
-
-                                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].status = HistoryStatus.Success;
-                                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![preStepIndex].date.end = dateString;
+                                                const prestep = (job.steps! ?? [])[preStepIndex];
+                                                if (preStepIndex > -1 && prestep?.status === HistoryStatus.Running) {
+                                                    prestep.status = HistoryStatus.Success;
+                                                    prestep.date.end = dateString;
                                                 }
                                             }
 
-                                            let stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!
+                                            let stepIndex = steps
                                                 .findIndex(step => step.id === stepId && step.name === stepName);
                                             if (stepIndex < 0) {
                                                 // Add new step
-                                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.push({
+                                                steps.push({
                                                     id: stepId,
                                                     name: stepName,
                                                     status: HistoryStatus.Running,
@@ -843,21 +851,24 @@ export class Act {
                                                         start: dateString
                                                     }
                                                 });
-                                                stepIndex = this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps!.length - 1;
+                                                stepIndex = steps.length - 1;
                                             }
 
                                             if (parsedMessage.stepResult) {
-                                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].status =
-                                                    HistoryManager.stepResultToHistoryStatus(parsedMessage.stepResult);
-                                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].date.end = dateString;
+                                                const step = steps[stepIndex];
+                                                if (step) {
+                                                    step.status = HistoryManager.stepResultToHistoryStatus(parsedMessage.stepResult);
+                                                    step.date.end = dateString;
+                                                }
+
                                             }
                                         }
 
                                         if (parsedMessage.jobResult) {
-                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].status =
-                                                HistoryManager.stepResultToHistoryStatus(parsedMessage.jobResult);
-                                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].date.end =
-                                                dateString;
+                                            if (job) {
+                                                job.status = HistoryManager.stepResultToHistoryStatus(parsedMessage.jobResult);
+                                                job.date.end = dateString;
+                                            }
                                         }
                                     }
                                 }
@@ -872,7 +883,7 @@ export class Act {
                             writeEmitter.fire(`${message.trimEnd()}\r\n`);
                             historyTreeDataProvider.refresh();
                         }
-                        await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+                        await this.storageManager.update(StorageKey.WorkspaceHistory, workspaceHistory);
                     };
                 };
 
@@ -920,36 +931,47 @@ export class Act {
                     const dateString = new Date().toString();
 
                     // Set execution status and end time in workspace history
-                    if (this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status === HistoryStatus.Running) {
+                    const workspaceHistory = (await this.historyManager.getWorkspaceHistory());
+                    if (workspaceHistory[commandArgs.path][historyIndex].status === HistoryStatus.Running) {
                         const jobAndStepStatus = (!code && code !== 0) ? HistoryStatus.Cancelled : HistoryStatus.Unknown;
-                        this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs?.forEach((job, jobIndex) => {
-                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps?.forEach((step, stepIndex) => {
+                        workspaceHistory[commandArgs.path][historyIndex].jobs?.forEach((job, jobIndex) => {
+                            workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps?.forEach((step, stepIndex) => {
                                 if (step.status === HistoryStatus.Running) {
                                     // Update status of all running steps
-                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].status = jobAndStepStatus;
-                                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex].date.end = dateString;
+                                    const step = workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].steps![stepIndex];
+                                    if (step) {
+                                        step.status = jobAndStepStatus;
+                                        step.date.end = dateString;
+                                    }
                                 }
                             });
 
                             if (job.status === HistoryStatus.Running) {
                                 // Update status of all running jobs
-                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].status = jobAndStepStatus;
-                                this.historyManager.workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex].date.end = dateString;
+                                const step = workspaceHistory[commandArgs.path][historyIndex].jobs![jobIndex];
+                                if (step) {
+                                    step.status = jobAndStepStatus;
+                                    step.date.end = dateString;
+                                }
                             }
                         });
 
                         // Update history status
                         if (code === 0) {
-                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Success;
+                            workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Success;
                         } else if (!code) {
-                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Cancelled;
+                            workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Cancelled;
                         } else {
-                            this.historyManager.workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Failed;
+                            workspaceHistory[commandArgs.path][historyIndex].status = HistoryStatus.Failed;
                         }
                     }
-                    this.historyManager.workspaceHistory[commandArgs.path][historyIndex].date.end = dateString;
+                    const step = workspaceHistory[commandArgs.path][historyIndex];
+
+                    if (step) {
+                        step.date.end = dateString;
+                    }
                     historyTreeDataProvider.refresh();
-                    await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+                    await this.storageManager.update(StorageKey.WorkspaceHistory, workspaceHistory);
 
                     if (signal === 'SIGINT') {
                         writeEmitter.fire(`\r\n${commandArgs.name} #${count} was interrupted.\r\n`);
@@ -987,7 +1009,7 @@ export class Act {
         });
 
         // Add new entry to workspace history
-        this.historyManager.workspaceHistory[commandArgs.path].push({
+        workspaceHistory[commandArgs.path].push({
             index: historyIndex,
             count: count,
             name: `${commandArgs.name}`,
@@ -1001,7 +1023,7 @@ export class Act {
             jobs: []
         });
         historyTreeDataProvider.refresh();
-        await this.storageManager.update(StorageKey.WorkspaceHistory, this.historyManager.workspaceHistory);
+        await this.storageManager.update(StorageKey.WorkspaceHistory, workspaceHistory);
     }
 
     async install(packageManager: string) {

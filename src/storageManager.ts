@@ -1,4 +1,4 @@
-import { ExtensionContext } from "vscode";
+import { ExtensionContext, Uri, workspace } from "vscode";
 
 export enum StorageKey {
     WorkspaceHistory = 'workspaceHistory',
@@ -9,7 +9,7 @@ export enum StorageKey {
     Inputs = 'inputs',
     InputFiles = 'inputFiles',
     Runners = 'runners',
-    PayloadFiles = 'PayloadFiles',
+    PayloadFiles = 'payloadFiles',
     Options = 'options'
 }
 
@@ -21,15 +21,43 @@ export class StorageManager {
         this.context = context;
     }
 
-    keys(): readonly string[] {
-        return this.context.globalState.keys();
+    private async getStorageDirectory(): Promise<Uri> {
+        const storageDirectory = Uri.joinPath(this.context.storageUri ?? this.context.globalStorageUri, "storageManager");
+        await workspace.fs.createDirectory(storageDirectory).then(undefined, () => void 0);
+        return storageDirectory;
     }
 
-    get<T>(storageKey: StorageKey): T | undefined {
-        return this.context.globalState.get<T>(`${this.extensionKey}.${storageKey}`);
+    private async getStorageFile(storageKey: StorageKey): Promise<Uri> {
+        const storageDirectory = await this.getStorageDirectory();
+        return Uri.joinPath(storageDirectory, `${storageKey}.json`);
+    }
+
+    async get<T>(storageKey: StorageKey): Promise<T | undefined> {
+        if ([StorageKey.Secrets, StorageKey.SecretFiles].includes(storageKey)) {
+            return this.context.globalState.get<T>(`${this.extensionKey}.${storageKey}`);
+        }
+
+        const storageFile = await this.getStorageFile(storageKey);
+        return workspace.fs.readFile(storageFile).then(data => {
+            if (data) {
+                return JSON.parse(data.toString()) as T;
+            }
+            return undefined;
+        }, (error) => {
+            if (error.code === 'FileNotFound') {
+                return undefined;
+            }
+        });
     }
 
     async update(storageKey: StorageKey, value: any): Promise<void> {
-        await this.context.globalState.update(`${this.extensionKey}.${storageKey}`, value);
+        if ([StorageKey.Secrets, StorageKey.SecretFiles].includes(storageKey)) {
+            await this.context.globalState.update(`${this.extensionKey}.${storageKey}`, value);
+            return;
+        }
+
+        const data = JSON.stringify(value, null, 2);
+        const storageFile = await this.getStorageFile(storageKey);
+        await workspace.fs.writeFile(storageFile, Buffer.from(data));
     }
 }
