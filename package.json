@@ -909,7 +909,7 @@
   "devDependencies": {
     "@types/node": "22.x",
     "@types/vscode": "^1.93.0",
-    "@typescript-eslint/eslint-plugin": "^8.14.0",
+    "@typescript-eslint/eslint-plugin": "^8.24.1",
     "@typescript-eslint/parser": "^8.14.0",
     "eslint": "^9.15.0",
     "ts-loader": "^9.5.1",
