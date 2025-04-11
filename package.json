@@ -901,6 +901,8 @@
     "test": "vscode-test"
   },
   "dependencies": {
+    "@actions/expressions": "^0.3.14",
+    "@actions/workflow-parser": "^0.3.14",
     "child_process": "^1.0.2",
     "octokit": "^4.0.2",
     "sanitize-filename": "^1.6.3",
