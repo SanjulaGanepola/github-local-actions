@@ -1,7 +1,8 @@
 import { TaskExecution, ThemeColor, ThemeIcon, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { CommandArgs } from "./act";
-import { act, historyTreeDataProvider } from "./extension";
+import { act, historyTreeDataProvider, logger } from "./extension";
 import { StorageKey, StorageManager } from "./storageManager";
+import { Utils } from "./utils";
 
 export interface History {
     index: number,
@@ -119,7 +120,7 @@ export class HistoryManager {
             const document = await workspace.openTextDocument(history.logPath);
             await window.showTextDocument(document);
         } catch (error: any) {
-            window.showErrorMessage(`${history.name} #${history.count} log file not found`);
+            Utils.showAndLogErrorMessage(`${history.name} #${history.count} log file not found`, 'HistoryManager');
         }
     }
 
@@ -140,7 +141,9 @@ export class HistoryManager {
 
             try {
                 await workspace.fs.delete(Uri.file(history.logPath));
-            } catch (error: any) { }
+            } catch (error: any) {
+                logger.error(`HistoryManager: ${error}`);
+            }
         }
     }
 

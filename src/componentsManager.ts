@@ -304,6 +304,8 @@ export class ComponentsManager {
                 const version = stdout?.match(versionRegex);
 
                 if (error) {
+                    console.error(`ComponentsManager: ${error}`);
+
                     if (ignoreError && version) {
                         resolve({
                             version: version[1],

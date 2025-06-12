@@ -3,6 +3,7 @@ import * as path from "path";
 import { RelativePattern, Uri, workspace, WorkspaceFolder } from "vscode";
 import * as yaml from "yaml";
 import { ConfigurationManager, Section } from "./configurationManager";
+import { logger } from "./extension";
 
 export interface Workflow {
   name: string,
@@ -30,7 +31,11 @@ export class WorkflowsManager {
     const workflows: Workflow[] = [];
 
     const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
+    logger.debug(`WorkflowsManager: looking for workflows in ${workflowsDirectory}`);
+
     const workflowFileUris = await workspace.findFiles(new RelativePattern(workspaceFolder, `${workflowsDirectory}/*.{${WorkflowsManager.yamlExtension},${WorkflowsManager.ymlExtension}}`));
+    logger.debug(`WorkflowsManager: found workflow files ${workflowFileUris}`);
+
     for await (const workflowFileUri of workflowFileUris) {
       let yamlContent: any | undefined;
 
@@ -50,6 +55,7 @@ export class WorkflowsManager {
           uri: workflowFileUri,
           error: 'Failed to parse workflow'
         });
+        logger.error(`WorkflowsManager: failed to parse workflow ${workflowFileUri}`);
       }
     }
 

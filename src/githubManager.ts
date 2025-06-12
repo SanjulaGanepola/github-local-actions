@@ -2,7 +2,9 @@ import * as childProcess from "child_process";
 import { Octokit } from "octokit";
 import * as path from "path";
 import { authentication, AuthenticationSession, commands, extensions, ShellExecution, TaskGroup, TaskPanelKind, TaskRevealKind, tasks, TaskScope, window, WorkspaceFolder } from "vscode";
+import { logger } from "./extension";
 import { GitExtension } from "./import/git";
+import { Utils } from "./utils";
 
 export interface Response<T> {
     data: T,
@@ -45,12 +47,12 @@ export class GitHubManager {
                         };
                     } else {
                         if (!suppressNotFoundErrors) {
-                            window.showErrorMessage('Remote GitHub URL not found.');
+                            Utils.showAndLogErrorMessage('Remote GitHub URL not found.', 'GitHubManager');
                         }
                     }
                 } else {
                     if (!suppressNotFoundErrors) {
-                        window.showErrorMessage(`${workspaceFolder.name} does not have a Git repository`);
+                        Utils.showAndLogErrorMessage(`${workspaceFolder.name} does not have a Git repository`, 'GitHubManager');
                     }
                 }
             } else {
@@ -62,7 +64,7 @@ export class GitHubManager {
                 });
             }
         } else {
-            window.showErrorMessage('Failed to load VS Code Git API.');
+            Utils.showAndLogErrorMessage('Failed to load VS Code Git API.', 'GitHubManager');
         }
     }
 
@@ -87,6 +89,7 @@ export class GitHubManager {
             }
         } catch (error: any) {
             environments.error = error.message ? error.message : error;
+            logger.error(`GitHubManager: ${environments.error}`);
         }
 
         return environments;
@@ -123,6 +126,7 @@ export class GitHubManager {
             }
         } catch (error: any) {
             variables.error = error.message ? error.message : error;
+            logger.error(`GitHubManager: ${variables.error}`);
         }
 
         return variables;
@@ -156,7 +160,7 @@ export class GitHubManager {
         try {
             return await authentication.getSession('github', ['repo'], { createIfNone: true });
         } catch (error: any) {
-            window.showErrorMessage(`Failed to authenticate to GitHub. Error ${error}`);
+            Utils.showAndLogErrorMessage(`Failed to authenticate to GitHub. Error ${error}`, 'GitHubManager');
             return;
         }
     }
@@ -166,6 +170,7 @@ export class GitHubManager {
             childProcess.exec('gh auth token', (error, stdout, stderr) => {
                 if (error) {
                     const errorMessage = (String(stderr).charAt(0).toUpperCase() + String(stderr).slice(1)).trim();
+                    logger.error(`GitHubManager: ${errorMessage}`);
                     window.showErrorMessage(`${errorMessage}. Authenticate to GitHub and try again.`, 'Authenticate').then(async value => {
                         if (value === 'Authenticate') {
                             await tasks.executeTask({

@@ -1,4 +1,5 @@
 import { window, workspace, WorkspaceFolder } from "vscode";
+import { logger } from "./extension";
 
 export namespace Utils {
     /**
@@ -62,5 +63,11 @@ export namespace Utils {
      */
     export function escapeSpecialCharacters(input: string): string {
         return input.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    }
+
+    export function showAndLogErrorMessage(message: string, source?: string): void {
+        window.showErrorMessage(message);
+        const prefix = (source !== undefined) ? `${source}: ` : '';
+        logger.error(`${prefix}${message}`);
     }
 }
