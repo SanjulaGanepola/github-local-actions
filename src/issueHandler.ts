@@ -3,7 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { env, ExtensionContext, ProgressLocation, QuickPickItem, ThemeIcon, Uri, window, workspace } from "vscode";
 import { Act, Option } from "./act";
-import { act } from "./extension";
+import { act, logger } from "./extension";
 
 interface BugReport {
     githubLocalActionsVersion?: string
@@ -43,6 +43,7 @@ export namespace IssueHandler {
                 await env.openExternal(Uri.parse(urlWithParams));
             }
         } catch (error) {
+            logger.error(`IssueHandler: ${error}`);
             await env.openExternal(Uri.parse('https://github.com/SanjulaGanepola/github-local-actions/issues'));
         }
     }
@@ -148,7 +149,9 @@ export namespace IssueHandler {
                                         key: 'actCommandOutput'
                                     });
                                 }
-                            } catch (error: any) { }
+                            } catch (error: any) {
+                                logger.error(`IssueHandler: ${error}`);
+                            }
                         }
                     }
                 }

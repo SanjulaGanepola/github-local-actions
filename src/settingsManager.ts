@@ -1,9 +1,10 @@
 import * as path from "path";
 import { Uri, window, workspace, WorkspaceFolder } from "vscode";
-import { act } from "./extension";
+import { act, logger } from "./extension";
 import { GitHubManager } from "./githubManager";
 import { SecretManager } from "./secretManager";
 import { StorageKey, StorageManager } from "./storageManager";
+import { Utils } from "./utils";
 
 export interface Settings {
     secrets: Setting[];
@@ -195,15 +196,16 @@ export class SettingsManager {
 
         try {
             await workspace.fs.stat(settingFileUri);
-            window.showErrorMessage(`A file or folder named ${settingFileName} already exists at ${workspaceFolder.uri.fsPath}. Please choose another name.`);
+            Utils.showAndLogErrorMessage(`A file or folder named ${settingFileName} already exists at ${workspaceFolder.uri.fsPath}. Please choose another name.`, 'SettingsManager');
         } catch (error: any) {
+            logger.error(`SettingsManager: ${error}`);
             try {
                 await workspace.fs.writeFile(settingFileUri, new TextEncoder().encode(content));
                 await this.locateSettingFile(workspaceFolder, storageKey, [settingFileUri]);
                 const document = await workspace.openTextDocument(settingFileUri);
                 await window.showTextDocument(document);
             } catch (error: any) {
-                window.showErrorMessage(`Failed to create ${settingFileName}. Error: ${error}`);
+                Utils.showAndLogErrorMessage(`Failed to create ${settingFileName}. Error: ${error}`, 'SettingsManager');
             }
         }
     }
@@ -228,7 +230,7 @@ export class SettingsManager {
         }
 
         if (existingSettingFileNames.length > 0) {
-            window.showErrorMessage(`The following file(s) have already been added: ${existingSettingFileNames.join(', ')}`);
+            Utils.showAndLogErrorMessage(`The following file(s) have already been added: ${existingSettingFileNames.join(', ')}`, 'SettingsManager');
         }
     }
 
@@ -275,7 +277,7 @@ export class SettingsManager {
         } catch (error: any) {
             try {
                 await workspace.fs.stat(Uri.file(settingFile.path));
-                window.showErrorMessage(`Failed to delete file. Error ${error}`);
+                Utils.showAndLogErrorMessage(`Failed to delete file. Error ${error}`, 'SettingsManager');
                 return;
             } catch (error: any) { }
         }

@@ -1,4 +1,5 @@
 import { ExtensionContext, Uri, workspace } from "vscode";
+import { logger } from "./extension";
 
 export enum StorageKey {
     WorkspaceHistory = 'workspaceHistory',
@@ -38,6 +39,8 @@ export class StorageManager {
         }
 
         const storageFile = await this.getStorageFile(storageKey);
+        logger.debug(`StorageManager: found storage file ${storageFile}`);
+
         return workspace.fs.readFile(storageFile).then(data => {
             if (data) {
                 return JSON.parse(data.toString()) as T;
@@ -47,6 +50,7 @@ export class StorageManager {
             if (error.code === 'FileNotFound') {
                 return undefined;
             }
+            logger.error(`StorageManager: ${error}`);
         });
     }
 
