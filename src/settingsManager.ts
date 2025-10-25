@@ -55,6 +55,10 @@ export enum SettingFileName {
     payloadFile = 'payload.json'
 }
 
+enum SettingYamlKey {
+    runners = 'runs-on'
+}
+
 export class SettingsManager {
     storageManager: StorageManager;
     secretManager: SecretManager;
@@ -62,7 +66,6 @@ export class SettingsManager {
     static secretsRegExp: RegExp = /\${{\s*secrets\.(.*?)\s*}}/g;
     static variablesRegExp: RegExp = /\${{\s*vars\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
     static inputsRegExp: RegExp = /\${{\s*(?:inputs|github\.event\.inputs)\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
-    static runnersRegExp: RegExp = /runs-on:\s*(.+)/g;
 
     constructor(storageManager: StorageManager, secretManager: SecretManager) {
         this.storageManager = storageManager;
@@ -87,7 +90,7 @@ export class SettingsManager {
         const variableFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
         const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
         const inputFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.InputFiles)).filter(inputFile => !isUserSelected || inputFile.selected);
-        const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
+        const runners = (await this.getSetting(workspaceFolder, SettingYamlKey.runners, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
         const payloadFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.PayloadFiles)).filter(payloadFile => !isUserSelected || payloadFile.selected);
         const options = (await this.getCustomSettings(workspaceFolder, StorageKey.Options)).filter(option => !isUserSelected || (option.selected && (option.path || option.notEditable)));
         // const environments = await this.getEnvironments(workspaceFolder);
@@ -106,7 +109,7 @@ export class SettingsManager {
         };
     }
 
-    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey, password: boolean, visible: Visibility, defaultSettings: Setting[] = []): Promise<Setting[]> {
+    async getSetting(workspaceFolder: WorkspaceFolder, finder: RegExp | SettingYamlKey, storageKey: StorageKey, password: boolean, visible: Visibility, defaultSettings: Setting[] = []): Promise<Setting[]> {
         const settings: Setting[] = defaultSettings;
 
         const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
@@ -115,7 +118,13 @@ export class SettingsManager {
                 continue;
             }
 
-            const workflowSettings = this.findInWorkflow(workflow.fileContent, regExp, password, visible);
+            let workflowSettings: Setting[];
+            if (finder instanceof RegExp) {
+                workflowSettings = this.findInWorkflow(workflow.fileContent, finder, password, visible);
+            } else {
+                workflowSettings = this.findInYaml(workflow.yaml, finder, password, visible);
+            }
+
             for (const workflowSetting of workflowSettings) {
                 const existingSetting = settings.find(setting => setting.key === workflowSetting.key);
                 if (!existingSetting) {
@@ -317,6 +326,49 @@ export class SettingsManager {
         const matches = content.matchAll(regExp);
         for (const match of matches) {
             results.push({ key: match[1], value: '', password: password, selected: false, visible: visible, mode: Mode.manual });
+        }
+
+        return results;
+    }
+
+    private findInYaml(yamlContent: object, targetKey: SettingYamlKey, password: boolean, visible: Visibility) {
+        const results: Setting[] = [];
+
+        if (!yamlContent) {
+            return results;
+        }
+
+        const stack = [yamlContent];
+
+        while (stack.length > 0) {
+            const current = stack.pop();
+
+            if (current && typeof current === 'object') {
+                if (Array.isArray(current)) {
+                    stack.push(...current);
+                } else {
+                    for (const [currentKey, currentValue] of Object.entries(current)) {
+                        if (currentKey === targetKey) {
+                            if (Array.isArray(currentValue)) {
+                                for (const item of currentValue) {
+                                    results.push({ key: item, value: '', password: password, selected: false, visible: visible, mode: Mode.manual });
+                                }
+                            } else if (typeof currentValue === 'object') {
+                                // this is a specific case for 'runs-on' when it's using a 'group' object
+                                // if findInYaml is extended to other keys, a better way to handle different object structures will be needed
+                                if (targetKey === SettingYamlKey.runners && currentValue['group']) {
+                                    results.push({ key: currentValue['group'], value: '', password: password, selected: false, visible: visible, mode: Mode.manual });
+                                }
+                            } else {
+                                results.push({ key: currentValue, value: '', password: password, selected: false, visible: visible, mode: Mode.manual });
+                            }
+                        }
+                        if (currentValue && typeof currentValue === 'object') {
+                            stack.push(currentValue);
+                        }
+                    }
+                }
+            }
         }
 
         return results;

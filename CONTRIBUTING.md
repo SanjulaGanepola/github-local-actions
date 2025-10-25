@@ -9,14 +9,18 @@ No contribution is too small—every bit helps! If you're unsure where to start,
 1. Install [VS Code](https://code.visualstudio.com/download) and [Node.js](https://nodejs.org/en/download/package-manager).
 2. Create a [fork](https://github.com/SanjulaGanepola/github-local-actions/fork) of this repository.
 3. Clone your fork.
+
    ```sh
    git clone https://github.com/your-username/github-local-actions.git
    cd github-local-actions
    ```
+
 4. Install all dependencies.
+
     ```sh
     npm install
     ```
+
 5. Use `Run Extension` from VS Code's `Run and Debug` view.
 
 ## Contributors
@@ -27,5 +31,6 @@ Thanks so much to everyone [who has contributed](https://github.com/SanjulaGanep
 * [@ChristopherHX](https://github.com/ChristopherHX)
 * [@a11rew](https://github.com/a11rew)
 * [@atoko](https://github.com/atoko)
+* [@ghbuck](https://github.com/ghbuck)
 
 Want to see your name on this list? Join us and contribute!
