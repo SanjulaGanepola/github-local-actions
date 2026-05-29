@@ -28,9 +28,14 @@ export class WorkflowsManager {
 
   async getWorkflows(workspaceFolder: WorkspaceFolder): Promise<Workflow[]> {
     const workflows: Workflow[] = [];
-
     const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
-    const workflowFileUris = await workspace.findFiles(new RelativePattern(workspaceFolder, `${workflowsDirectory}/*.{${WorkflowsManager.yamlExtension},${WorkflowsManager.ymlExtension}}`));
+    const workflowFileUris = await workspace.findFiles(
+      new RelativePattern(
+        workspaceFolder,
+        `${workflowsDirectory}/*.{${WorkflowsManager.yamlExtension},${WorkflowsManager.ymlExtension}}`,
+      ),
+      null, // include files even if excluded in VS Code settings
+    );
     for await (const workflowFileUri of workflowFileUris) {
       let yamlContent: any | undefined;
 
